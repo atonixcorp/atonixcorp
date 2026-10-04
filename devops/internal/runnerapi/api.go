@@ -1,9 +1,12 @@
 package runnerapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -76,21 +79,121 @@ type service struct {
 	runner    jobRunner
 }
 
+type agentProxy struct {
+	baseURL string
+	token   string
+	client  *http.Client
+}
+
 func Register(mux *http.ServeMux) {
 	workspace := os.Getenv("ORCASTACK_RUNNER_WORKSPACE")
 	if workspace == "" {
 		workspace = "/workspace/orcastackapi"
 	}
-	registerWithRunner(mux, commandRunner{workspace: workspace})
+	registerWithRunnerAndAgent(
+		mux,
+		commandRunner{workspace: workspace},
+		agentProxy{
+			baseURL: os.Getenv("ATONIX_AGENT_API_URL"),
+			token:   os.Getenv("ATONIX_AGENT_API_TOKEN"),
+			client:  &http.Client{Timeout: 10 * time.Second},
+		},
+	)
 }
 
 func registerWithRunner(mux *http.ServeMux, runner jobRunner) {
+	registerWithRunnerAndAgent(mux, runner, agentProxy{})
+}
+
+func registerWithRunnerAndAgent(mux *http.ServeMux, runner jobRunner, agent agentProxy) {
 	service := &service{logs: make(map[string]string), runner: runner}
 	mux.HandleFunc("/pipelines", service.handlePipelines)
 	mux.HandleFunc("/pipelines/", service.handlePipeline)
 	mux.HandleFunc("/jobs", service.handleJobs)
 	mux.HandleFunc("/jobs/", service.handleJob)
 	mux.HandleFunc("/events/stream", service.handleEvents)
+	mux.HandleFunc("/agent/registry", agent.handleRegistry)
+	mux.HandleFunc("/agent/predict", agent.handlePredict)
+}
+
+func (agent agentProxy) proxy(w http.ResponseWriter, r *http.Request, method, path string) {
+	if agent.baseURL == "" || agent.token == "" {
+		respondJSON(w, http.StatusServiceUnavailable, map[string]string{
+			"error": "AtonixCorp Agent API is not configured on the runner",
+		})
+		return
+	}
+	if r.Method != method {
+		w.Header().Set("Allow", method)
+		respondJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	var body []byte
+	if method == http.MethodPost {
+		if !strings.EqualFold(strings.TrimSpace(strings.Split(r.Header.Get("Content-Type"), ";")[0]), "application/json") {
+			respondJSON(w, http.StatusUnsupportedMediaType, map[string]string{"error": "Content-Type must be application/json"})
+			return
+		}
+		var err error
+		body, err = io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
+		if err != nil {
+			respondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "request body exceeds the 1 MiB limit"})
+			return
+		}
+	}
+
+	target := strings.TrimRight(agent.baseURL, "/") + path
+	upstreamRequest, err := http.NewRequestWithContext(
+		r.Context(),
+		method,
+		target,
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		respondJSON(w, http.StatusBadGateway, map[string]string{"error": "invalid Agent API URL"})
+		return
+	}
+	upstreamRequest.Header.Set("Accept", "application/json")
+	upstreamRequest.Header.Set("Authorization", "Bearer "+agent.token)
+	if method == http.MethodPost {
+		upstreamRequest.Header.Set("Content-Type", "application/json")
+	}
+
+	client := agent.client
+	if client == nil {
+		client = &http.Client{Timeout: 10 * time.Second}
+	}
+	response, err := client.Do(upstreamRequest)
+	if err != nil {
+		respondJSON(w, http.StatusBadGateway, map[string]string{
+			"error": fmt.Sprintf("Agent API request failed: %v", err),
+		})
+		return
+	}
+	defer response.Body.Close()
+
+	responseBody, err := io.ReadAll(io.LimitReader(response.Body, (1<<20)+1))
+	if err != nil {
+		respondJSON(w, http.StatusBadGateway, map[string]string{"error": "could not read Agent API response"})
+		return
+	}
+	if len(responseBody) > 1<<20 {
+		respondJSON(w, http.StatusBadGateway, map[string]string{"error": "Agent API response exceeds the 1 MiB limit"})
+		return
+	}
+	w.Header().Set("Content-Type", response.Header.Get("Content-Type"))
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(response.StatusCode)
+	_, _ = w.Write(responseBody)
+}
+
+func (agent agentProxy) handleRegistry(w http.ResponseWriter, r *http.Request) {
+	agent.proxy(w, r, http.MethodGet, "/v1/agent/registry")
+}
+
+func (agent agentProxy) handlePredict(w http.ResponseWriter, r *http.Request) {
+	agent.proxy(w, r, http.MethodPost, "/v1/agent/predict")
 }
 
 func (service *service) handlePipelines(w http.ResponseWriter, r *http.Request) {

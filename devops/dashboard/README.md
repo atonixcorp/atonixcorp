@@ -35,6 +35,14 @@ different URL. The runner currently accepts the `api-test` workflow, which runs
 `go test ./...` in `ORCASTACK_RUNNER_WORKSPACE`; only start this workflow when
 you intend to execute those tests.
 
+To connect the AtonixCorp Agent, configure the runner process with
+`ATONIX_AGENT_API_URL` and `ATONIX_AGENT_API_TOKEN`. The dashboard reads model
+readiness and submits advisory predictions through runner-side proxy routes;
+the bearer token is never sent to browser code. Predictions require a model
+version promoted to production and real telemetry. The current runner provides
+pipeline/job status only, so its demo metrics are not used as infrastructure
+recommendation input.
+
 ## Open it from Cloud
 
 The Cloud dashboard’s **DevSecOps** navigation entry opens this standalone app.

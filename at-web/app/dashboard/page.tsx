@@ -29,6 +29,24 @@ type CloudActivity = {
   user: string;
 };
 
+type AgentModel = {
+  name: string;
+  version?: string;
+  stage?: string;
+  production_version?: string;
+  metadata?: {
+    family?: string;
+  };
+  versions?: Record<string, {
+    version: string;
+    stage?: string;
+  }>;
+};
+
+type AgentRegistry = {
+  models?: AgentModel[];
+};
+
 const navigation: Service[] = [
   { name: "Home", icon: "home", kind: "home" },
   { name: "Compute", icon: "compute", kind: "Virtual machine" },
@@ -59,6 +77,13 @@ const resourceSummary = [
   { name: "Kubernetes clusters", kind: "Kubernetes cluster", count: 4, delta: "+1 this week", icon: "containers", tone: "purple" },
   { name: "Storage buckets", kind: "Storage bucket", count: 18, delta: "+3 this week", icon: "storage", tone: "green" },
   { name: "Databases", kind: "Database", count: 6, delta: "+1 this week", icon: "database", tone: "blue" },
+];
+
+const agentModelFamilies = [
+  { name: "Anomaly detection", family: "anomaly", description: "Flag unusual workload and infrastructure signals.", icon: "observability" },
+  { name: "Autoscaling", family: "autoscale", description: "Recommend scale-up, hold, or scale-down from utilization.", icon: "containers" },
+  { name: "Forecasting", family: "forecasting", description: "Project future resource usage from observed time series.", icon: "chart" },
+  { name: "Resource optimization", family: "resource_opt", description: "Recommend resource sizing from observed workload usage.", icon: "compute" },
 ];
 
 const initialActivities: CloudActivity[] = [
@@ -142,6 +167,41 @@ export default function DashboardPage() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [userEmail, setUserEmail] = useState("demo@example.com");
+  const [agentModels, setAgentModels] = useState<AgentModel[]>([]);
+  const [agentError, setAgentError] = useState("");
+  const [agentConnected, setAgentConnected] = useState(false);
+  const [agentLoading, setAgentLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const refreshAgent = async () => {
+      try {
+        const response = await fetch("/api/agent/registry", { cache: "no-store" });
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || `Agent API returned ${response.status}.`);
+        }
+        const registry = (await response.json()) as AgentRegistry;
+        if (!active) return;
+        setAgentModels(Array.isArray(registry.models) ? registry.models : []);
+        setAgentError("");
+        setAgentConnected(true);
+      } catch (error) {
+        if (!active) return;
+        setAgentModels([]);
+        setAgentError(error instanceof Error ? error.message : "Could not connect to the Agent API.");
+        setAgentConnected(false);
+      } finally {
+        if (active) setAgentLoading(false);
+      }
+    };
+    void refreshAgent();
+    const timer = window.setInterval(refreshAgent, 30000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -191,6 +251,7 @@ export default function DashboardPage() {
   }, [toast]);
 
   const selected = navigation.find((item) => item.name === selectedService) ?? navigation[0];
+  const productionModels = agentModels.filter((model) => model.production_version);
   const filteredResources = useMemo(() => {
     const serviceItems = resources.filter((resource) =>
       selected.kind === "home" || selected.kind === "Observability" || selected.kind === "Billing"
@@ -407,12 +468,14 @@ export default function DashboardPage() {
               <div>
                 <p className="cloud-eyebrow">{selectedService === "Home" ? "WELCOME TO ATONIXCORP CLOUD" : `ATONIXCORP CLOUD / ${selectedService.toUpperCase()}`}</p>
                 <h1>{selectedService === "Home" ? "Cloud overview" : selectedService}</h1>
-                <p>{selectedService === "Home" ? "Monitor and manage your cloud workspace from one place." : `${selectedService} workspace in your AtonixCorp demo environment.`}</p>
+                <p>{selectedService === "Home" ? "Monitor and manage your cloud workspace from one place." : selectedService === "AI & Machine Learning" ? "AI & Machine Learning workspace in your AtonixCorp demo environment." : `${selectedService} workspace in your AtonixCorp demo environment.`}</p>
               </div>
               <div className="cloud-heading-actions">
-                <button className="cloud-create-button" type="button" onClick={() => openCreate(canCreate ? suggestedAction : undefined)}>
-                  <DashboardIcon name="plus" /> Create resource <span>⌄</span>
-                </button>
+                {selectedService !== "AI & Machine Learning" && (
+                  <button className="cloud-create-button" type="button" onClick={() => openCreate(canCreate ? suggestedAction : undefined)}>
+                    <DashboardIcon name="plus" /> Create resource <span>⌄</span>
+                  </button>
+                )}
                 <button className="cloud-services-button" type="button" onClick={() => { setSelectedService("Home"); setQuery(""); }}>
                   <DashboardIcon name="containers" /> View overview
                 </button>
@@ -446,6 +509,24 @@ export default function DashboardPage() {
                     <div><strong>Cloud connection not configured</strong><p>Connect an environment to see live health and availability.</p></div>
                   </div>
                   <div className="cloud-uptime"><strong>—</strong><span>Uptime metrics appear when connected</span></div>
+                </article>
+
+                <article className="cloud-panel cloud-agent-panel">
+                  <header className="cloud-panel-heading"><div><h2>AtonixCorp Agent</h2><p>Model readiness · advisory only</p></div><span className={`cloud-agent-state${!agentConnected && !agentLoading ? " unavailable" : ""}`}>{agentLoading ? "Connecting" : agentConnected ? "Connected" : "Unavailable"}</span></header>
+                  {agentLoading ? (
+                    <div className="cloud-agent-body"><strong>Checking Agent API</strong><p>Loading production model status.</p></div>
+                  ) : agentError ? (
+                    <div className="cloud-agent-body"><strong>Agent API unavailable</strong><p>{agentError}</p></div>
+                  ) : (
+                    <div className="cloud-agent-body">
+                      <strong>{agentModels.filter((model) => model.production_version).length} production models</strong>
+                      <p>
+                        {agentModels.some((model) => model.production_version)
+                          ? "Waiting for live Cloud telemetry. The selected database metrics API currently returns placeholders, so no predictions are generated."
+                          : "Register and promote production models. Demo resources and placeholder metrics are not used for predictions."}
+                      </p>
+                    </div>
+                  )}
                 </article>
 
                 <article className="cloud-panel cloud-security-panel">
@@ -492,6 +573,98 @@ export default function DashboardPage() {
                 <article className="cloud-panel cloud-regions-panel">
                   <header className="cloud-panel-heading"><div><h2>Regions & availability</h2><p>Illustrative deployment footprint</p></div><button type="button" onClick={() => setRegion(regions[(regions.indexOf(region) + 1) % regions.length])}>Change region <span aria-hidden="true">→</span></button></header>
                   <RegionMap />
+                </article>
+              </section>
+            ) : selectedService === "AI & Machine Learning" ? (
+              <section className="cloud-ai-workspace" aria-label="AI and Machine Learning workspace">
+                <article className={`cloud-panel cloud-ai-status${agentError ? " unavailable" : ""}`}>
+                  <span className="cloud-ai-status-icon"><DashboardIcon name={agentLoading ? "ai" : agentError ? "security" : "ai"} /></span>
+                  <div>
+                    <strong>{agentLoading ? "Connecting to AtonixCorp Agent" : agentError ? "Agent connection unavailable" : "AtonixCorp Agent connected"}</strong>
+                    <p>{agentLoading ? "Checking registered models." : agentError ? agentError : "Registry status is live. Recommendations remain advisory and require connected Cloud telemetry."}</p>
+                  </div>
+                  <span className={`cloud-agent-state${!agentConnected && !agentLoading ? " unavailable" : ""}`}>{agentLoading ? "Connecting" : agentConnected ? "Connected" : "Unavailable"}</span>
+                </article>
+
+                <div className="cloud-ai-summary" aria-label="AI and Machine Learning readiness">
+                  <article className="cloud-panel"><span>Agent API</span><strong>{agentLoading ? "Checking" : agentConnected ? "Connected" : "Unavailable"}</strong><small>Model registry connection</small></article>
+                  <article className="cloud-panel"><span>Production models</span><strong>{agentLoading || agentError ? "—" : productionModels.length}</strong><small>Explicitly promoted versions</small></article>
+                  <article className="cloud-panel"><span>Cloud telemetry</span><strong>Not connected</strong><small>Live workload metrics required</small></article>
+                </div>
+
+                <div className="cloud-ai-grid">
+                  <article className="cloud-panel cloud-ai-models">
+                    <header className="cloud-panel-heading">
+                      <div><h2>Model registry</h2><p>Production and staging model versions from the Agent</p></div>
+                      <span>{agentLoading || agentError ? "—" : `${agentModels.length} model${agentModels.length === 1 ? "" : "s"}`}</span>
+                    </header>
+                    {agentLoading ? (
+                      <div className="cloud-ai-empty">Loading registered models…</div>
+                    ) : agentError ? (
+                      <div className="cloud-ai-empty">Model inventory is unavailable. Check the Agent API connection.</div>
+                    ) : agentModels.length === 0 ? (
+                      <div className="cloud-ai-empty">No models are registered yet. Register and promote a model through the Agent ModelOps API to make it available here.</div>
+                    ) : (
+                      <div className="cloud-ai-model-list">
+                        {agentModels.map((model) => {
+                          const versions = Object.values(model.versions ?? {});
+                          return (
+                            <article className="cloud-ai-model" key={model.name}>
+                              <span className="cloud-ai-model-icon"><DashboardIcon name="ai" /></span>
+                              <div className="cloud-ai-model-main">
+                                <strong>{model.name}</strong>
+                                <small>{model.metadata?.family ?? "Model family not specified"}</small>
+                                <div className="cloud-ai-version-list">
+                                  {versions.length ? versions.map((version) => (
+                                    <span key={version.version}><code>{version.version}</code> {version.stage ?? "staging"}</span>
+                                  )) : <span><code>{model.version ?? "—"}</code> {model.stage ?? "staging"}</span>}
+                                </div>
+                              </div>
+                              <span className={`cloud-ai-model-stage${model.production_version ? " production" : ""}`}>
+                                {model.production_version ? `Production · ${model.production_version}` : "No production version"}
+                              </span>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </article>
+
+                  <article className="cloud-panel cloud-ai-recommendations">
+                    <header className="cloud-panel-heading"><div><h2>AI recommendations</h2><p>Model outputs · advisory only</p></div><span className="cloud-agent-state">Human review</span></header>
+                    <div className="cloud-ai-telemetry">
+                      <span><DashboardIcon name="observability" /></span>
+                      <div><strong>Waiting for live Cloud telemetry</strong><p>The available database metrics endpoint currently returns placeholder values. Demo resources and placeholder data are not sent to models.</p></div>
+                    </div>
+                    <div className="cloud-ai-empty">
+                      {agentError
+                        ? "Connect the Agent API and live Cloud telemetry to see model recommendations."
+                        : productionModels.length
+                          ? `${productionModels.length} production model${productionModels.length === 1 ? " is" : "s are"} ready. Recommendations will appear when real workload metrics are available.`
+                          : "Promote a production model and connect real workload metrics to enable recommendations."}
+                    </div>
+                  </article>
+                </div>
+
+                <article className="cloud-panel cloud-ai-capabilities">
+                  <header className="cloud-panel-heading"><div><h2>Supported model families</h2><p>Implemented baseline capabilities · registry status shown per family</p></div></header>
+                  <div className="cloud-ai-family-grid">
+                    {agentModelFamilies.map((item) => {
+                      const count = agentModels.filter((model) => model.metadata?.family === item.family).length;
+                      return (
+                        <article key={item.family}>
+                          <span><DashboardIcon name={item.icon} /></span>
+                          <div><strong>{item.name}</strong><p>{item.description}</p></div>
+                          <small>{agentLoading || agentError ? "Status unavailable" : count ? `${count} registered` : "Not registered"}</small>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </article>
+
+                <article className="cloud-panel cloud-ai-safety">
+                  <DashboardIcon name="security" />
+                  <div><strong>Recommendations never apply changes</strong><p>The Agent only provides advisory output. It does not provision resources, alter scaling, or modify Cloud configuration.</p></div>
                 </article>
               </section>
             ) : selectedService === "Observability" || selectedService === "Billing" ? (

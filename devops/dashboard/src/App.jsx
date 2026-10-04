@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getJobLogs, getRunnerState, startPipeline } from "./api.js";
+import { getAgentRegistry, getJobLogs, getRunnerState, startPipeline } from "./api.js";
 
 const sidebar = [
   ["Dashboard", "grid"],
@@ -258,7 +258,7 @@ function PipelineDetails({ pipeline, onClose, mode, onLoadLogs, logs, logsError 
   );
 }
 
-function DashboardOverview({ pipelines, summary, mode, query, onSelect, onNewPipeline, onNavigate }) {
+function DashboardOverview({ pipelines, summary, mode, query, onSelect, onNewPipeline, onNavigate, agentModels, agentError, agentLoading }) {
   const completed = pipelines.filter((pipeline) => ["success", "failed"].includes(pipeline.status)).length;
   const succeeded = pipelines.filter((pipeline) => pipeline.status === "success").length;
   const successRate = completed ? `${Math.round((succeeded / completed) * 100)}%` : null;
@@ -321,7 +321,7 @@ function DashboardOverview({ pipelines, summary, mode, query, onSelect, onNewPip
           <div className="capacity-content"><div className="capacity-ring"><strong>68%<small>total capacity</small></strong></div><div className="capacity-legend"><span><i className="blue" />Compute <b>68%</b></span><span><i className="teal" />Storage <b>54%</b></span><span><i className="purple" />Networking <b>42%</b></span><span><i className="violet" />Memory <b>62%</b></span></div></div>
         </article>
         <article className="panel security-panel"><PanelHeading eyebrow="CONTINUOUS ASSURANCE" title="Security alerts" action="View security" onAction={() => onNavigate("Security")} /><AlertList /></article>
-        <article className="panel recommendations-panel"><PanelHeading eyebrow="INTELLIGENT OPERATIONS" title="AI recommendations" action="Review all" onAction={() => onNavigate("AI Operations")} /><RecommendationList /></article>
+        <article className="panel recommendations-panel"><PanelHeading eyebrow="ATONIXCORP AGENT" title="AI Operations" action="Open workspace" onAction={() => onNavigate("AI Operations")} /><AgentReadiness models={agentModels} error={agentError} loading={agentLoading} /></article>
         <article className="panel operations-panel"><PanelHeading eyebrow="PLATFORM TELEMETRY" title="Pipeline activity" action="Open pipelines" onAction={() => onNavigate("Pipelines")} /><div className="pipeline-stats"><span><strong>{pipelines.length}</strong><small>Pipeline runs</small></span><span><strong>{runningJobs}</strong><small>Running jobs</small></span><span><strong>{queuedJobs}</strong><small>Queued jobs</small></span></div><div className="activity-spark"><ActivityChart /></div><button className="text-action" type="button" onClick={onNewPipeline}>Start a pipeline <Icon name="arrow" size={14} /></button></article>
       </section>
     </>
@@ -350,16 +350,145 @@ function AlertList() {
   return <div className="alert-list">{alerts.map(([level, title, when, priority]) => <div className="alert-row" key={title}><span className={`alert-symbol ${level}`}>{level === "high" ? "!" : level === "warning" ? "▲" : "i"}</span><strong>{title}</strong><small>{when}</small><span className={`priority ${level}`}>{priority}</span></div>)}</div>;
 }
 
-function RecommendationList() {
-  const items = [["brain", "Scale compute resources", "Predicted 80% CPU in 2 hours", "High"], ["shield", "Optimise storage tiering", "Move 12 TB to cold storage", "Medium"], ["pipeline", "Update dependency", "New secure version available", "Low"]];
-  return <div className="recommendation-list">{items.map(([icon, title, description, priority]) => <div className="recommendation-row" key={title}><span><Icon name={icon} size={15} /></span><div><strong>{title}</strong><small>{description}</small></div><b className={priority.toLowerCase()}>{priority}</b></div>)}</div>;
+function AgentReadiness({ models, error, loading }) {
+  const productionModels = models.filter((model) => model.production_version);
+  return (
+    <div className="agent-readiness" role="status">
+      {loading ? (
+        <>
+          <strong>Checking Agent API</strong>
+          <p>Loading Agent status.</p>
+        </>
+      ) : error ? (
+        <>
+          <strong>Agent connection unavailable</strong>
+          <p>{error}</p>
+        </>
+      ) : (
+        <>
+          <strong>{productionModels.length ? `${productionModels.length} production model${productionModels.length === 1 ? "" : "s"} registered` : "No production models registered"}</strong>
+          <p>
+            {productionModels.length
+              ? "Recommendations need a live cluster telemetry feed. No actions are executed."
+              : "Register and promote a model, then connect real cluster telemetry. Sample data is not used."}
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ModelRegistry({ models }) {
+  if (!models.length) {
+    return <div className="agent-empty-state">No models are registered with the AtonixCorp Agent.</div>;
+  }
+
+  return (
+    <div className="agent-model-list">
+      {models.map((model) => {
+        const versions = Object.values(model.versions || {});
+        const family = model.metadata?.family || "Unspecified family";
+        return (
+          <article className="agent-model-card" key={model.name}>
+            <div className="agent-model-heading">
+              <span className="agent-model-icon"><Icon name="brain" size={17} /></span>
+              <div><strong>{model.name}</strong><small>{family}</small></div>
+              {model.production_version
+                ? <span className="agent-model-stage production">Production · {model.production_version}</span>
+                : <span className="agent-model-stage staging">No production version</span>}
+            </div>
+            <div className="agent-model-versions">
+              {versions.length ? versions.map((version) => (
+                <span key={version.version}><code>{version.version}</code>{version.stage || "staging"}</span>
+              )) : <span><code>{model.version || "—"}</code>{model.stage || "staging"}</span>}
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function AIOperationsWorkspace({ models, error, loading, mode }) {
+  const productionModels = models.filter((model) => model.production_version);
+  const stagingVersions = models.reduce(
+    (count, model) => count + Object.values(model.versions || {}).filter((version) => version.stage !== "production").length,
+    0,
+  );
+
+  return (
+    <section className="workspace-page ai-operations-page">
+      <div className="page-heading">
+        <div>
+          <p className="eyebrow">ATONIXCORP / DEVSECOPS</p>
+          <h1>AI Operations</h1>
+          <p>Explore registered Agent models and workload recommendations for your DevSecOps environment.</p>
+        </div>
+        <span className="advisory-badge"><Icon name="shield" size={14} /> Recommendations only</span>
+      </div>
+
+      <article className={`agent-status-banner${error ? " unavailable" : ""}`}>
+        <span className="agent-status-icon"><Icon name={loading ? "refresh" : error ? "close" : "brain"} size={18} /></span>
+        <div>
+          <strong>{loading ? "Connecting to the AtonixCorp Agent" : error ? "Agent connection unavailable" : "AtonixCorp Agent"}</strong>
+          <p>{loading ? "Checking model registry." : error ? error : "Model inventory is connected. Predictions are paused until real cluster telemetry is available."}</p>
+        </div>
+        <span className={`agent-connection-tag${error ? " offline" : ""}`}>{loading ? "CONNECTING" : error ? "OFFLINE" : "CONNECTED"}</span>
+      </article>
+
+      <div className="agent-summary-grid" aria-label="AI Operations readiness">
+        <article className="agent-summary-card"><span>Production models</span><strong>{loading || error ? "—" : productionModels.length}</strong><small>Promoted versions available</small></article>
+        <article className="agent-summary-card"><span>Staging versions</span><strong>{loading || error ? "—" : stagingVersions}</strong><small>Not used for recommendations</small></article>
+        <article className="agent-summary-card"><span>Runner connection</span><strong>{mode === "live" ? "Connected" : "Demo"}</strong><small>Pipeline status only · no cluster metrics</small></article>
+      </div>
+
+      <div className="agent-operations-grid">
+        <article className="panel agent-section">
+          <PanelHeading eyebrow="MODEL REGISTRY" title="Registered models" action={loading ? "Loading" : `${models.length} total`} />
+          {error ? <div className="agent-empty-state">The model registry could not be loaded. Check the Agent connection and try again.</div> : loading ? <div className="agent-empty-state">Loading registered models…</div> : <ModelRegistry models={models} />}
+        </article>
+
+        <article className="panel agent-section agent-recommendations">
+          <PanelHeading eyebrow="WORKLOAD INTELLIGENCE" title="Recommendations" action="Advisory only" />
+          <div className="agent-telemetry-callout">
+            <span className="agent-telemetry-icon"><Icon name="chart" size={19} /></span>
+            <div>
+              <strong>{mode === "live" ? "Cluster telemetry not connected" : "Connect live services to enable recommendations"}</strong>
+              <p>
+                {mode === "live"
+                  ? "The runner currently supplies pipeline and job status only. AI Operations needs real cluster metrics before requesting model predictions."
+                  : "Demo pipeline activity and sample dashboard metrics are excluded from model input."}
+              </p>
+            </div>
+          </div>
+          {!error && !loading && productionModels.length === 0 && (
+            <div className="agent-recommendation-empty">
+              <strong>Production model required</strong>
+              <p>Register a supported model family and promote a version to production. Predictions will appear here after telemetry is connected.</p>
+            </div>
+          )}
+          {!error && !loading && productionModels.length > 0 && (
+            <div className="agent-recommendation-empty">
+              <strong>Waiting for telemetry</strong>
+              <p>{productionModels.length} production model{productionModels.length === 1 ? " is" : "s are"} ready. No recommendation is generated until real workload observations are available.</p>
+            </div>
+          )}
+        </article>
+
+        <article className="panel agent-safety-note">
+          <span><Icon name="shield" size={17} /></span>
+          <div><strong>Human-led operations</strong><p>The Agent does not scale workloads, change pipelines, or provision infrastructure. Recommendations are informational; engineers retain control of every action.</p></div>
+        </article>
+      </div>
+    </section>
+  );
 }
 
 function ActivityChart() {
   return <svg viewBox="0 0 320 68" preserveAspectRatio="none" aria-label="Illustrative pipeline activity trend"><path d="M0 56 C20 54 22 37 43 39 S70 49 88 35 S112 16 131 26 S158 49 178 35 S200 14 219 22 S243 47 261 30 S290 16 320 20" fill="none" stroke="#1878d8" strokeWidth="2.4" /><path d="M0 62H320" stroke="#e4eaf2" strokeWidth="1" /></svg>;
 }
 
-function ServiceWorkspace({ active, pipelines, onSelect, onNewPipeline, mode }) {
+function ServiceWorkspace({ active, pipelines, onSelect, onNewPipeline, mode, agentModels, agentError, agentLoading }) {
   const content = {
     Pipelines: ["Pipeline runs", "Review run status, job stages, branch refs, and runner results."],
     Deployments: ["Deployments", "Track release activity across production and staging environments."],
@@ -375,6 +504,9 @@ function ServiceWorkspace({ active, pipelines, onSelect, onNewPipeline, mode }) 
     Settings: ["Workspace settings", "Configure this dashboard and runner connection."],
   };
   const [title, description] = content[active] || content.Pipelines;
+  if (active === "AI Operations") {
+    return <AIOperationsWorkspace models={agentModels} error={agentError} loading={agentLoading} mode={mode} />;
+  }
   return <section className="workspace-page"><div className="page-heading"><div><p className="eyebrow">ATONIXCORP / DEVSECOPS</p><h1>{title}</h1><p>{description}</p></div>{active === "Pipelines" && <button className="button-primary" onClick={onNewPipeline}><Icon name="plus" /> Run pipeline</button>}</div>{active === "Pipelines" ? <article className="panel workspace-pipelines"><PanelHeading eyebrow={mode === "live" ? "RUNNER API" : "SAMPLE DATA"} title={`${pipelines.length} pipeline runs`} action={mode === "live" ? "Connected" : "Demo mode"} /><PipelineTable pipelines={pipelines} onSelect={onSelect} /></article> : <div className="workspace-placeholder panel"><span className="workspace-placeholder-icon"><Icon name={sidebar.find(([name]) => name === active)?.[1] || "grid"} size={25} /></span><h2>{title} workspace</h2><p>{description} Connect AtonixCorp services to populate this view with live data.</p><button className="text-action" type="button" onClick={onNewPipeline}>Open pipeline control <Icon name="arrow" size={14} /></button></div>}</section>;
 }
 
@@ -385,6 +517,9 @@ export default function App() {
   const [pipelines, setPipelines] = useState(initialPipelines);
   const [runnerSummary, setRunnerSummary] = useState({});
   const [runnerError, setRunnerError] = useState("");
+  const [agentModels, setAgentModels] = useState([]);
+  const [agentError, setAgentError] = useState("");
+  const [agentLoading, setAgentLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -412,6 +547,30 @@ export default function App() {
     } finally {
       setRefreshing(false);
     }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const refreshAgent = async () => {
+      try {
+        const registry = await getAgentRegistry();
+        if (!active) return;
+        setAgentModels(Array.isArray(registry.models) ? registry.models : []);
+        setAgentError("");
+        setAgentLoading(false);
+      } catch (error) {
+        if (!active) return;
+        setAgentModels([]);
+        setAgentError(error.message || "Could not connect to the Agent API.");
+        setAgentLoading(false);
+      }
+    };
+    refreshAgent();
+    const timer = window.setInterval(refreshAgent, 30000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -516,7 +675,7 @@ export default function App() {
       <div className="app-shell">
         <Sidebar active={active} onSelect={setActive} pipelineCount={pipelines.length} />
         <main className="main-content">
-          {active === "Dashboard" ? <DashboardOverview pipelines={recentPipelines} summary={runnerSummary} mode={mode} query={query} onSelect={setSelectedPipeline} onNewPipeline={() => setModalOpen(true)} onNavigate={setActive} /> : <ServiceWorkspace active={active} pipelines={recentPipelines} onSelect={setSelectedPipeline} onNewPipeline={() => setModalOpen(true)} mode={mode} />}
+          {active === "Dashboard" ? <DashboardOverview pipelines={recentPipelines} summary={runnerSummary} mode={mode} query={query} onSelect={setSelectedPipeline} onNewPipeline={() => setModalOpen(true)} onNavigate={setActive} agentModels={agentModels} agentError={agentError} agentLoading={agentLoading} /> : <ServiceWorkspace active={active} pipelines={recentPipelines} onSelect={setSelectedPipeline} onNewPipeline={() => setModalOpen(true)} mode={mode} agentModels={agentModels} agentError={agentError} agentLoading={agentLoading} />}
           <footer className="app-footer"><span>© 2026 AtonixCorp · DevSecOps Pipeline</span><span>{mode === "live" ? "Runner API connected" : "Interactive prototype · Demo data"}</span><span>Build · Innovate · Scale · A More Connected Tomorrow</span></footer>
         </main>
       </div>

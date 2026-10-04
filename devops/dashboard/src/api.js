@@ -30,6 +30,17 @@ export async function getRunnerState() {
   };
 }
 
+export async function getAgentRegistry() {
+  return request("/agent/registry");
+}
+
+export async function requestAgentPrediction(payload) {
+  return request("/agent/predict", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function startPipeline({ project, ref, workflow }) {
   return request("/pipelines", {
     method: "POST",

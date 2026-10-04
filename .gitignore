@@ -21,9 +21,22 @@
 # frontend dependencies and build output
 **/node_modules/
 /devops/dashboard/dist/
+/atonixcorp-agent/model/registry.json
+/atonixcorp-agent/db/metrics.json
+/atonixcorp-agent/db/events.json
+/atonixcorp-agent/db/rag_index.json
+/atonixcorp-agent/db/*.sqlite3
+/atonixcorp-agent/db/*.sqlite3-shm
+/atonixcorp-agent/db/*.sqlite3-wal
+/atonixcorp-agent/models/
 
 # production
 /build
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
 
 # misc
 .DS_Store

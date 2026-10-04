@@ -1861,6 +1861,475 @@
   line-height: 1.5;
 }
 
+.cloud-agent-panel {
+  grid-column: 1 / -1;
+}
+
+.cloud-agent-state {
+  align-self: flex-start;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: #087f61;
+  background: #e6f7ef;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.cloud-agent-state.unavailable {
+  color: #a04b31;
+  background: #fff0e9;
+}
+
+.cloud-agent-body {
+  display: grid;
+  gap: 7px;
+  padding: 14px 18px 18px;
+}
+
+.cloud-agent-body strong {
+  color: #173253;
+  font-size: 13px;
+}
+
+.cloud-agent-body p {
+  max-width: 640px;
+  margin: 0;
+  color: #687b98;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.cloud-ai-workspace {
+  display: grid;
+  gap: 14px;
+}
+
+.cloud-ai-status {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px 18px;
+  border-color: #cfe5da;
+  background: #f4fbf7;
+}
+
+.cloud-ai-status.unavailable {
+  border-color: #f0d4c9;
+  background: #fff8f5;
+}
+
+.cloud-ai-status-icon,
+.cloud-ai-model-icon,
+.cloud-ai-telemetry > span,
+.cloud-ai-family-grid article > span {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 10px;
+  color: #078d8c;
+  background: #e5f4f1;
+}
+
+.cloud-ai-status.unavailable .cloud-ai-status-icon {
+  color: #ae563d;
+  background: #fbe9e3;
+}
+
+.cloud-ai-status > div {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 5px;
+}
+
+.cloud-ai-status > div strong {
+  color: #173b54;
+  font-size: 13px;
+}
+
+.cloud-ai-status > div p {
+  margin: 0;
+  color: #627c8d;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.cloud-ai-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cloud-ai-summary > article {
+  display: grid;
+  min-height: 102px;
+  align-content: center;
+  gap: 6px;
+  padding: 15px 17px;
+}
+
+.cloud-ai-summary > article > span {
+  color: #7184a0;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.cloud-ai-summary > article > strong {
+  color: #123b60;
+  font-size: 20px;
+  font-weight: 750;
+}
+
+.cloud-ai-summary > article > small {
+  color: #8998ad;
+  font-size: 9px;
+}
+
+.cloud-ai-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.cloud-ai-models,
+.cloud-ai-recommendations {
+  min-width: 0;
+  min-height: 250px;
+}
+
+.cloud-ai-models .cloud-panel-heading,
+.cloud-ai-recommendations .cloud-panel-heading {
+  min-height: 76px;
+}
+
+.cloud-ai-models .cloud-panel-heading > span {
+  color: #7184a0;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.cloud-ai-empty {
+  display: grid;
+  min-height: 145px;
+  place-items: center;
+  padding: 22px;
+  color: #71829c;
+  font-size: 11px;
+  line-height: 1.65;
+  text-align: center;
+}
+
+.cloud-ai-model-list {
+  display: grid;
+  gap: 9px;
+  padding: 0 15px 15px;
+}
+
+.cloud-ai-model {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid #e7edf4;
+  border-radius: 7px;
+  background: #fbfcfe;
+}
+
+.cloud-ai-model-icon {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  color: #7053ae;
+  background: #f0ebf9;
+}
+
+.cloud-ai-model-main {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 4px;
+}
+
+.cloud-ai-model-main > strong {
+  overflow: hidden;
+  color: #1b3858;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cloud-ai-model-main > small {
+  color: #788aa5;
+  font-size: 9px;
+}
+
+.cloud-ai-version-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.cloud-ai-version-list > span {
+  padding: 4px 6px;
+  border: 1px solid #e5ebf2;
+  border-radius: 4px;
+  color: #7788a0;
+  font-size: 8px;
+}
+
+.cloud-ai-version-list code {
+  color: #4e6887;
+  font-size: 8px;
+}
+
+.cloud-ai-model-stage {
+  max-width: 142px;
+  padding: 5px 7px;
+  border-radius: 5px;
+  color: #8a6921;
+  background: #fff5df;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.cloud-ai-model-stage.production {
+  color: #18744f;
+  background: #e6f7ef;
+}
+
+.cloud-ai-telemetry {
+  display: flex;
+  gap: 10px;
+  margin: 0 14px;
+  padding: 12px;
+  border: 1px solid #eadfbe;
+  border-radius: 7px;
+  background: #fffaf0;
+}
+
+.cloud-ai-telemetry > span {
+  width: 32px;
+  height: 32px;
+  flex-basis: 32px;
+  color: #977226;
+  background: #f8efd9;
+}
+
+.cloud-ai-telemetry > div {
+  display: grid;
+  gap: 5px;
+}
+
+.cloud-ai-telemetry strong {
+  color: #6a5528;
+  font-size: 10px;
+}
+
+.cloud-ai-telemetry p {
+  margin: 0;
+  color: #827650;
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.cloud-ai-recommendations > .cloud-ai-empty {
+  min-height: 116px;
+  padding-top: 12px;
+}
+
+.cloud-ai-capabilities {
+  min-width: 0;
+}
+
+.cloud-ai-capabilities .cloud-panel-heading {
+  min-height: 76px;
+}
+
+.cloud-ai-family-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  padding: 0 14px 14px;
+}
+
+.cloud-ai-family-grid article {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e7edf4;
+  border-radius: 7px;
+  background: #fbfcfe;
+}
+
+.cloud-ai-family-grid article > span {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
+.cloud-ai-family-grid article > div strong {
+  color: #1b3858;
+  font-size: 10px;
+}
+
+.cloud-ai-family-grid article > div p {
+  margin: 5px 0 0;
+  color: #71829c;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.cloud-ai-family-grid article > small {
+  grid-column: 2;
+  color: #7789a2;
+  font-size: 8px;
+}
+
+.cloud-ai-safety {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-color: #dce8f3;
+  background: #f7faff;
+}
+
+.cloud-ai-safety > svg {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  color: #3475ad;
+}
+
+.cloud-ai-safety > div {
+  display: grid;
+  gap: 5px;
+}
+
+.cloud-ai-safety strong {
+  color: #304d70;
+  font-size: 11px;
+}
+
+.cloud-ai-safety p {
+  margin: 0;
+  color: #7183a0;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-agent-state {
+  color: #9ce0be;
+  background: #193c31;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-agent-state.unavailable {
+  color: #f0bca7;
+  background: #432d2a;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-agent-body strong {
+  color: #e0e9f5;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-agent-body p {
+  color: #a5b6cb;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-status {
+  border-color: #285541;
+  background: #172f29;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-status.unavailable {
+  border-color: #67443d;
+  background: #342522;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-status > div strong,
+.cloud-dashboard[data-theme="dark"] .cloud-ai-summary > article > strong,
+.cloud-dashboard[data-theme="dark"] .cloud-ai-model-main > strong,
+.cloud-dashboard[data-theme="dark"] .cloud-ai-family-grid article > div strong {
+  color: #e0e9f5;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-status > div p,
+.cloud-dashboard[data-theme="dark"] .cloud-ai-summary > article > span,
+.cloud-dashboard[data-theme="dark"] .cloud-ai-summary > article > small,
+.cloud-dashboard[data-theme="dark"] .cloud-ai-model-main > small,
+.cloud-dashboard[data-theme="dark"] .cloud-ai-family-grid article > div p,
+.cloud-dashboard[data-theme="dark"] .cloud-ai-family-grid article > small,
+.cloud-dashboard[data-theme="dark"] .cloud-ai-empty {
+  color: #9aacc4;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-model,
+.cloud-dashboard[data-theme="dark"] .cloud-ai-family-grid article {
+  border-color: #2b3e56;
+  background: #1a2b41;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-model-icon {
+  color: #c3a9f1;
+  background: #332b4a;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-version-list > span {
+  border-color: #354861;
+  color: #a5b6cb;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-version-list code {
+  color: #c0d4ee;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-model-stage {
+  color: #e4cd91;
+  background: #42381f;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-model-stage.production {
+  color: #a7e3c2;
+  background: #234638;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-telemetry {
+  border-color: #67542d;
+  background: #342d1c;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-telemetry > span {
+  color: #e4cd91;
+  background: #493d22;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-telemetry strong,
+.cloud-dashboard[data-theme="dark"] .cloud-ai-telemetry p {
+  color: #e4cd91;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-safety {
+  border-color: #2b3e56;
+  background: #152338;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-safety strong {
+  color: #e0e9f5;
+}
+
+.cloud-dashboard[data-theme="dark"] .cloud-ai-safety p {
+  color: #9aacc4;
+}
+
 .cloud-dashboard button:focus-visible,
 .cloud-dashboard a:focus-visible {
   outline: 3px solid rgba(8, 127, 145, 0.34);
@@ -1868,6 +2337,30 @@
 }
 
 @media (max-width: 650px) {
+  .cloud-ai-status {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .cloud-ai-status .cloud-agent-state {
+    margin-left: 51px;
+  }
+
+  .cloud-ai-summary,
+  .cloud-ai-grid,
+  .cloud-ai-family-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cloud-ai-model {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .cloud-ai-model-stage {
+    margin-left: 45px;
+  }
+
   .cloud-service-info {
     align-items: flex-start;
     flex-direction: column;
