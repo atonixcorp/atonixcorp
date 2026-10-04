@@ -1235,7 +1235,7 @@ section + section {
 
 .footer-social {
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   margin-top: 14px;
   display: flex;
 }
@@ -1243,15 +1243,20 @@ section + section {
 .footer-social a {
   color: #d5e0e9;
   background: #ffffff0a;
-  border-radius: 6px;
+  border-radius: 9px;
   justify-content: center;
   align-items: center;
-  width: 26px;
-  height: 26px;
+  width: 40px;
+  height: 40px;
   font-size: 13px;
   font-weight: 700;
   transition: color .2s, background .2s, transform .2s;
   display: flex;
+}
+
+.footer-social svg {
+  width: 27px;
+  height: 27px;
 }
 
 .footer-social a:hover {

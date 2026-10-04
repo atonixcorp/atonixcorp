@@ -616,6 +616,56 @@ function Footer() {
                                         fileName: "[project]/app/sections/footer/Footer.tsx",
                                         lineNumber: 44,
                                         columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                        href: "https://mastodon.social/@atonixcorp",
+                                        target: "_blank",
+                                        rel: "noreferrer",
+                                        "aria-label": "AtonixCorp on Mastodon",
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
+                                            viewBox: "0 0 24 24",
+                                            fill: "currentColor",
+                                            "aria-hidden": "true",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
+                                                d: "M21.6 7.1c-.3-2.2-2.3-3.9-4.6-4.3a29 29 0 0 0-10 0C4.6 3.2 2.6 4.9 2.3 7.1c-.5 3.1-.5 6.1 0 9.2.4 2.4 2.4 4.1 4.8 4.5 2.3.4 4.7.4 7 0 1.3-.2 2.5-.7 3.4-1.6l-.8-1.4c-.8.5-1.7.8-2.7.9-1.6.2-3.2.2-4.8 0-1.5-.2-2.6-1.1-2.8-2.5v-.7c1.6.4 3.2.6 4.8.6 1.7 0 3.4-.2 5-.6 2.3-.6 3.9-2.3 4.2-4.5.4-2.7.4-5.4.2-7.9ZM17 13.2h-2.4V8.5c0-1-.4-1.5-1.2-1.5-.9 0-1.4.6-1.4 1.8v2.6H9.6V8.8c0-1.2-.5-1.8-1.4-1.8-.8 0-1.2.5-1.2 1.5v4.7H4.6V8.4c0-1 .3-1.8.9-2.4.6-.6 1.3-.9 2.3-.9 1.1 0 2 .4 2.6 1.3l.6 1 .6-1c.6-.9 1.5-1.3 2.6-1.3 1 0 1.7.3 2.3.9.6.6.9 1.4.9 2.4v4.8Z"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/sections/footer/Footer.tsx",
+                                                lineNumber: 63,
+                                                columnNumber: 17
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/sections/footer/Footer.tsx",
+                                            lineNumber: 62,
+                                            columnNumber: 15
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/sections/footer/Footer.tsx",
+                                        lineNumber: 56,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                        href: "#contact",
+                                        "aria-label": "AtonixCorp WeChat contact",
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
+                                            viewBox: "0 0 24 24",
+                                            fill: "currentColor",
+                                            "aria-hidden": "true",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
+                                                d: "M9.5 3C5.4 3 2 5.7 2 9c0 1.8 1 3.4 2.6 4.5L4 16l2.8-1.4c.8.3 1.7.4 2.7.4h.3a5.7 5.7 0 0 1-.3-1.8c0-3.3 3.1-6 7-6h.3C16 4.8 13 3 9.5 3Zm-2.7 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm5.4 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm4.3-1.5c-3 0-5.5 1.9-5.5 4.3s2.5 4.3 5.5 4.3c.7 0 1.4-.1 2-.3l2.3 1.2-.5-2.1c1.1-.8 1.7-1.9 1.7-3.1 0-2.4-2.5-4.3-5.5-4.3Zm-2 5.3a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6Zm4 0a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6Z"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/sections/footer/Footer.tsx",
+                                                lineNumber: 69,
+                                                columnNumber: 17
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/sections/footer/Footer.tsx",
+                                            lineNumber: 68,
+                                            columnNumber: 15
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/sections/footer/Footer.tsx",
+                                        lineNumber: 67,
+                                        columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
@@ -635,7 +685,7 @@ function Footer() {
                                 children: "Strategic engagement"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 59,
+                                lineNumber: 76,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -647,19 +697,19 @@ function Footer() {
                                         children: "→"
                                     }, void 0, false, {
                                         fileName: "[project]/app/sections/footer/Footer.tsx",
-                                        lineNumber: 61,
+                                        lineNumber: 78,
                                         columnNumber: 34
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 60,
+                                lineNumber: 77,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/sections/footer/Footer.tsx",
-                        lineNumber: 58,
+                        lineNumber: 75,
                         columnNumber: 9
                     }, this)
                 ]
@@ -678,7 +728,7 @@ function Footer() {
                                 children: "AtonixCorp develops mission-critical infrastructure across autonomous cloud, high-performance compute, energy systems, and research ecosystems."
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 68,
+                                lineNumber: 85,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -686,20 +736,20 @@ function Footer() {
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {}, void 0, false, {
                                         fileName: "[project]/app/sections/footer/Footer.tsx",
-                                        lineNumber: 73,
+                                        lineNumber: 90,
                                         columnNumber: 13
                                     }, this),
                                     " Global systems operational"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 72,
+                                lineNumber: 89,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/sections/footer/Footer.tsx",
-                        lineNumber: 67,
+                        lineNumber: 84,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -708,7 +758,7 @@ function Footer() {
                                 children: "Company"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 78,
+                                lineNumber: 95,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -716,7 +766,7 @@ function Footer() {
                                 children: "About AtonixCorp"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 79,
+                                lineNumber: 96,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -724,7 +774,7 @@ function Footer() {
                                 children: "Mission & mandate"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 80,
+                                lineNumber: 97,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -732,7 +782,7 @@ function Footer() {
                                 children: "Corporate governance"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 81,
+                                lineNumber: 98,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -740,13 +790,13 @@ function Footer() {
                                 children: "Strategic roadmap"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 82,
+                                lineNumber: 99,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/sections/footer/Footer.tsx",
-                        lineNumber: 77,
+                        lineNumber: 94,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -755,7 +805,7 @@ function Footer() {
                                 children: "Infrastructure"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 86,
+                                lineNumber: 103,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -763,7 +813,7 @@ function Footer() {
                                 children: "Cloud & AI systems"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 87,
+                                lineNumber: 104,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -771,7 +821,7 @@ function Footer() {
                                 children: "Compute & energy"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 88,
+                                lineNumber: 105,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -779,7 +829,7 @@ function Footer() {
                                 children: "Security engineering"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 89,
+                                lineNumber: 106,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -787,13 +837,13 @@ function Footer() {
                                 children: "Developer ecosystem"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 90,
+                                lineNumber: 107,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/sections/footer/Footer.tsx",
-                        lineNumber: 85,
+                        lineNumber: 102,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -802,7 +852,7 @@ function Footer() {
                                 children: "Resources"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 94,
+                                lineNumber: 111,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -810,7 +860,7 @@ function Footer() {
                                 children: "Technical support"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 95,
+                                lineNumber: 112,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -818,7 +868,7 @@ function Footer() {
                                 children: "Enterprise solutions"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 96,
+                                lineNumber: 113,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -826,7 +876,7 @@ function Footer() {
                                 children: "Research collaboration"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 97,
+                                lineNumber: 114,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -834,19 +884,19 @@ function Footer() {
                                 children: "Media center"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 98,
+                                lineNumber: 115,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/sections/footer/Footer.tsx",
-                        lineNumber: 93,
+                        lineNumber: 110,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                lineNumber: 66,
+                lineNumber: 83,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -856,7 +906,7 @@ function Footer() {
                         children: "© 2026 AtonixCorp. All rights reserved."
                     }, void 0, false, {
                         fileName: "[project]/app/sections/footer/Footer.tsx",
-                        lineNumber: 103,
+                        lineNumber: 120,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -866,7 +916,7 @@ function Footer() {
                                 children: "Privacy"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 106,
+                                lineNumber: 123,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -874,7 +924,7 @@ function Footer() {
                                 children: "Terms of use"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 107,
+                                lineNumber: 124,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -882,13 +932,13 @@ function Footer() {
                                 children: "Accessibility"
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                                lineNumber: 108,
+                                lineNumber: 125,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/sections/footer/Footer.tsx",
-                        lineNumber: 105,
+                        lineNumber: 122,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -897,13 +947,13 @@ function Footer() {
                         children: "Back to top ↑"
                     }, void 0, false, {
                         fileName: "[project]/app/sections/footer/Footer.tsx",
-                        lineNumber: 111,
+                        lineNumber: 128,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/sections/footer/Footer.tsx",
-                lineNumber: 102,
+                lineNumber: 119,
                 columnNumber: 7
             }, this)
         ]
@@ -1454,12 +1504,12 @@ function TopHeader() {
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "dropdown-parent top-left",
                     children: [
-                        "An Orcastack Project",
+                        "Developer Community",
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "top-dropdown",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                    href: "https://github.com/orcastack",
+                                    href: "https://github.com/atonixcorp",
                                     target: "_blank",
                                     children: "GitHub ↗"
                                 }, void 0, false, {
@@ -1468,7 +1518,7 @@ function TopHeader() {
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                    href: "https://discord.gg/atonixcorp",
+                                    href: "https://discord.gg/EGqJ778a55",
                                     target: "_blank",
                                     children: "Discord ↗"
                                 }, void 0, false, {
@@ -1477,12 +1527,21 @@ function TopHeader() {
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                    href: "https://atonixcorp.slack.com/archives/C0C6G060JL",
+                                    target: "_blank",
+                                    children: "Slack ↗"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/sections/header/TopHeader.tsx",
+                                    lineNumber: 18,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
                                     href: "https://linkedin.com/company/atonixcorp",
                                     target: "_blank",
                                     children: "LinkedIn ↗"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/header/TopHeader.tsx",
-                                    lineNumber: 18,
+                                    lineNumber: 19,
                                     columnNumber: 13
                                 }, this)
                             ]
@@ -1514,17 +1573,17 @@ function TopHeader() {
                                     d: "M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.5 8h4V24h-4V8zm7.5 0h3.8v2.2h.1c.5-.9 1.8-2.2 4-2.2 4.3 0 5.1 2.8 5.1 6.5V24h-4v-8.2c0-2-.1-4.5-2.7-4.5-2.7 0-3.1 2.1-3.1 4.3V24h-4V8z"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/header/TopHeader.tsx",
-                                    lineNumber: 28,
+                                    lineNumber: 29,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/header/TopHeader.tsx",
-                                lineNumber: 27,
+                                lineNumber: 28,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/sections/header/TopHeader.tsx",
-                            lineNumber: 26,
+                            lineNumber: 27,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -1541,17 +1600,17 @@ function TopHeader() {
                                     d: "M18.244 1.016h3.73l-8.16 9.33 9.57 12.638h-7.47l-5.85-7.65-6.69 7.65H.684l8.73-9.98L.5 1.016h7.64l5.24 6.89z"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/header/TopHeader.tsx",
-                                    lineNumber: 35,
+                                    lineNumber: 36,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/header/TopHeader.tsx",
-                                lineNumber: 34,
+                                lineNumber: 35,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/sections/header/TopHeader.tsx",
-                            lineNumber: 33,
+                            lineNumber: 34,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -1568,23 +1627,23 @@ function TopHeader() {
                                     d: "M12 .5C5.73.5.5 5.74.5 12.02c0 5.1 3.29 9.43 7.86 10.96.58.1.79-.25.79-.56v-2.17c-3.2.7-3.87-1.55-3.87-1.55-.53-1.36-1.3-1.72-1.3-1.72-1.06-.73.08-.72.08-.72 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.73 1.27 3.4.97.1-.76.41-1.27.75-1.56-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.3 1.2-3.11-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.75.81 1.2 1.85 1.2 3.11 0 4.43-2.69 5.41-5.25 5.69.42.36.8 1.08.8 2.18v3.23c0 .31.21.67.8.56A10.52 10.52 0 0 0 23.5 12C23.5 5.74 18.27.5 12 .5z"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/header/TopHeader.tsx",
-                                    lineNumber: 42,
+                                    lineNumber: 43,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/sections/header/TopHeader.tsx",
-                                lineNumber: 41,
+                                lineNumber: 42,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/sections/header/TopHeader.tsx",
-                            lineNumber: 40,
+                            lineNumber: 41,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/sections/header/TopHeader.tsx",
-                    lineNumber: 23,
+                    lineNumber: 24,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1599,7 +1658,7 @@ function TopHeader() {
                                     children: "Portal Home"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/header/TopHeader.tsx",
-                                    lineNumber: 53,
+                                    lineNumber: 54,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1607,7 +1666,7 @@ function TopHeader() {
                                     children: "Login"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/header/TopHeader.tsx",
-                                    lineNumber: 54,
+                                    lineNumber: 55,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1615,19 +1674,19 @@ function TopHeader() {
                                     children: "Onboard"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/header/TopHeader.tsx",
-                                    lineNumber: 55,
+                                    lineNumber: 56,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/header/TopHeader.tsx",
-                            lineNumber: 52,
+                            lineNumber: 53,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/sections/header/TopHeader.tsx",
-                    lineNumber: 49,
+                    lineNumber: 50,
                     columnNumber: 9
                 }, this)
             ]

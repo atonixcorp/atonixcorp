@@ -1,77 +1,132 @@
 /* [project]/app/styles/MissionSection.css [app-client] (css) */
 .mission {
   background: #fff;
-  border-bottom: 1px solid #e5e7eb;
   width: 100%;
-  padding: 100px 0;
+  padding: 120px 0;
+  position: relative;
+  overflow: hidden;
 }
 
-.mission-grid {
+.mission:before {
+  content: "";
+  filter: blur(40px);
+  opacity: .7;
+  background: radial-gradient(circle, #00e67633, #0000 70%);
+  width: 420px;
+  height: 420px;
+  position: absolute;
+  top: -140px;
+  right: -140px;
+}
+
+.mission-wrap {
   grid-template-columns: 1fr 1fr;
   align-items: start;
-  gap: 60px;
+  gap: 80px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 32px;
   display: grid;
 }
 
-.mission-heading h2 {
-  color: #111418;
-  font-size: clamp(36px, 4vw, 52px);
-  font-weight: 700;
-  line-height: 1.15;
-}
-
-.mission-heading em {
-  color: #00a6a7;
-  font-style: normal;
-}
-
-.section-index {
-  letter-spacing: 1px;
+.mission-index {
+  letter-spacing: 1.8px;
   text-transform: uppercase;
-  color: #6b7280;
+  color: #004c56;
+  opacity: 0;
   margin-bottom: 24px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
+  animation: .6s forwards fadeUp;
+}
+
+.mission-title {
+  color: #0f172a;
+  opacity: 0;
+  font-size: clamp(42px, 5vw, 64px);
+  font-weight: 800;
+  line-height: 1.15;
+  animation: .8s .1s forwards fadeUp;
+  position: relative;
+}
+
+.mission-accent {
+  background: linear-gradient(90deg, #00e676, #00b86b, #004c56, #00d4e8);
+  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text;
+}
+
+.mission-title:after {
+  content: "";
+  background: linear-gradient(90deg, #00e676, #00b86b, #004c56, #00d4e8);
+  border-radius: 4px;
+  width: 140px;
+  height: 6px;
+  margin-top: 18px;
+  display: block;
 }
 
 .mission-summary {
-  color: #444;
-  max-width: 600px;
-  margin-bottom: 28px;
+  color: #334155;
+  opacity: 0;
+  max-width: 620px;
+  margin-bottom: 32px;
   font-size: 18px;
-  line-height: 1.65;
+  line-height: 1.7;
+  animation: 1s .2s forwards fadeUp;
 }
 
 .mission-list {
-  flex-direction: column;
-  gap: 14px;
-  display: flex;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  animation: 1.1s .3s forwards fadeUp;
 }
 
 .mission-list li {
-  color: #333;
+  color: #1e293b;
+  margin-bottom: 14px;
   padding-left: 18px;
-  font-size: 16px;
+  font-size: 17px;
   position: relative;
 }
 
 .mission-list li:before {
-  content: "•";
-  color: #00a6a7;
-  font-size: 20px;
-  line-height: 1;
+  content: "";
+  background: #00b86b;
+  border-radius: 50%;
+  width: 8px;
+  height: 8px;
   position: absolute;
-  top: 0;
+  top: 9px;
   left: 0;
 }
 
-@media (max-width: 900px) {
-  .mission-grid {
-    grid-template-columns: 1fr;
-    gap: 40px;
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
   }
 
-  .mission-heading h2 {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .mission-wrap {
+    text-align: center;
+    grid-template-columns: 1fr;
+  }
+
+  .mission-title:after, .mission-summary {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .mission-list li {
     text-align: left;
   }
 }

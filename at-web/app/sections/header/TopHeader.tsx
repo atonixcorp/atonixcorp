@@ -10,11 +10,12 @@ export default function TopHeader() {
 
         {/* LEFT — ORCASTACK PROJECT (with dropdown) */}
         <div className="dropdown-parent top-left">
-          An Orcastack Project
+          Developer Community
 
           <div className="top-dropdown">
-            <a href="https://github.com/orcastack" target="_blank">GitHub ↗</a>
-            <a href="https://discord.gg/atonixcorp" target="_blank">Discord ↗</a>
+            <a href="https://github.com/atonixcorp" target="_blank">GitHub ↗</a>
+            <a href="https://discord.gg/EGqJ778a55" target="_blank">Discord ↗</a>
+            <a href="https://atonixcorp.slack.com/archives/C0C6G060JL" target="_blank">Slack ↗</a>
             <a href="https://linkedin.com/company/atonixcorp" target="_blank">LinkedIn ↗</a>
           </div>
         </div>

@@ -1,41 +1,55 @@
 /* [project]/app/styles/OperationalRail.css [app-client] (css) */
 .operational-rail {
   background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  border-top: 1px solid #e5e7eb;
   width: 100%;
-  padding: 24px 0;
+  padding: 60px 0;
 }
 
 .rail-wrap {
-  justify-content: space-between;
-  gap: 40px;
-  max-width: 1400px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 26px;
+  max-width: 1480px;
   margin: 0 auto;
-  padding: 0 24px;
-  display: flex;
+  padding: 0 20px;
+  display: grid;
 }
 
 .rail-item {
-  flex: 1;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 26px 22px;
+  transition: transform .25s, box-shadow .25s;
+  box-shadow: 0 6px 18px #0000000f;
+}
+
+.rail-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px #0000001a;
 }
 
 .rail-item h4 {
-  color: #111418;
-  margin-bottom: 6px;
-  font-size: 16px;
+  color: #004c56;
+  margin-bottom: 10px;
+  font-size: 18px;
   font-weight: 700;
 }
 
 .rail-item p {
-  color: #555;
-  font-size: 14px;
-  line-height: 1.5;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
 @media (max-width: 900px) {
   .rail-wrap {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     gap: 20px;
+  }
+
+  .rail-item {
+    padding: 22px 20px;
   }
 }
 

@@ -3,9 +3,52 @@
   background: #fff;
   width: 100%;
   padding: 120px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.enterprise-hero:before {
+  content: "";
+  -webkit-mask-composite: xor;
+  background: linear-gradient(135deg, #00e676, #00b86b, #004c56, #00d4e8, #00e676) 0 0 / 400% 400%;
+  border-radius: 0;
+  animation: 12s infinite atonix-gradient;
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
+  mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
+  -webkit-mask-position: 0 0, 0 0;
+  mask-position: 0 0, 0 0;
+  -webkit-mask-size: auto, auto;
+  mask-size: auto, auto;
+  -webkit-mask-repeat: repeat, repeat;
+  mask-repeat: repeat, repeat;
+  -webkit-mask-clip: content-box, border-box;
+  mask-clip: content-box, border-box;
+  -webkit-mask-origin: content-box, border-box;
+  mask-origin: content-box, border-box;
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  -webkit-mask-source-type: auto, auto;
+  mask-mode: match-source, match-source;
+}
+
+@keyframes atonix-gradient {
+  0% {
+    background-position: 0%;
+  }
+
+  50% {
+    background-position: 100%;
+  }
+
+  100% {
+    background-position: 0%;
+  }
 }
 
 .enterprise-hero-wrap {
+  z-index: 2;
   grid-template-columns: 1fr 1fr;
   align-items: center;
   gap: 80px;
@@ -13,12 +56,13 @@
   margin: 0 auto;
   padding: 0 32px;
   display: grid;
+  position: relative;
 }
 
 .enterprise-hero-index {
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: #6b7280;
+  color: #004c56;
   margin-bottom: 24px;
   font-size: 14px;
   font-weight: 600;
@@ -49,7 +93,7 @@
 
 .enterprise-hero-action {
   color: #fff;
-  background: #00a6a7;
+  background: #00b86b;
   border-radius: 8px;
   padding: 16px 28px;
   font-size: 16px;
@@ -60,7 +104,7 @@
 }
 
 .enterprise-hero-action:hover {
-  background: #4cd7d7;
+  background: #00e676;
   box-shadow: 0 10px 24px #00a6a759;
 }
 

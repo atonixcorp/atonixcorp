@@ -18,12 +18,69 @@
   display: flex;
 }
 
+.dropdown-parent {
+  display: inline-block;
+  position: relative;
+}
+
 .top-left {
   color: #d1d5db;
   letter-spacing: .8px;
   text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 0;
   font-size: 11px;
   font-weight: 600;
+}
+
+.top-right {
+  color: #00b86b;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 0;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.top-dropdown {
+  z-index: 9999;
+  pointer-events: auto;
+  background: #1a1d22;
+  border: 1px solid #2a2f36;
+  border-radius: 6px;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 10px 0;
+  animation: .2s fadeIn;
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  box-shadow: 0 10px 24px #00000059;
+}
+
+.top-dropdown.right {
+  left: auto;
+  right: 0;
+}
+
+.top-dropdown a, .top-dropdown a:visited {
+  color: #d1d5db;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background .2s, color .2s;
+}
+
+.top-dropdown a:hover {
+  color: #fff;
+  background: #00b86b;
+}
+
+.dropdown-parent:hover .top-dropdown {
+  display: flex;
 }
 
 .header-social {
@@ -43,37 +100,27 @@
 }
 
 .header-social .social-link.linkedin:hover {
-  color: #4cd7d7;
+  color: #00b86b;
 }
 
-.header-social .social-link.x {
+.header-social .social-link.x, .header-social .social-link.github {
   color: #fff;
 }
 
-.header-social .social-link.x:hover {
-  color: #4cd7d7;
+.header-social .social-link.x:hover, .header-social .social-link.github:hover {
+  color: #00b86b;
 }
 
-.header-social .social-link.github {
-  color: #fff;
-}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 
-.header-social .social-link.github:hover {
-  color: #4cd7d7;
-}
-
-.top-right {
-  color: #4cd7d7;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 700;
-  transition: color .2s;
-}
-
-.top-right:hover {
-  color: #7eecec;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 760px) {

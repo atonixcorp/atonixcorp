@@ -31,7 +31,7 @@
 .footer-social {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   margin-top: 14px;
 }
 
@@ -39,14 +39,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 40px;
+  height: 40px;
   color: #d5e0e9;
   font-size: 13px;
   font-weight: 700;
-  border-radius: 6px;
+  border-radius: 9px;
   background: #ffffff0a;
   transition: color .2s ease, background .2s ease, transform .2s ease;
+}
+
+.footer-social svg {
+  width: 27px;
+  height: 27px;
 }
 
 .footer-social a:hover {
