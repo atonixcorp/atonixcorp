@@ -16,23 +16,24 @@ import PlatformOverview from "../sections/platform/PlatformOverview";
 import MissionSection from "../sections/mission/MissionSection";
 import TechnologySovereignty from "../sections/sovereignty/TechnologySovereignty";
 import StrategicRoadmap from "../sections/roadmap/StrategicRoadmap";
+import ContactSection from "../sections/contact/ContactSection";
 import Footer from "../sections/footer/Footer";
 
 export default function HomePage() {
   return (
-    <main className="home-page">
+    <main className="home-page" id="top">
 
       <TopHeader />
       <GlobalHeader />
 
       <HeroSection />
-      <CoreCapabilities />
       <OperationalRail />
       <PlatformOverview />
       <MissionSection />
+      <CoreCapabilities />
       <TechnologySovereignty />
       <StrategicRoadmap />
-    
+      <ContactSection />
 
       <Footer />
     </main>

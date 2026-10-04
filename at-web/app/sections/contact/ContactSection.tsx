@@ -1,21 +1,25 @@
 "use client";
+import "../../styles/ContactSection.css";
 
 export default function ContactSection() {
   return (
-    <section className="contact-section wrap" id="contact">
-      <p className="section-index">07 / Contact</p>
+    <section className="contact-section" id="contact">
+      <div className="contact-section-wrap">
+        <p className="section-index">06 / Contact</p>
 
-      <h2>Get in touch with AtonixCorp.</h2>
+        <h2>Let’s build what comes next.</h2>
 
-      <p>
-        Reach out for enterprise solutions, partnerships, developer programs, or
-        infrastructure collaboration.
-      </p>
+        <p>
+          Talk with our team about infrastructure, research, partnerships, or developer programs.
+        </p>
 
-      <div className="contact-actions">
-        <a href="mailto:dev@atonixcorp.com">Developer Support →</a>
-        <a href="mailto:partners@atonixcorp.com">Partnerships →</a>
-        <a href="mailto:info@atonixcorp.com">General Enquiries →</a>
+        <div className="contact-actions">
+          <a className="contact-action-primary" href="mailto:info@atonixcorp.com">
+            Contact AtonixCorp <span aria-hidden="true">→</span>
+          </a>
+          <a href="mailto:dev@atonixcorp.com">Developer support</a>
+          <a href="mailto:partners@atonixcorp.com">Partnerships</a>
+        </div>
       </div>
     </section>
   );

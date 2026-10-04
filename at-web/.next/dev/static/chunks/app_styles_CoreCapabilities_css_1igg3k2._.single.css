@@ -53,7 +53,7 @@
 }
 
 .cap-grid {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 40px;
   display: grid;
 }
@@ -148,6 +148,66 @@
 @media (max-width: 700px) {
   .cap-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+.cap-grid {
+  align-items: stretch;
+}
+
+.capabilities .cap-card {
+  border-color: #e3ebf0;
+  border-radius: 14px;
+  flex-direction: column;
+  min-height: 410px;
+  padding: 32px;
+  display: flex;
+  box-shadow: 0 8px 24px #112a3d0b;
+}
+
+.cap-card .cap-number {
+  color: #00b86b;
+  margin-bottom: 14px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.cap-card .cap-name {
+  color: #0f172a;
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.cap-card .cap-summary {
+  color: #475569;
+  margin-bottom: 18px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cap-card .cap-description {
+  color: #334155;
+  margin-bottom: 22px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.capabilities .cap-card:hover {
+  border-color: #bdded8;
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px #112a3d17;
+}
+
+@media (max-width: 1100px) {
+  .capabilities .cap-card {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 700px) {
+  .capabilities .cap-card {
+    min-height: 0;
   }
 }
 

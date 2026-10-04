@@ -22,15 +22,15 @@ export default function MissionSection() {
         {/* Right Details */}
         <div className="mission-detail">
           <p className="mission-summary">
-            We engineer infrastructure that is autonomous, secure, energy‑efficient,
-            and capable of supporting the world’s most advanced digital operations.
+            We build dependable, secure infrastructure for the systems people and
+            organizations rely on every day.
           </p>
 
           <ul className="mission-list">
-            <li>Power enterprise workloads with precision and reliability</li>
-            <li>Secure critical infrastructure against digital and physical threats</li>
-            <li>Accelerate research through high‑performance computing</li>
-            <li>Enable autonomous operations across distributed environments</li>
+            <li>Run enterprise workloads with predictable performance</li>
+            <li>Protect infrastructure with security built into every layer</li>
+            <li>Advance research with high-performance computing</li>
+            <li>Simplify operations across distributed environments</li>
           </ul>
         </div>
 

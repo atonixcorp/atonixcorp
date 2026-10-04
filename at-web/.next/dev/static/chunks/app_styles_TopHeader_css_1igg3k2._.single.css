@@ -5,8 +5,7 @@
   border-bottom: 1px solid #1f242b;
   width: 100%;
   padding: 6px 0;
-  position: sticky;
-  top: 0;
+  position: relative;
 }
 
 .top-header-wrap {
@@ -103,11 +102,11 @@
   color: #00b86b;
 }
 
-.header-social .social-link.x, .header-social .social-link.github {
+.header-social .social-link.x, .header-social .social-link.github, .header-social .social-link.mastodon {
   color: #fff;
 }
 
-.header-social .social-link.x:hover, .header-social .social-link.github:hover {
+.header-social .social-link.x:hover, .header-social .social-link.github:hover, .header-social .social-link.mastodon:hover {
   color: #00b86b;
 }
 

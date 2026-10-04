@@ -30,23 +30,22 @@ function PlatformIllustration() {
       </defs>
 
       <circle cx="310" cy="310" r="258" fill="none" stroke="#dff5ef" strokeWidth="1.5" />
-      <circle cx="310" cy="310" r="220" fill="none" stroke="#e7f1f7" strokeWidth="1" strokeDasharray="3 9" />
+      <circle cx="310" cy="310" r="215" fill="none" stroke="#dcefeb" strokeWidth="1.5" />
+      <circle cx="310" cy="310" r="178" fill="none" stroke="#e7f1f7" strokeWidth="1" strokeDasharray="3 9" />
 
       <g fill="none" strokeLinecap="round">
-        <path d="M310 108 C405 112 500 190 520 284 C539 377 474 475 390 511" stroke="#00b86b" strokeOpacity=".58" strokeWidth="2" />
-        <path d="M390 511 C310 550 210 533 150 454 C91 375 100 264 145 184 C184 116 247 91 310 108" stroke="#00a6a7" strokeOpacity=".5" strokeWidth="2" />
-        <path d="M145 184 C250 165 371 166 475 204 C527 224 546 293 520 350 C484 432 407 471 310 478 C222 484 151 448 120 389 C89 330 105 243 145 184Z" stroke="#1685c5" strokeOpacity=".35" strokeWidth="1.5" />
-        <path d="M310 108 L310 222 M475 204 L388 270 M520 350 L399 337 M390 511 L359 397 M230 511 L270 397 M120 389 L221 337 M145 184 L232 270 M100 285 L221 310" stroke="#00a6a7" strokeOpacity=".53" strokeWidth="2" />
+        <path d="M310 152V214 M427 193L383 251 M463 310H406 M427 427L383 369 M310 468V406 M193 427L237 369 M157 310H214 M193 193L237 251" stroke="#00a6a7" strokeOpacity=".53" strokeWidth="2" />
       </g>
 
       <g fill="#00a6a7">
-        <circle cx="310" cy="222" r="6" />
-        <circle cx="388" cy="270" r="6" />
-        <circle cx="399" cy="337" r="6" />
-        <circle cx="359" cy="397" r="6" />
-        <circle cx="270" cy="397" r="6" />
-        <circle cx="221" cy="337" r="6" />
-        <circle cx="232" cy="270" r="6" />
+        <circle cx="310" cy="214" r="5" />
+        <circle cx="383" cy="251" r="5" />
+        <circle cx="406" cy="310" r="5" />
+        <circle cx="383" cy="369" r="5" />
+        <circle cx="310" cy="406" r="5" />
+        <circle cx="237" cy="369" r="5" />
+        <circle cx="214" cy="310" r="5" />
+        <circle cx="237" cy="251" r="5" />
       </g>
 
       <g filter="url(#platform-node-shadow)" textAnchor="middle" fontFamily="Arial, sans-serif">
@@ -59,7 +58,7 @@ function PlatformIllustration() {
           <text y="42" fill="#15324a" fontSize="12" fontWeight="700">Compute</text>
         </g>
 
-        <g transform="translate(478 184)">
+        <g transform="translate(462 158)">
           <circle r="57" fill="url(#platform-node-gradient)" stroke="#d8e8ee" strokeWidth="2" />
           <rect x="-21" y="-19" width="28" height="28" rx="6" fill="#00b86b" />
           <rect x="-8" y="-11" width="28" height="28" rx="6" fill="#0877c9" />
@@ -67,7 +66,7 @@ function PlatformIllustration() {
           <text y="42" fill="#15324a" fontSize="11" fontWeight="700">Orchestration</text>
         </g>
 
-        <g transform="translate(520 350)">
+        <g transform="translate(525 310)">
           <circle r="57" fill="url(#platform-node-gradient)" stroke="#d8e8ee" strokeWidth="2" />
           <ellipse cx="0" cy="-15" rx="19" ry="7" fill="#1685c5" />
           <path d="M-19-15v29c0 4 9 8 19 8s19-4 19-8v-29" fill="#1685c5" />
@@ -75,7 +74,7 @@ function PlatformIllustration() {
           <text y="42" fill="#15324a" fontSize="11" fontWeight="700">Cloud Database</text>
         </g>
 
-        <g transform="translate(390 511)">
+        <g transform="translate(462 462)">
           <circle r="57" fill="url(#platform-node-gradient)" stroke="#d8e8ee" strokeWidth="2" />
           <path d="m-22 16 9-15 12 4 7-13 13 7-8 15 10 8h-43z" fill="none" stroke="#0877a9" strokeWidth="5" strokeLinejoin="round" />
           <circle cx="-13" cy="1" r="5" fill="#00b86b" />
@@ -85,7 +84,7 @@ function PlatformIllustration() {
           <text y="42" fill="#15324a" fontSize="11" fontWeight="700">Robotics</text>
         </g>
 
-        <g transform="translate(230 511)">
+        <g transform="translate(310 525)">
           <circle r="57" fill="url(#platform-node-gradient)" stroke="#d8e8ee" strokeWidth="2" />
           <g stroke="#1685c5" strokeWidth="3">
             <path d="M0-13 0 9M-18 2 0 9 18 2" />
@@ -99,7 +98,7 @@ function PlatformIllustration() {
           <text y="42" fill="#15324a" fontSize="11" fontWeight="700">Network</text>
         </g>
 
-        <g transform="translate(120 389)">
+        <g transform="translate(158 462)">
           <circle r="57" fill="url(#platform-node-gradient)" stroke="#d8e8ee" strokeWidth="2" />
           <path d="m0-24 21 8v15c0 13-9 23-21 29C-12 22-21 12-21-1v-15z" fill="url(#platform-brand-gradient)" />
           <rect x="-8" y="-3" width="16" height="14" rx="3" fill="#fff" />
@@ -107,14 +106,14 @@ function PlatformIllustration() {
           <text y="42" fill="#15324a" fontSize="11" fontWeight="700">Security</text>
         </g>
 
-        <g transform="translate(100 285)">
+        <g transform="translate(95 310)">
           <circle r="57" fill="url(#platform-node-gradient)" stroke="#d8e8ee" strokeWidth="2" />
           <path d="M-21 16h42M-17 10V-4M-5 10v-9M7 10v-18M19 10V0" fill="none" stroke="#0877c9" strokeWidth="6" strokeLinecap="round" />
           <path d="M-21 18h42" stroke="#00b86b" strokeWidth="4" strokeLinecap="round" />
           <text y="42" fill="#15324a" fontSize="11" fontWeight="700">Observability</text>
         </g>
 
-        <g transform="translate(145 184)">
+        <g transform="translate(158 158)">
           <circle r="57" fill="url(#platform-node-gradient)" stroke="#d8e8ee" strokeWidth="2" />
           <rect x="-21" y="-17" width="42" height="11" rx="3" fill="#0877c9" />
           <rect x="-21" y="-2" width="42" height="11" rx="3" fill="#1685c5" />
@@ -156,12 +155,11 @@ export default function HeroSection() {
           </p>
 
           <p className="enterprise-hero-description">
-            AtonixCorp delivers cloud, compute, network, data, and secure‑operations
-            capabilities that power enterprise workloads, scientific research,
-            critical infrastructure, and next‑generation digital systems.
+            AtonixCorp connects cloud, compute, networking, data, and secure operations
+            to support enterprise workloads, scientific research, and critical infrastructure.
           </p>
 
-          <a href="#divisions" className="enterprise-hero-action">
+          <a href="#capabilities" className="enterprise-hero-action">
             Explore AtonixCorp Platform →
           </a>
         </div>

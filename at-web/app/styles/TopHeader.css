@@ -7,8 +7,7 @@
   background: #111418;
   border-bottom: 1px solid #1f242b;
   padding: 6px 0;
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 3000;
 }
 
@@ -119,11 +118,13 @@
 }
 
 .header-social .social-link.x,
-.header-social .social-link.github {
+.header-social .social-link.github,
+.header-social .social-link.mastodon {
   color: #ffffff;
 }
 .header-social .social-link.x:hover,
-.header-social .social-link.github:hover {
+.header-social .social-link.github:hover,
+.header-social .social-link.mastodon:hover {
   color: #00B86B;
 }
 

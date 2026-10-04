@@ -12,10 +12,9 @@ export default function TechnologySovereignty() {
           <p className="sov-index">04 / Technology Sovereignty</p>
 
           <h2 className="sov-title">
-            Independent engineering.<br />
-            Zero external influence.<br />
+            Independent engineering. Long-term control.
             <span className="sov-accent">
-              Every engineering decision remains protected and aligned with long‑term infrastructure stability.
+              Build and operate infrastructure with clear ownership, secure foundations, and room to evolve.
             </span>
           </h2>
         </div>
@@ -27,7 +26,7 @@ export default function TechnologySovereignty() {
             <div className="sov-number">01</div>
             <h3 className="sov-name">Protected engineering decisions</h3>
             <p className="sov-description">
-              All architectural, operational, and security decisions remain internally governed and shielded from external influence.
+              Keep architecture, operations, and security decisions accountable to the platform’s long-term goals.
             </p>
           </div>
 
@@ -35,7 +34,7 @@ export default function TechnologySovereignty() {
             <div className="sov-number">02</div>
             <h3 className="sov-name">Secure‑by‑design operations</h3>
             <p className="sov-description">
-              Infrastructure is built with embedded security controls, hardened defaults, and continuous protection mechanisms.
+              Make security part of the foundation with hardened defaults and continuous protection.
             </p>
           </div>
 
@@ -43,7 +42,7 @@ export default function TechnologySovereignty() {
             <div className="sov-number">03</div>
             <h3 className="sov-name">Portable infrastructure services</h3>
             <p className="sov-description">
-              Platform capabilities operate independently across environments, ensuring portability, resilience, and long‑term continuity.
+              Move platform capabilities across environments while preserving portability and resilience.
             </p>
           </div>
 
@@ -51,7 +50,7 @@ export default function TechnologySovereignty() {
             <div className="sov-number">04</div>
             <h3 className="sov-name">Long‑term platform ownership</h3>
             <p className="sov-description">
-              AtonixCorp maintains full lifecycle control over infrastructure, ensuring stability, predictability, and sovereign operation.
+              Maintain lifecycle ownership to support stable, predictable infrastructure over time.
             </p>
           </div>
 

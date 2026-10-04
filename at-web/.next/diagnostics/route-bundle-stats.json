@@ -1,11 +1,11 @@
 [
   {
     "route": "/",
-    "firstLoadUncompressedJsBytes": 511491,
+    "firstLoadUncompressedJsBytes": 516530,
     "firstLoadChunkPaths": [
       ".next/static/chunks/3fntmmi971322.js",
-      ".next/static/chunks/32_nn5lke-8lt.js",
-      ".next/static/chunks/3cg46babq2akl.js",
+      ".next/static/chunks/1yak5rnptjq67.js",
+      ".next/static/chunks/30tw8za0_5h-d.js",
       ".next/static/chunks/3s6nzrbk-8mnv.js",
       ".next/static/chunks/19mx3mg6lkumu.js",
       ".next/static/chunks/196x_tfexoucg.js",
@@ -15,11 +15,11 @@
   },
   {
     "route": "/onboard",
-    "firstLoadUncompressedJsBytes": 493191,
+    "firstLoadUncompressedJsBytes": 494421,
     "firstLoadChunkPaths": [
       ".next/static/chunks/3fntmmi971322.js",
       ".next/static/chunks/12heh2301c85e.js",
-      ".next/static/chunks/3cg46babq2akl.js",
+      ".next/static/chunks/30tw8za0_5h-d.js",
       ".next/static/chunks/3s6nzrbk-8mnv.js",
       ".next/static/chunks/19mx3mg6lkumu.js",
       ".next/static/chunks/196x_tfexoucg.js",
@@ -29,11 +29,11 @@
   },
   {
     "route": "/portal",
-    "firstLoadUncompressedJsBytes": 493184,
+    "firstLoadUncompressedJsBytes": 494414,
     "firstLoadChunkPaths": [
       ".next/static/chunks/3fntmmi971322.js",
       ".next/static/chunks/3ql9qiqidf2iy.js",
-      ".next/static/chunks/3cg46babq2akl.js",
+      ".next/static/chunks/30tw8za0_5h-d.js",
       ".next/static/chunks/3s6nzrbk-8mnv.js",
       ".next/static/chunks/19mx3mg6lkumu.js",
       ".next/static/chunks/196x_tfexoucg.js",
@@ -43,11 +43,11 @@
   },
   {
     "route": "/login",
-    "firstLoadUncompressedJsBytes": 492971,
+    "firstLoadUncompressedJsBytes": 494201,
     "firstLoadChunkPaths": [
       ".next/static/chunks/3fntmmi971322.js",
       ".next/static/chunks/02sua-wrzvngx.js",
-      ".next/static/chunks/3cg46babq2akl.js",
+      ".next/static/chunks/30tw8za0_5h-d.js",
       ".next/static/chunks/3s6nzrbk-8mnv.js",
       ".next/static/chunks/19mx3mg6lkumu.js",
       ".next/static/chunks/196x_tfexoucg.js",

@@ -52,22 +52,22 @@ function HomePage() {
                 lineNumber: 28,
                 columnNumber: 7
             }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$sections$2f$capabilities$2f$CoreCapabilities$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$sections$2f$operational$2f$OperationalRail$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                 fileName: "[project]/app/home/HomePage.tsx",
                 lineNumber: 29,
                 columnNumber: 7
             }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$sections$2f$operational$2f$OperationalRail$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$sections$2f$platform$2f$PlatformOverview$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                 fileName: "[project]/app/home/HomePage.tsx",
                 lineNumber: 30,
                 columnNumber: 7
             }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$sections$2f$platform$2f$PlatformOverview$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$sections$2f$mission$2f$MissionSection$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                 fileName: "[project]/app/home/HomePage.tsx",
                 lineNumber: 31,
                 columnNumber: 7
             }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$sections$2f$mission$2f$MissionSection$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$sections$2f$capabilities$2f$CoreCapabilities$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                 fileName: "[project]/app/home/HomePage.tsx",
                 lineNumber: 32,
                 columnNumber: 7
@@ -84,7 +84,7 @@ function HomePage() {
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$sections$2f$footer$2f$Footer$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                 fileName: "[project]/app/home/HomePage.tsx",
-                lineNumber: 37,
+                lineNumber: 36,
                 columnNumber: 7
             }, this)
         ]
@@ -133,24 +133,13 @@ function CoreCapabilities() {
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                             className: "cap-title",
                             children: [
-                                "One platform.",
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
-                                    fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 15,
-                                    columnNumber: 26
-                                }, this),
-                                "Four core capabilities.",
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
-                                    fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 16,
-                                    columnNumber: 36
-                                }, this),
+                                "Four capabilities. One connected platform.",
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                     className: "cap-accent",
-                                    children: "Focused infrastructure domains, designed to operate together."
+                                    children: "Each domain works independently and integrates through shared control, identity, telemetry, and automation."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 17,
+                                    lineNumber: 16,
                                     columnNumber: 13
                                 }, this)
                             ]
@@ -176,7 +165,7 @@ function CoreCapabilities() {
                                     children: "01 ↗"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 26,
+                                    lineNumber: 27,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -184,7 +173,7 @@ function CoreCapabilities() {
                                     children: "Cloud Control"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 27,
+                                    lineNumber: 28,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -192,15 +181,15 @@ function CoreCapabilities() {
                                     children: "Orchestration & platform services"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 28,
+                                    lineNumber: 29,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "cap-description",
-                                    children: "Control‑plane services that coordinate infrastructure, identities, policies, automation, and distributed operations."
+                                    children: "Coordinate infrastructure, identity, policy, and automation across distributed environments."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 30,
+                                    lineNumber: 31,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -236,7 +225,7 @@ function CoreCapabilities() {
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                            lineNumber: 25,
+                            lineNumber: 26,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -268,7 +257,7 @@ function CoreCapabilities() {
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "cap-description",
-                                    children: "Compute agents, cluster scheduling, hardware‑aware placement, and high‑performance environments for scientific and enterprise workloads."
+                                    children: "Run demanding enterprise and research workloads with cluster scheduling and hardware-aware placement."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
                                     lineNumber: 48,
@@ -281,27 +270,27 @@ function CoreCapabilities() {
                                             children: "Compute agents"
                                         }, void 0, false, {
                                             fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                            lineNumber: 54,
+                                            lineNumber: 53,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
                                             children: "HPC scheduling"
                                         }, void 0, false, {
                                             fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                            lineNumber: 55,
+                                            lineNumber: 54,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
                                             children: "Hardware control"
                                         }, void 0, false, {
                                             fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                            lineNumber: 56,
+                                            lineNumber: 55,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 53,
+                                    lineNumber: 52,
                                     columnNumber: 13
                                 }, this)
                             ]
@@ -318,7 +307,7 @@ function CoreCapabilities() {
                                     children: "03 ↗"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 62,
+                                    lineNumber: 61,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -326,7 +315,7 @@ function CoreCapabilities() {
                                     children: "Network & Data"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 63,
+                                    lineNumber: 62,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -334,15 +323,15 @@ function CoreCapabilities() {
                                     children: "Connected infrastructure"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 64,
+                                    lineNumber: 63,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "cap-description",
-                                    children: "Secure networking, database services, object storage, and governed data flows for systems that need durable access and visibility."
+                                    children: "Connect systems with secure networking, database services, and governed, durable data access."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 66,
+                                    lineNumber: 65,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -352,33 +341,33 @@ function CoreCapabilities() {
                                             children: "Networking"
                                         }, void 0, false, {
                                             fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                            lineNumber: 72,
+                                            lineNumber: 70,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
                                             children: "DBaaS"
                                         }, void 0, false, {
                                             fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                            lineNumber: 73,
+                                            lineNumber: 71,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
                                             children: "Storage"
                                         }, void 0, false, {
                                             fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                            lineNumber: 74,
+                                            lineNumber: 72,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 71,
+                                    lineNumber: 69,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                            lineNumber: 61,
+                            lineNumber: 60,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -389,7 +378,7 @@ function CoreCapabilities() {
                                     children: "04 ↗"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 80,
+                                    lineNumber: 78,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -397,7 +386,7 @@ function CoreCapabilities() {
                                     children: "Secure Operations"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 81,
+                                    lineNumber: 79,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -405,15 +394,15 @@ function CoreCapabilities() {
                                     children: "Delivery, protection & insight"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 82,
+                                    lineNumber: 80,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "cap-description",
-                                    children: "Developer delivery services, security controls, observability, analytics, and audit capabilities for dependable platform operations."
+                                    children: "Support dependable delivery with security controls, observability, analytics, and audit capabilities."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 84,
+                                    lineNumber: 82,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -423,39 +412,39 @@ function CoreCapabilities() {
                                             children: "DevOps"
                                         }, void 0, false, {
                                             fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                            lineNumber: 90,
+                                            lineNumber: 87,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
                                             children: "Security"
                                         }, void 0, false, {
                                             fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                            lineNumber: 91,
+                                            lineNumber: 88,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
                                             children: "Analytics"
                                         }, void 0, false, {
                                             fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                            lineNumber: 92,
+                                            lineNumber: 89,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                                    lineNumber: 89,
+                                    lineNumber: 86,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                            lineNumber: 79,
+                            lineNumber: 77,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/sections/capabilities/CoreCapabilities.tsx",
-                    lineNumber: 22,
+                    lineNumber: 23,
                     columnNumber: 9
                 }, this)
             ]
@@ -2684,19 +2673,19 @@ function HeroSection() {
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                             className: "enterprise-hero-description",
-                            children: "AtonixCorp delivers cloud, compute, network, data, and secure‑operations capabilities that power enterprise workloads, scientific research, critical infrastructure, and next‑generation digital systems."
+                            children: "AtonixCorp connects cloud, compute, networking, data, and secure operations to support enterprise workloads, scientific research, and critical infrastructure."
                         }, void 0, false, {
                             fileName: "[project]/app/sections/hero/HeroSection.tsx",
                             lineNumber: 158,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                            href: "#divisions",
+                            href: "#capabilities",
                             className: "enterprise-hero-action",
                             children: "Explore AtonixCorp Platform →"
                         }, void 0, false, {
                             fileName: "[project]/app/sections/hero/HeroSection.tsx",
-                            lineNumber: 164,
+                            lineNumber: 163,
                             columnNumber: 11
                         }, this)
                     ]
@@ -2710,7 +2699,7 @@ function HeroSection() {
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(PlatformIllustration, {}, void 0, false, {
                             fileName: "[project]/app/sections/hero/HeroSection.tsx",
-                            lineNumber: 171,
+                            lineNumber: 170,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2721,14 +2710,14 @@ function HeroSection() {
                                     "aria-hidden": "true"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/hero/HeroSection.tsx",
-                                    lineNumber: 173,
+                                    lineNumber: 172,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                     children: "AtonixCorp Cloud Fabric"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/hero/HeroSection.tsx",
-                                    lineNumber: 174,
+                                    lineNumber: 173,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2736,26 +2725,26 @@ function HeroSection() {
                                     "aria-hidden": "true"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/hero/HeroSection.tsx",
-                                    lineNumber: 175,
+                                    lineNumber: 174,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                     children: "Eight connected capabilities"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/hero/HeroSection.tsx",
-                                    lineNumber: 176,
+                                    lineNumber: 175,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/hero/HeroSection.tsx",
-                            lineNumber: 172,
+                            lineNumber: 171,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/sections/hero/HeroSection.tsx",
-                    lineNumber: 170,
+                    lineNumber: 169,
                     columnNumber: 9
                 }, this)
             ]
@@ -2853,7 +2842,7 @@ function MissionSection() {
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                             className: "mission-summary",
-                            children: "We engineer infrastructure that is autonomous, secure, energy‑efficient, and capable of supporting the world’s most advanced digital operations."
+                            children: "We build dependable, secure infrastructure for the systems people and organizations rely on every day."
                         }, void 0, false, {
                             fileName: "[project]/app/sections/mission/MissionSection.tsx",
                             lineNumber: 24,
@@ -2863,28 +2852,28 @@ function MissionSection() {
                             className: "mission-list",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
-                                    children: "Power enterprise workloads with precision and reliability"
+                                    children: "Run enterprise workloads with predictable performance"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/mission/MissionSection.tsx",
                                     lineNumber: 30,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
-                                    children: "Secure critical infrastructure against digital and physical threats"
+                                    children: "Protect infrastructure with security built into every layer"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/mission/MissionSection.tsx",
                                     lineNumber: 31,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
-                                    children: "Accelerate research through high‑performance computing"
+                                    children: "Advance research with high-performance computing"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/mission/MissionSection.tsx",
                                     lineNumber: 32,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
-                                    children: "Enable autonomous operations across distributed environments"
+                                    children: "Simplify operations across distributed environments"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/mission/MissionSection.tsx",
                                     lineNumber: 33,
@@ -3076,9 +3065,9 @@ function PlatformOverview() {
                     lineNumber: 11,
                     columnNumber: 9
                 }, this),
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
+                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                     className: "platform-title",
-                    children: "Infrastructure capabilities designed to operate as a unified platform."
+                    children: "Infrastructure that works better together."
                 }, void 0, false, {
                     fileName: "[project]/app/sections/platform/PlatformOverview.tsx",
                     lineNumber: 13,
@@ -3086,7 +3075,7 @@ function PlatformOverview() {
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                     className: "platform-description",
-                    children: "AtonixCorp provides a connected foundation for cloud orchestration, compute, networking, data services, security, and developer operations. Each capability is engineered to function independently while integrating seamlessly through shared control, identity, telemetry, and automation layers."
+                    children: "AtonixCorp brings cloud orchestration, compute, networking, data services, security, and developer operations into one connected foundation. Each capability can stand on its own and works through shared control, identity, telemetry, and automation."
                 }, void 0, false, {
                     fileName: "[project]/app/sections/platform/PlatformOverview.tsx",
                     lineNumber: 17,
@@ -3094,17 +3083,27 @@ function PlatformOverview() {
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                     className: "platform-description",
-                    children: "This approach enables consistent operations, predictable performance, and a platform architecture built for modern workloads and long‑term reliability."
+                    children: "The result is a consistent operating experience built to support modern workloads and long-term reliability."
                 }, void 0, false, {
                     fileName: "[project]/app/sections/platform/PlatformOverview.tsx",
                     lineNumber: 24,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
-                    href: "/mandate",
+                    href: "#mission",
                     className: "platform-action",
-                    children: "Learn more about our operating mandate →"
-                }, void 0, false, {
+                    children: [
+                        "Explore our mission ",
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                            "aria-hidden": "true",
+                            children: "→"
+                        }, void 0, false, {
+                            fileName: "[project]/app/sections/platform/PlatformOverview.tsx",
+                            lineNumber: 30,
+                            columnNumber: 31
+                        }, this)
+                    ]
+                }, void 0, true, {
                     fileName: "[project]/app/sections/platform/PlatformOverview.tsx",
                     lineNumber: 29,
                     columnNumber: 9
@@ -3160,24 +3159,13 @@ function StrategicRoadmap() {
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                             className: "roadmap-title",
                             children: [
-                                "Thirty years.",
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
-                                    fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 15,
-                                    columnNumber: 26
-                                }, this),
-                                "Six phases.",
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
-                                    fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 16,
-                                    columnNumber: 24
-                                }, this),
+                                "A deliberate path to long-term infrastructure.",
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                     className: "roadmap-accent",
-                                    children: "A future built in deliberate phases, advancing independence and infrastructure stability at each horizon."
+                                    children: "Grow capability in measured stages—from a resilient foundation to globally connected, autonomous systems."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 17,
+                                    lineNumber: 16,
                                     columnNumber: 13
                                 }, this)
                             ]
@@ -3203,7 +3191,7 @@ function StrategicRoadmap() {
                                     children: "Phase I"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 28,
+                                    lineNumber: 27,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -3211,7 +3199,7 @@ function StrategicRoadmap() {
                                     children: "Foundation & Stabilization"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 29,
+                                    lineNumber: 28,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3219,13 +3207,13 @@ function StrategicRoadmap() {
                                     children: "Core infrastructure, cloud systems, HPC environments, and governance frameworks."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 30,
+                                    lineNumber: 29,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                            lineNumber: 27,
+                            lineNumber: 26,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3236,7 +3224,7 @@ function StrategicRoadmap() {
                                     children: "Phase II"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 37,
+                                    lineNumber: 36,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -3244,7 +3232,7 @@ function StrategicRoadmap() {
                                     children: "Infrastructure Expansion"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 38,
+                                    lineNumber: 37,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3252,13 +3240,13 @@ function StrategicRoadmap() {
                                     children: "Multi‑region cloud, HPC, AI, and energy systems at scale."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 39,
+                                    lineNumber: 38,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                            lineNumber: 36,
+                            lineNumber: 35,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3269,7 +3257,7 @@ function StrategicRoadmap() {
                                     children: "Phase III"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 46,
+                                    lineNumber: 45,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -3277,7 +3265,7 @@ function StrategicRoadmap() {
                                     children: "Global Integration"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 47,
+                                    lineNumber: 46,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3285,13 +3273,13 @@ function StrategicRoadmap() {
                                     children: "International enterprise, research, and institutional collaboration."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 48,
+                                    lineNumber: 47,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                            lineNumber: 45,
+                            lineNumber: 44,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3302,7 +3290,7 @@ function StrategicRoadmap() {
                                     children: "Phase IV"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 55,
+                                    lineNumber: 54,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -3310,7 +3298,7 @@ function StrategicRoadmap() {
                                     children: "International Positioning"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 56,
+                                    lineNumber: 55,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3318,13 +3306,13 @@ function StrategicRoadmap() {
                                     children: "Expanded developer ecosystems and media intelligence capabilities."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 57,
+                                    lineNumber: 56,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                            lineNumber: 54,
+                            lineNumber: 53,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3335,7 +3323,7 @@ function StrategicRoadmap() {
                                     children: "Phase V"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 64,
+                                    lineNumber: 63,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -3343,7 +3331,7 @@ function StrategicRoadmap() {
                                     children: "Autonomous Infrastructure Era"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 65,
+                                    lineNumber: 64,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3351,13 +3339,13 @@ function StrategicRoadmap() {
                                     children: "Self‑governing cloud, HPC, and AI operational frameworks."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 66,
+                                    lineNumber: 65,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                            lineNumber: 63,
+                            lineNumber: 62,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3368,7 +3356,7 @@ function StrategicRoadmap() {
                                     children: "Phase VI"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 73,
+                                    lineNumber: 72,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -3376,7 +3364,7 @@ function StrategicRoadmap() {
                                     children: "Sovereign Technology Era"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 74,
+                                    lineNumber: 73,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3384,19 +3372,19 @@ function StrategicRoadmap() {
                                     children: "Global operational independence and enduring technological leadership."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                                    lineNumber: 75,
+                                    lineNumber: 74,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                            lineNumber: 72,
+                            lineNumber: 71,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/sections/roadmap/StrategicRoadmap.tsx",
-                    lineNumber: 24,
+                    lineNumber: 23,
                     columnNumber: 9
                 }, this)
             ]
@@ -3450,24 +3438,13 @@ function TechnologySovereignty() {
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                             className: "sov-title",
                             children: [
-                                "Independent engineering.",
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
-                                    fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 15,
-                                    columnNumber: 37
-                                }, this),
-                                "Zero external influence.",
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
-                                    fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 16,
-                                    columnNumber: 37
-                                }, this),
+                                "Independent engineering. Long-term control.",
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                     className: "sov-accent",
-                                    children: "Every engineering decision remains protected and aligned with long‑term infrastructure stability."
+                                    children: "Build and operate infrastructure with clear ownership, secure foundations, and room to evolve."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 17,
+                                    lineNumber: 16,
                                     columnNumber: 13
                                 }, this)
                             ]
@@ -3493,7 +3470,7 @@ function TechnologySovereignty() {
                                     children: "01"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 27,
+                                    lineNumber: 26,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -3501,21 +3478,21 @@ function TechnologySovereignty() {
                                     children: "Protected engineering decisions"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 28,
+                                    lineNumber: 27,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "sov-description",
-                                    children: "All architectural, operational, and security decisions remain internally governed and shielded from external influence."
+                                    children: "Keep architecture, operations, and security decisions accountable to the platform’s long-term goals."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 29,
+                                    lineNumber: 28,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                            lineNumber: 26,
+                            lineNumber: 25,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3526,7 +3503,7 @@ function TechnologySovereignty() {
                                     children: "02"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 35,
+                                    lineNumber: 34,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -3534,21 +3511,21 @@ function TechnologySovereignty() {
                                     children: "Secure‑by‑design operations"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 36,
+                                    lineNumber: 35,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "sov-description",
-                                    children: "Infrastructure is built with embedded security controls, hardened defaults, and continuous protection mechanisms."
+                                    children: "Make security part of the foundation with hardened defaults and continuous protection."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 37,
+                                    lineNumber: 36,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                            lineNumber: 34,
+                            lineNumber: 33,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3559,7 +3536,7 @@ function TechnologySovereignty() {
                                     children: "03"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 43,
+                                    lineNumber: 42,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -3567,21 +3544,21 @@ function TechnologySovereignty() {
                                     children: "Portable infrastructure services"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 44,
+                                    lineNumber: 43,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "sov-description",
-                                    children: "Platform capabilities operate independently across environments, ensuring portability, resilience, and long‑term continuity."
+                                    children: "Move platform capabilities across environments while preserving portability and resilience."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 45,
+                                    lineNumber: 44,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                            lineNumber: 42,
+                            lineNumber: 41,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3592,7 +3569,7 @@ function TechnologySovereignty() {
                                     children: "04"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 51,
+                                    lineNumber: 50,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -3600,27 +3577,27 @@ function TechnologySovereignty() {
                                     children: "Long‑term platform ownership"
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 52,
+                                    lineNumber: 51,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "sov-description",
-                                    children: "AtonixCorp maintains full lifecycle control over infrastructure, ensuring stability, predictability, and sovereign operation."
+                                    children: "Maintain lifecycle ownership to support stable, predictable infrastructure over time."
                                 }, void 0, false, {
                                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                                    lineNumber: 53,
+                                    lineNumber: 52,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                            lineNumber: 50,
+                            lineNumber: 49,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/sections/sovereignty/TechnologySovereignty.tsx",
-                    lineNumber: 24,
+                    lineNumber: 23,
                     columnNumber: 9
                 }, this)
             ]

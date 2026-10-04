@@ -14,13 +14,15 @@ export default function Footer() {
             </span>
           </a>
 
-          <p>Engineering for the infrastructure that powers global digital operations.</p>
+          <p className="footer-tagline">
+            Infrastructure for the systems shaping what comes next.
+          </p>
 
-          <div className="footer-social">
+          <nav className="footer-social" aria-label="AtonixCorp social links">
             <a
               href="https://github.com/Orcastack/atonixcorp"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               aria-label="AtonixCorp GitHub"
             >
               {/* GitHub Icon */}
@@ -32,7 +34,7 @@ export default function Footer() {
             <a
               href="https://linkedin.com/company/atonixcorp"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               aria-label="AtonixCorp LinkedIn"
             >
               {/* LinkedIn Icon */}
@@ -44,7 +46,7 @@ export default function Footer() {
             <a
               href="https://discord.gg/orcastack"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               aria-label="AtonixCorp Discord"
             >
               {/* Discord Icon */}
@@ -56,7 +58,7 @@ export default function Footer() {
             <a
               href="https://mastodon.social/@atonixcorp"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               aria-label="AtonixCorp on Mastodon"
             >
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -69,13 +71,13 @@ export default function Footer() {
                 <path d="M9.5 3C5.4 3 2 5.7 2 9c0 1.8 1 3.4 2.6 4.5L4 16l2.8-1.4c.8.3 1.7.4 2.7.4h.3a5.7 5.7 0 0 1-.3-1.8c0-3.3 3.1-6 7-6h.3C16 4.8 13 3 9.5 3Zm-2.7 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm5.4 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm4.3-1.5c-3 0-5.5 1.9-5.5 4.3s2.5 4.3 5.5 4.3c.7 0 1.4-.1 2-.3l2.3 1.2-.5-2.1c1.1-.8 1.7-1.9 1.7-3.1 0-2.4-2.5-4.3-5.5-4.3Zm-2 5.3a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6Zm4 0a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6Z" />
               </svg>
             </a>
-          </div>
+          </nav>
         </div>
 
-        <div>
+        <div className="footer-engagement">
           <span>Strategic engagement</span>
           <a href="#contact">
-            Start a conversation <b aria-hidden="true">→</b>
+            Start a conversation <b aria-hidden="true">↗</b>
           </a>
         </div>
       </div>
@@ -83,37 +85,37 @@ export default function Footer() {
       <div className="wrap footer-grid">
         <div className="footer-overview">
           <p>
-            AtonixCorp develops mission-critical infrastructure across autonomous cloud,
-            high-performance compute, energy systems, and research ecosystems.
+            AtonixCorp connects cloud, compute, networking, data, and secure operations
+            in one platform for enterprise, research, and critical infrastructure.
           </p>
           <span className="footer-status">
             <i /> Global systems operational
           </span>
         </div>
 
-        <div>
+        <nav aria-label="Company links">
           <h3>Company</h3>
-          <a href="#about">About AtonixCorp</a>
+          <a href="#platform-overview">About AtonixCorp</a>
           <a href="#mission">Mission & mandate</a>
           <a href="#sovereignty">Corporate governance</a>
           <a href="#roadmap">Strategic roadmap</a>
-        </div>
+        </nav>
 
-        <div>
+        <nav aria-label="Infrastructure links">
           <h3>Infrastructure</h3>
-          <a href="#divisions">Cloud & AI systems</a>
-          <a href="#divisions">Compute & energy</a>
-          <a href="#systems">Security engineering</a>
-          <a href="#systems">Developer ecosystem</a>
-        </div>
+          <a href="#capabilities">Cloud & AI systems</a>
+          <a href="#capabilities">Compute & energy</a>
+          <a href="#sovereignty">Security engineering</a>
+          <a href="#capabilities">Developer ecosystem</a>
+        </nav>
 
-        <div>
+        <nav aria-label="Resource links">
           <h3>Resources</h3>
           <a href="#contact">Technical support</a>
           <a href="#contact">Enterprise solutions</a>
           <a href="#contact">Research collaboration</a>
           <a href="#contact">Media center</a>
-        </div>
+        </nav>
       </div>
 
       <div className="wrap footer-legal">

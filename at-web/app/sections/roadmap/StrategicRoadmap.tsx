@@ -12,10 +12,9 @@ export default function StrategicRoadmap() {
           <p className="roadmap-index">05 / Strategic Roadmap</p>
 
           <h2 className="roadmap-title">
-            Thirty years.<br />
-            Six phases.<br />
+            A deliberate path to long-term infrastructure.
             <span className="roadmap-accent">
-              A future built in deliberate phases, advancing independence and infrastructure stability at each horizon.
+              Grow capability in measured stages—from a resilient foundation to globally connected, autonomous systems.
             </span>
           </h2>
         </div>

@@ -1,22 +1,109 @@
-/* ============================================
-   CONTACT SECTION
-   ============================================ */
+.contact-section {
+  padding: clamp(56px, 7vw, 88px) 24px;
+  background:
+    radial-gradient(ellipse at 50% 115%, rgba(0, 184, 107, 0.12), transparent 55%),
+    #edf5f7;
+}
 
-.contact-links {
-  margin-top: 40px;
+.contact-section-wrap {
+  width: min(100%, 920px);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.contact-section .section-index {
+  margin-bottom: 18px;
+  color: #087a83;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.contact-section h2 {
+  margin: 0 0 16px;
+  color: #101a2d;
+  font-size: clamp(32px, 4.5vw, 52px);
+  font-weight: 780;
+  letter-spacing: -0.045em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.contact-section-wrap > p:not(.section-index) {
+  max-width: 620px;
+  margin: 0 auto;
+  color: #536477;
+  font-size: 17px;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.contact-actions {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
 }
 
-.contact-links a {
-  background: #00a6a7;
-  color: #ffffff;
-  padding: 14px 22px;
-  border-radius: 6px;
-  font-weight: 600;
+.contact-actions a {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 18px;
+  border: 1px solid #d2e0e5;
+  border-radius: 8px;
+  background: #fff;
+  color: #19374b;
+  font-size: 14px;
+  font-weight: 700;
   text-decoration: none;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
-.contact-links a:hover {
-  background: #4cd7d7;
+.contact-actions a:hover {
+  transform: translateY(-2px);
+  border-color: #8ccfc1;
+  box-shadow: 0 8px 22px rgba(17, 42, 61, 0.08);
+}
+
+.contact-actions .contact-action-primary {
+  border-color: #00a66a;
+  background: linear-gradient(115deg, #00a96c, #078c88);
+  color: #fff;
+}
+
+.contact-actions .contact-action-primary:hover {
+  border-color: #087a83;
+  box-shadow: 0 10px 24px rgba(0, 137, 113, 0.2);
+}
+
+.contact-actions a:focus-visible {
+  outline: 3px solid rgba(8, 119, 201, 0.45);
+  outline-offset: 3px;
+}
+
+@media (max-width: 520px) {
+  .contact-section {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .contact-section-wrap > p:not(.section-index) {
+    font-size: 15px;
+  }
+
+  .contact-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-actions a {
+    transition: none;
+  }
 }
