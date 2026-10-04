@@ -22,15 +22,15 @@ export default function MissionSection() {
         {/* Right Details */}
         <div className="mission-detail">
           <p className="mission-summary">
-            We build dependable, secure infrastructure for the systems people and
-            organizations rely on every day.
+            We are building the cloud foundation for ambitious ideas and essential
+            systems—supporting the people who research, engineer, and operate them.
           </p>
 
           <ul className="mission-list">
-            <li>Run enterprise workloads with predictable performance</li>
-            <li>Protect infrastructure with security built into every layer</li>
-            <li>Advance research with high-performance computing</li>
-            <li>Simplify operations across distributed environments</li>
+            <li>Enable AI, scientific discovery, and high-performance workloads</li>
+            <li>Support engineering across robotics, aerospace, flight, and energy</li>
+            <li>Bring compute, data, networking, and security into a connected foundation</li>
+            <li>Scale critical applications from development through operation</li>
           </ul>
         </div>
 

@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/app/styles/base.css"],"sourcesContent":["/* Base reset */\n* {\n  margin: 0;\n  padding: 0;\n  box-sizing: border-box;\n}\n\nhtml, body {\n  min-height: 100%;\n  font-family: Inter, system-ui, sans-serif;\n\n  /* REMOVE the forced dark background */\n  background: #ffffff; /* pure white default */\n  color: #000000;      /* pure black default */\n}\n"],"names":[],"mappings":"AACA;;;;;;AAMA"}}]
-}

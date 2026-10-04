@@ -2,6 +2,7 @@
 
 import "../../styles/GlobalHeader.css";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 type NavItem = {
@@ -14,10 +15,10 @@ const navigation: NavItem[] = [
   {
     label: "Software",
     items: [
-      { label: "Overview", href: "#platform-overview" },
+      { label: "Overview", href: "/platform" },
       { label: "AtonixCorp Components", href: "#capabilities" },
       { label: "Development Tools", href: "#capabilities" },
-      { label: "AtonixCorp Map", href: "#platform-overview" },
+      { label: "AtonixCorp Map", href: "/platform" },
       { label: "Configuration", href: "#capabilities" },
       { label: "Security", href: "#sovereignty" },
       { label: "Marketplace", href: "#capabilities" },
@@ -32,11 +33,11 @@ const navigation: NavItem[] = [
       { label: "Network & Data", href: "#capabilities" },
       { label: "Secure Operations", href: "#capabilities" },
       { label: "Platform Governance", href: "#sovereignty" },
-      { label: "Platform Architecture", href: "#platform-overview" },
+      { label: "Platform Architecture", href: "/platform" },
     ],
   },
   {
-    label: "Uses",
+    label: "Uses Cases",
     items: [
       { label: "Enterprise Workloads", href: "#capabilities" },
       { label: "Scientific Research & HPC", href: "#capabilities" },
@@ -72,12 +73,12 @@ const navigation: NavItem[] = [
       { label: "High‑Performance Workloads", href: "#capabilities" },
       { label: "Data Services", href: "#capabilities" },
       { label: "Infrastructure Automation", href: "#capabilities" },
-      { label: "Platform Architecture", href: "#platform-overview" },
+      { label: "Platform Architecture", href: "/platform" },
       { label: "Energy Systems", href: "#mission" },
     ],
   },
   {
-    label: "DevHub",
+    label: "Developers",
     items: [
       { label: "Documentation", href: "#capabilities" },
       { label: "API Reference", href: "#capabilities" },
@@ -129,12 +130,15 @@ export default function GlobalHeader() {
     setMobileOpen(false);
   };
 
+  const resolveHref = (href?: string) =>
+    href ? (href.startsWith("#") ? `/${href}` : href) : "/";
+
   return (
     <header className="global-header" ref={headerRef}>
       <div className="header-row wrap">
 
         {/* Brand */}
-        <a className="global-brand" href="#top" aria-label="AtonixCorp home" onClick={closeAll}>
+        <Link className="global-brand" href="/" aria-label="AtonixCorp home" onClick={closeAll}>
           <Image
             src="/atonixcorp-icon.png"
             alt="AtonixCorp logo"
@@ -145,7 +149,7 @@ export default function GlobalHeader() {
           <span>
             ATONIXCORP
           </span>
-        </a>
+        </Link>
 
         {/* Navigation */}
         <nav className="global-nav" aria-label="Global navigation">
@@ -179,7 +183,7 @@ export default function GlobalHeader() {
 
                 <div className={activeMenu === item.label ? "dropdown visible" : "dropdown"}>
                   {item.items.map((subItem) => (
-                    <a href={subItem.href} key={subItem.label} onClick={closeAll}>
+                    <a href={resolveHref(subItem.href)} key={subItem.label} onClick={closeAll}>
                       {subItem.label}
                       <span aria-hidden="true">↗</span>
                     </a>
@@ -187,7 +191,7 @@ export default function GlobalHeader() {
                 </div>
               </div>
             ) : (
-              <a className="nav-trigger home-link" href={item.href} key={item.label}>
+              <a className="nav-trigger home-link" href={resolveHref(item.href)} key={item.label}>
                 {item.label}
               </a>
             )
@@ -212,14 +216,14 @@ export default function GlobalHeader() {
         {navigation.map((item) => (
           <div key={item.label} className="mobile-nav-group">
             {item.href ? (
-              <a href={item.href} onClick={closeAll}>
+              <a href={resolveHref(item.href)} onClick={closeAll}>
                 {item.label}
               </a>
             ) : (
               <>
                 <span>{item.label}</span>
                 {item.items?.map((subItem) => (
-                  <a href={subItem.href} key={subItem.label} onClick={closeAll}>
+                  <a href={resolveHref(subItem.href)} key={subItem.label} onClick={closeAll}>
                     {subItem.label}
                   </a>
                 ))}

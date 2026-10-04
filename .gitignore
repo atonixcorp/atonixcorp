@@ -15,7 +15,12 @@
 
 # next.js
 /.next/
+/at-web/.next/
 /out/
+
+# frontend dependencies and build output
+**/node_modules/
+/devops/dashboard/dist/
 
 # production
 /build

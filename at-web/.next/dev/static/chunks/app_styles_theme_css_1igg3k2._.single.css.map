@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/app/styles/theme.css"],"sourcesContent":[":root {\n  --accent: #00a6a7;\n  --accent-light: #4cd7d7;\n\n  --surface: #111418;\n  --surface-border: #1f2429;\n\n  --text-light: #e5e7eb;\n  --text-dim: #9ca3af;\n\n  --radius: 6px;\n  --space: 24px;\n}\n"],"names":[],"mappings":"AAAA"}}]
-}

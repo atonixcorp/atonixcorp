@@ -1,216 +1,404 @@
-/* ============================================
-   ATONIXCORP — ONBOARD / CREATE ACCOUNT (PREMIUM)
-   ============================================ */
-
 .onboard-page {
   width: 100%;
-  background: #ffffff;
+  color: #102235;
+  background: #f5f8fb;
 }
 
-/* HERO */
 .onboard-hero {
-  padding: 120px 0;
-  background: #ffffff;
   position: relative;
   overflow: hidden;
+  padding: clamp(64px, 8vw, 104px) 24px;
+  background:
+    radial-gradient(ellipse at 5% 20%, rgba(0, 166, 167, 0.08), transparent 34%),
+    #f5f8fb;
 }
 
-/* Glow */
-.onboard-hero::before {
-  content: "";
+.onboard-hero::after {
   position: absolute;
-  top: -160px;
-  right: -160px;
-  width: 480px;
-  height: 480px;
-  background: radial-gradient(circle, #00E67633, transparent 70%);
-  filter: blur(40px);
-  opacity: 0.7;
+  top: -220px;
+  right: -180px;
+  width: 520px;
+  height: 520px;
+  border: 1px solid rgba(0, 166, 167, 0.1);
+  border-radius: 50%;
+  box-shadow: 0 0 0 46px rgba(0, 166, 167, 0.025), 0 0 0 92px rgba(0, 166, 167, 0.02);
+  content: "";
+  pointer-events: none;
 }
 
 .onboard-wrap {
-  max-width: 480px;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 0.88fr) minmax(480px, 1fr);
+  align-items: center;
+  gap: clamp(48px, 8vw, 112px);
+  width: min(100%, 1120px);
   margin: 0 auto;
-  padding: 0 32px;
-  text-align: center;
+}
+
+.onboard-intro {
+  max-width: 470px;
+}
+
+.onboard-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 22px;
+  color: #087f75;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.17em;
+}
+
+.onboard-eyebrow span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00a878;
 }
 
 .onboard-title {
-  font-size: 42px;
-  font-weight: 800;
-  color: #0f172a;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
+  color: #102235;
+  font-size: clamp(38px, 5vw, 58px);
+  font-weight: 760;
+  letter-spacing: -0.06em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+.onboard-title span {
+  display: block;
+  margin-top: 8px;
+  color: #087f75;
 }
 
 .onboard-subtitle {
-  font-size: 18px;
-  color: #475569;
-  margin-bottom: 40px;
+  max-width: 430px;
+  color: #5b6e7f;
+  font-size: 16px;
+  line-height: 1.75;
 }
 
-/* Card */
+.onboard-benefits {
+  display: grid;
+  gap: 15px;
+  margin-top: 38px;
+  padding-top: 26px;
+  border-top: 1px solid #dce6ea;
+}
+
+.onboard-benefits p {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  color: #344c5e;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.onboard-benefits p span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  border: 1px solid #d2e6e1;
+  border-radius: 8px;
+  color: #087f75;
+  background: #f2faf7;
+  font-size: 9px;
+  font-weight: 750;
+}
+
 .onboard-card {
+  padding: clamp(24px, 3vw, 36px);
+  border: 1px solid #e0e8ec;
+  border-radius: 16px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 40px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-  transition: box-shadow .3s ease, transform .3s ease;
+  box-shadow: 0 22px 64px rgba(19, 48, 65, 0.09);
 }
 
-.onboard-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 26px 48px rgba(0,0,0,0.12);
+.onboard-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 25px;
+}
+
+.onboard-card-kicker {
+  margin-bottom: 7px;
+  color: #07877c;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.15em;
 }
 
 .onboard-card-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 24px;
+  color: #142c3d;
+  font-size: 24px;
+  font-weight: 720;
+  letter-spacing: -0.035em;
 }
 
-/* Form */
+.onboard-card-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border: 1px solid #e4ecee;
+  border-radius: 6px;
+  color: #087f75;
+  background: #f8fbfb;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.onboard-card-step i {
+  width: 20px;
+  height: 1px;
+  background: #c5d8d8;
+}
+
+.onboard-card-step i::after {
+  display: block;
+  width: 11px;
+  height: 2px;
+  background: #00a878;
+  content: "";
+}
+
 .onboard-form {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 16px;
+}
+
+.onboard-password-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.onboard-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: #344c5e;
+  font-size: 11px;
+  font-weight: 650;
 }
 
 .onboard-input {
-  padding: 16px 18px;
-  border-radius: 12px;
-  border: 1px solid #cbd5e1;
-  font-size: 16px;
-  transition: border .25s ease, box-shadow .25s ease;
+  width: 100%;
+  min-height: 47px;
+  padding: 0 13px;
+  border: 1px solid #d8e2e7;
+  border-radius: 7px;
+  outline: none;
+  color: #152d3e;
+  background: #fbfcfd;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 450;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.onboard-input::placeholder {
+  color: #98a7b1;
+}
+
+.onboard-input:hover {
+  border-color: #b9cbd2;
 }
 
 .onboard-input:focus {
-  border-color: #00B86B;
-  box-shadow: 0 0 0 4px rgba(0,184,107,0.15);
+  border-color: #07877c;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(8, 135, 124, 0.12);
 }
 
 .onboard-btn.primary {
-  padding: 16px;
-  background: #00B86B;
-  color: #ffffff;
-  font-weight: 700;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  transition: background .25s ease, box-shadow .25s ease, transform .25s ease;
-}
-
-.onboard-btn.primary:hover {
-  background: #00E676;
-  box-shadow: 0 14px 32px rgba(0,230,118,0.45);
-  transform: translateY(-4px);
-}
-
-/* Divider */
-.onboard-divider {
-  margin: 26px 0;
-  font-size: 14px;
-  color: #64748b;
-  position: relative;
-}
-
-.onboard-divider span {
-  background: #ffffff;
-  padding: 0 12px;
-  position: relative;
-  z-index: 2;
-}
-
-.onboard-divider::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 0;
-  height: 1px;
-  width: 100%;
-  background: #e2e8f0;
-}
-
-/* ============================================
-   OAUTH — HORIZONTAL SOCIAL SIGNUP (PREMIUM)
-   ============================================ */
-
-.oauth-row {
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 24px;
-  flex-wrap: wrap;
-}
-
-.oauth-btn {
-  flex: 1;
-  min-width: 120px;
-
-  display: flex;
+  min-height: 49px;
   align-items: center;
   justify-content: center;
   gap: 10px;
-
-  padding: 14px 18px;
-  border-radius: 12px;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-
+  margin-top: 3px;
+  border: 0;
+  border-radius: 7px;
+  color: #ffffff;
+  background: #087f75;
+  box-shadow: 0 8px 18px rgba(8, 127, 117, 0.15);
   cursor: pointer;
-  font-weight: 600;
-  font-size: 15px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
 
-  transition: background .25s ease, transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+.onboard-btn.primary:hover {
+  transform: translateY(-1px);
+  background: #06675f;
+  box-shadow: 0 11px 22px rgba(8, 127, 117, 0.2);
+}
+
+.onboard-btn:focus-visible,
+.oauth-btn:focus-visible {
+  outline: 3px solid rgba(8, 127, 117, 0.26);
+  outline-offset: 2px;
+}
+
+.onboard-divider {
+  position: relative;
+  margin: 22px 0 16px;
+  color: #81909a;
+  font-size: 10px;
+  text-align: center;
+}
+
+.onboard-divider::before {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: #e8edef;
+  content: "";
+}
+
+.onboard-divider span {
+  position: relative;
+  z-index: 1;
+  padding: 0 11px;
+  background: #ffffff;
+}
+
+.oauth-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.oauth-btn {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid #e0e7ea;
+  border-radius: 7px;
+  color: #354c5c;
+  background: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
 }
 
 .oauth-btn img {
-  width: 20px;
-  height: 20px;
-  opacity: 0.9;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 
 .oauth-btn:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.10);
-  border-color: #00B86B;
+  transform: translateY(-1px);
+  border-color: #b9d9d2;
+  background: #f7fbfa;
 }
 
-/* Provider Colors */
-.oauth-btn.github:hover {
-  background: #24292e;
-  color: #ffffff;
-}
-
-.oauth-btn.linkedin:hover {
-  background: #0A66C2;
-  color: #ffffff;
-}
-
-.oauth-btn.google:hover {
-  background: #EA4335;
-  color: #ffffff;
-}
-
-.oauth-btn.gmail:hover {
-  background: #D44638;
-  color: #ffffff;
-}
-
-/* Login Link */
 .login-text {
-  margin-top: 24px;
-  font-size: 15px;
-  color: #475569;
+  margin-top: 22px;
+  color: #687b89;
+  font-size: 12px;
+  text-align: center;
 }
 
 .login-text a {
-  color: #00B86B;
-  font-weight: 600;
+  margin-left: 4px;
+  color: #087f75;
+  font-weight: 700;
   text-decoration: none;
 }
 
 .login-text a:hover {
   text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .onboard-wrap {
+    grid-template-columns: minmax(0, 0.8fr) minmax(420px, 1fr);
+    gap: 36px;
+  }
+
+  .onboard-title {
+    font-size: clamp(36px, 5vw, 48px);
+  }
+}
+
+@media (max-width: 760px) {
+  .onboard-hero {
+    padding: 58px 20px 72px;
+  }
+
+  .onboard-wrap {
+    grid-template-columns: 1fr;
+    width: min(100%, 540px);
+    gap: 32px;
+  }
+
+  .onboard-intro {
+    max-width: 520px;
+  }
+
+  .onboard-title {
+    max-width: 500px;
+    font-size: clamp(38px, 8vw, 52px);
+  }
+
+  .onboard-benefits {
+    grid-template-columns: 1fr;
+    gap: 11px;
+    margin-top: 24px;
+    padding-top: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .onboard-hero {
+    padding: 44px 16px 56px;
+  }
+
+  .onboard-title {
+    font-size: clamp(36px, 10vw, 46px);
+  }
+
+  .onboard-subtitle {
+    font-size: 14px;
+  }
+
+  .onboard-card {
+    padding: 22px 17px;
+  }
+
+  .onboard-card-title {
+    font-size: 21px;
+  }
+
+  .onboard-password-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboard-page *,
+  .onboard-page *::before,
+  .onboard-page *::after {
+    transition-duration: 0.01ms !important;
+  }
 }

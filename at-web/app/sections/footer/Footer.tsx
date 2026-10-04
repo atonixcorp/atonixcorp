@@ -1,18 +1,19 @@
 "use client";
 import "../../styles/Footer.css";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Footer() {
   return (
     <footer className="enterprise-footer">
       <div className="wrap footer-mission">
         <div>
-          <a className="brand footer-brand" href="#top">
+          <Link className="brand footer-brand" href="/" aria-label="AtonixCorp home">
             <Image src="/atonixcorp-icon.png" alt="" width={42} height={42} />
             <span>
               ATONIXCORP
             </span>
-          </a>
+          </Link>
 
           <p className="footer-tagline">
             Infrastructure for the systems shaping what comes next.
@@ -66,27 +67,27 @@ export default function Footer() {
               </svg>
             </a>
 
-            <a href="#contact" aria-label="AtonixCorp WeChat contact">
+            <Link href="/contact" aria-label="AtonixCorp WeChat contact">
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M9.5 3C5.4 3 2 5.7 2 9c0 1.8 1 3.4 2.6 4.5L4 16l2.8-1.4c.8.3 1.7.4 2.7.4h.3a5.7 5.7 0 0 1-.3-1.8c0-3.3 3.1-6 7-6h.3C16 4.8 13 3 9.5 3Zm-2.7 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm5.4 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm4.3-1.5c-3 0-5.5 1.9-5.5 4.3s2.5 4.3 5.5 4.3c.7 0 1.4-.1 2-.3l2.3 1.2-.5-2.1c1.1-.8 1.7-1.9 1.7-3.1 0-2.4-2.5-4.3-5.5-4.3Zm-2 5.3a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6Zm4 0a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6Z" />
               </svg>
-            </a>
+            </Link>
           </nav>
         </div>
 
         <div className="footer-engagement">
           <span>Strategic engagement</span>
-          <a href="#contact">
+          <Link href="/contact">
             Start a conversation <b aria-hidden="true">↗</b>
-          </a>
+          </Link>
         </div>
       </div>
 
       <div className="wrap footer-grid">
         <div className="footer-overview">
           <p>
-            AtonixCorp connects cloud, compute, networking, data, and secure operations
-            in one platform for enterprise, research, and critical infrastructure.
+            AtonixCorp is building a connected cloud platform for AI, research, robotics,
+            aerospace, energy, enterprise, and the critical systems of tomorrow.
           </p>
           <span className="footer-status">
             <i /> Global systems operational
@@ -95,26 +96,26 @@ export default function Footer() {
 
         <nav aria-label="Company links">
           <h3>Company</h3>
-          <a href="#platform-overview">About AtonixCorp</a>
-          <a href="#mission">Mission & mandate</a>
-          <a href="#sovereignty">Corporate governance</a>
-          <a href="#roadmap">Strategic roadmap</a>
+          <Link href="/platform">About AtonixCorp</Link>
+          <Link href="/#mission">Mission & mandate</Link>
+          <Link href="/#sovereignty">Corporate governance</Link>
+          <Link href="/#roadmap">Strategic roadmap</Link>
         </nav>
 
         <nav aria-label="Infrastructure links">
           <h3>Infrastructure</h3>
-          <a href="#capabilities">Cloud & AI systems</a>
-          <a href="#capabilities">Compute & energy</a>
-          <a href="#sovereignty">Security engineering</a>
-          <a href="#capabilities">Developer ecosystem</a>
+          <Link href="/#capabilities">Cloud & AI systems</Link>
+          <Link href="/#capabilities">Compute & energy</Link>
+          <Link href="/#sovereignty">Security engineering</Link>
+          <Link href="/#capabilities">Developer ecosystem</Link>
         </nav>
 
         <nav aria-label="Resource links">
           <h3>Resources</h3>
-          <a href="#contact">Technical support</a>
-          <a href="#contact">Enterprise solutions</a>
-          <a href="#contact">Research collaboration</a>
-          <a href="#contact">Media center</a>
+          <Link href="/contact">Technical support</Link>
+          <Link href="/contact">Enterprise solutions</Link>
+          <Link href="/contact">Research collaboration</Link>
+          <Link href="/contact">Media center</Link>
         </nav>
       </div>
 
@@ -122,14 +123,14 @@ export default function Footer() {
         <span>© 2026 AtonixCorp. All rights reserved.</span>
 
         <div>
-          <a href="#top">Privacy</a>
-          <a href="#top">Terms of use</a>
-          <a href="#top">Accessibility</a>
+          <Link href="/#top">Privacy</Link>
+          <Link href="/#top">Terms of use</Link>
+          <Link href="/#top">Accessibility</Link>
         </div>
 
-        <a className="back-top" href="#top">
+        <Link className="back-top" href="/#top">
           Back to top ↑
-        </a>
+        </Link>
       </div>
     </footer>
   );

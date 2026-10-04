@@ -7,29 +7,36 @@ export default function PlatformOverview() {
   return (
     <section className="platform-overview" id="platform-overview">
       <div className="platform-overview-wrap">
-
         <p className="platform-index">01 / Platform Overview</p>
 
-        <h2 className="platform-title">
-          Infrastructure that works better together.
-        </h2>
+        <div className="platform-overview-content">
+          <div className="platform-overview-heading">
+            <h2 className="platform-title">
+              A foundation for the next generation of complex systems.
+            </h2>
+            <p className="platform-lead">
+              AtonixCorp is building a connected cloud platform to support the work
+              behind tomorrow’s most demanding systems—from AI and scientific discovery
+              to robotics, aerospace, flight, energy, and enterprise services.
+            </p>
+          </div>
 
-        <p className="platform-description">
-          AtonixCorp brings cloud orchestration, compute, networking, data services,
-          security, and developer operations into one connected foundation. Each
-          capability can stand on its own and works through shared control, identity,
-          telemetry, and automation.
-        </p>
-
-        <p className="platform-description">
-          The result is a consistent operating experience built to support modern
-          workloads and long-term reliability.
-        </p>
-
-        <Link href="#mission" className="platform-action">
-          Explore our mission <span aria-hidden="true">→</span>
-        </Link>
-
+          <div className="platform-overview-story">
+            <p className="platform-description">
+              By bringing compute, networking, data, security, and operations together,
+              the platform is designed to help teams develop, simulate, deploy, and
+              operate complex workloads with room to scale.
+            </p>
+            <div className="platform-overview-actions">
+              <Link href="/platform" className="platform-action">
+                Explore the full platform <span aria-hidden="true">→</span>
+              </Link>
+              <Link href="#mission" className="platform-mission-link">
+                Explore our mission
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

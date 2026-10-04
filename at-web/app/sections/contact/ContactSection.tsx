@@ -14,7 +14,7 @@ export default function ContactSection() {
         </p>
 
         <div className="contact-actions">
-          <a className="contact-action-primary" href="mailto:info@atonixcorp.com">
+          <a className="contact-action-primary" href="/contact">
             Contact AtonixCorp <span aria-hidden="true">→</span>
           </a>
           <a href="mailto:dev@atonixcorp.com">Developer support</a>

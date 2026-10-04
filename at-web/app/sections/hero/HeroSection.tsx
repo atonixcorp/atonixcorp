@@ -146,17 +146,18 @@ export default function HeroSection() {
           <p className="enterprise-hero-index">00 / Introduction</p>
 
           <h1 className="enterprise-hero-title">
-            <span>The Enterprise Cloud Platform</span>
-            <span className="enterprise-hero-title-accent">for Modern Infrastructure</span>
+            <span>One Cloud Platform</span>
+            <span className="enterprise-hero-title-accent">for the Systems That Shape Tomorrow</span>
           </h1>
 
           <p className="enterprise-hero-subtitle">
-            Built for scale. Engineered for reliability. Designed for mission‑critical systems.
+            Built for ambitious workloads. Designed for critical systems. Ready to grow across industries.
           </p>
 
           <p className="enterprise-hero-description">
-            AtonixCorp connects cloud, compute, networking, data, and secure operations
-            to support enterprise workloads, scientific research, and critical infrastructure.
+            AtonixCorp is developing a connected cloud foundation for AI, scientific research,
+            robotics, aerospace, flight, energy, and enterprise applications—bringing the
+            infrastructure for complex work together in one platform.
           </p>
 
           <a href="#capabilities" className="enterprise-hero-action">

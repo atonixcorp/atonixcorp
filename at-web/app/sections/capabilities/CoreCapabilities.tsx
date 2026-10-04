@@ -14,7 +14,7 @@ export default function CoreCapabilities() {
           <h2 className="cap-title">
             One platform.<br />
             Six core capabilities.<br />
-            <span className="cap-accent">Focused infrastructure domains, designed to operate together.</span>
+            <span className="cap-accent">A connected foundation for AI, research, advanced engineering, and critical services.</span>
           </h2>
         </div>
 
