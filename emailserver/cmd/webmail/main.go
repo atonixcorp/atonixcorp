@@ -23,8 +23,7 @@ func main() {
 		logger.Error("db:", err)
 		return
 	}
-	store := storage.NewPostgresStore(db)
-
+	_ = db
 	mux := http.NewServeMux()
 
 	mux.Handle("/", http.FileServer(http.Dir("webmail/static")))

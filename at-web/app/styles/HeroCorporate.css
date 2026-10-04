@@ -41,7 +41,7 @@
 
 .section-title em {
   font-style: normal;
-  color: #00a6a7;
+  color: #00B86B;
 }
 
 /* Section text */
@@ -58,14 +58,14 @@
   display: inline-block;
   font-size: 18px;
   font-weight: 600;
-  color: #00a6a7;
+  color: #00B86B;
   text-decoration: none;
   margin-top: 14px;
   transition: color 0.25s ease;
 }
 
 .section-link:hover {
-  color: #4cd7d7;
+  color: #00B86B;
 }
 
 /* ============================
@@ -87,7 +87,7 @@
 
 .mission-heading em {
   font-style: normal;
-  color: #00a6a7;
+  color: #00B86B;
 }
 
 .mission-list {
@@ -110,7 +110,7 @@
   position: absolute;
   left: 0;
   top: 0;
-  color: #00a6a7;
+  color: #00B86B;
   font-size: 24px;
 }
 
@@ -146,7 +146,7 @@
 .cap-code {
   font-size: 20px;
   font-weight: 700;
-  color: #00a6a7;
+  color: #00B86B;
 }
 
 .cap-arrow {
@@ -210,7 +210,7 @@
 .sovereignty-number {
   font-size: 20px;
   font-weight: 700;
-  color: #00a6a7;
+  color: #00B86B;
   display: block;
   margin-bottom: 14px;
 }
@@ -262,7 +262,7 @@
 }
 
 .contact-links a {
-  background: #00a6a7;
+  background: #00B86B;
   color: #ffffff;
   padding: 18px 30px;
   border-radius: 8px;

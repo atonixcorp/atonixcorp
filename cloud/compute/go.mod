@@ -1,4 +1,4 @@
-module compute
+module atonixcorp/cloud/compute
 
 go 1.27.1
 

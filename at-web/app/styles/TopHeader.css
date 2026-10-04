@@ -1,10 +1,10 @@
 /* ============================================
-   ORCASTACK — TOP FOUNDATION HEADER (CHARCOAL)
+   ORCASTACK — TOP FOUNDATION HEADER (FINAL FIX)
    ============================================ */
 
 .top-header {
   width: 100%;
-  background: #111418; /* Charcoal black */
+  background: #111418;
   border-bottom: 1px solid #1f242b;
   padding: 6px 0;
   position: sticky;
@@ -22,13 +22,80 @@
   justify-content: space-between;
 }
 
+/* Dropdown parent MUST be block-level */
+.dropdown-parent {
+  position: relative;
+  display: inline-block; /* CRITICAL FIX */
+}
+
 /* Left text */
 .top-left {
-  color: #d1d5db; /* Soft gray */
+  color: #d1d5db;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.8px;
   text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 0; /* gives hover area */
+}
+
+/* Right text */
+.top-right {
+  color: #00B86B;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 0; /* gives hover area */
+}
+
+/* Dropdown card */
+.top-dropdown {
+  position: absolute;
+  top: 100%; /* sits directly under parent */
+  left: 0;
+
+  background: #1a1d22;
+  border: 1px solid #2a2f36;
+  padding: 10px 0;
+  min-width: 180px;
+  border-radius: 6px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+
+  display: none;
+  flex-direction: column;
+  animation: fadeIn .2s ease;
+  z-index: 9999;
+
+  pointer-events: auto;
+}
+
+/* Right-aligned dropdown */
+.top-dropdown.right {
+  right: 0;
+  left: auto;
+}
+
+/* Dropdown links */
+.top-dropdown a,
+.top-dropdown a:visited {
+  padding: 10px 14px;
+  color: #d1d5db;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background .2s ease, color .2s ease;
+}
+
+.top-dropdown a:hover {
+  background: #00B86B;
+  color: #ffffff;
+}
+
+/* Hover trigger — FINAL FIX */
+.dropdown-parent:hover .top-dropdown {
+  display: flex;
 }
 
 /* Social icons */
@@ -38,50 +105,32 @@
   gap: 14px;
 }
 
-/* Default icon style */
 .header-social .social-link {
   font-size: 13px;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
-/* LinkedIn — official blue */
 .header-social .social-link.linkedin {
-  color: #0A66C2; /* LinkedIn blue */
+  color: #0A66C2;
 }
 .header-social .social-link.linkedin:hover {
-  color: #4cd7d7; /* Aqua accent */
+  color: #00B86B;
 }
 
-/* X (Twitter) — white */
-.header-social .social-link.x {
-  color: #ffffff;
-}
-.header-social .social-link.x:hover {
-  color: #4cd7d7;
-}
-
-/* GitHub — white */
+.header-social .social-link.x,
 .header-social .social-link.github {
   color: #ffffff;
 }
+.header-social .social-link.x:hover,
 .header-social .social-link.github:hover {
-  color: #4cd7d7;
+  color: #00B86B;
 }
 
-/* Right text */
-.top-right {
-  color: #4cd7d7; /* Aqua accent */
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color .2s ease;
-}
-
-.top-right:hover {
-  color: #7eecec; /* Lighter aqua */
+/* Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Mobile */

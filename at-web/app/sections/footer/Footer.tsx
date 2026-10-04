@@ -10,7 +10,7 @@ export default function Footer() {
           <a className="brand footer-brand" href="#top">
             <Image src="/atonixcorp-icon.png" alt="" width={42} height={42} />
             <span>
-              ATONIX<span>CORP</span>
+              ATONIXCORP
             </span>
           </a>
 

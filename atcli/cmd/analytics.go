@@ -87,12 +87,12 @@ var dashboardUsageCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println("\n=== AtonixCorp Usage Dashboard ===\n")
+		fmt.Print("\n=== AtonixCorp Usage Dashboard ===\n\n")
 
 		rows := [][]string{}
 		max := 0
 
-		for kind, count := range data {
+		for _, count := range data {
 			c := int(count.(float64))
 			if c > max {
 				max = c
@@ -127,7 +127,7 @@ var dashboardNodesCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println("\n=== AtonixCorp Nodes Dashboard ===\n")
+		fmt.Print("\n=== AtonixCorp Nodes Dashboard ===\n\n")
 
 		nodes, ok := data["nodes"].([]any)
 		if !ok {

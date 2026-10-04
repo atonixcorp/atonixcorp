@@ -2,6 +2,8 @@ package queue
 
 import (
 	"time"
+
+	"atonixcorp/emailserver/internal/smtp"
 )
 
 type Logger interface {
@@ -39,11 +41,19 @@ func New(store Store, logger Logger) *Queue {
 	return &Queue{store: store, logger: logger}
 }
 
-func (q *Queue) EnqueueOutgoing(msg *OutgoingMessage) error {
-	msg.Attempts = 0
-	msg.MaxRetry = 5
-	msg.NextRetry = time.Now()
+func (q *Queue) EnqueueOutgoing(msg *smtp.Message) error {
+	outgoing := &OutgoingMessage{
+		ID:      time.Now().UTC().Format(time.RFC3339Nano),
+		From:    msg.From,
+		To:      msg.To,
+		Subject: msg.Subject,
+		Body:    msg.Body,
+		Raw:     msg.Raw,
+		Attempts: 0,
+		MaxRetry: 5,
+		NextRetry: time.Now(),
+	}
 
-	q.logger.Info("Queue: enqueue outgoing message ", msg.ID)
-	return q.store.SaveOutgoing(msg)
+	q.logger.Info("Queue: enqueue outgoing message ", outgoing.ID)
+	return q.store.SaveOutgoing(outgoing)
 }

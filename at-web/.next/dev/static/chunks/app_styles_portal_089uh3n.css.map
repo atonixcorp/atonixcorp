@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["file:///home/orcadevstack/atonixcorp/at-web/app/styles/portal.css"],"sourcesContent":[".page-shell {\n  max-width: 960px;\n  margin: 0 auto;\n  padding: 40px 20px;\n}\n\n.page-hero h1 {\n  font-size: 28px;\n  font-weight: 700;\n  margin-bottom: 8px;\n}\n\n.page-hero p {\n  color: #555;\n  margin-bottom: 24px;\n}\n\n.page-content {\n  display: flex;\n  justify-content: flex-start;\n}\n\n.form-card {\n  background: #ffffff;\n  border: 1px solid #e5e7eb;\n  border-radius: 8px;\n  padding: 20px 24px;\n  max-width: 520px;\n}\n\n.primary-button {\n  margin-top: 8px;\n  padding: 10px 18px;\n  border-radius: 6px;\n  background: var(--accent);\n  color: #fff;\n  border: none;\n  cursor: pointer;\n}\n\n.tile-dropdown {\n  margin-top: 16px;\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n}\n\n.tile-dropdown a {\n  font-size: 14px;\n  color: #2563eb;\n  text-decoration: none;\n}\n"],"names":[],"mappings":"AAAA;;;;;;AAMA;;;;;;AAMA;;;;;AAKA;;;;;AAKA;;;;;;;;AAQA;;;;;;;;;;AAUA;;;;;;;AAOA"}}]
+}

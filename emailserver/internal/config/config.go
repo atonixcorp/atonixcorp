@@ -22,6 +22,7 @@ type Config struct {
 
 type SMTPConfig struct {
 	ListenAddr string `yaml:"listen_addr"`
+	Hostname   string `yaml:"hostname"`
 	TLSCert    string `yaml:"tls_cert"`
 	TLSKey     string `yaml:"tls_key"`
 }

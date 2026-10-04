@@ -1,0 +1,216 @@
+/* ============================================
+   ATONIXCORP — ONBOARD / CREATE ACCOUNT (PREMIUM)
+   ============================================ */
+
+.onboard-page {
+  width: 100%;
+  background: #ffffff;
+}
+
+/* HERO */
+.onboard-hero {
+  padding: 120px 0;
+  background: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glow */
+.onboard-hero::before {
+  content: "";
+  position: absolute;
+  top: -160px;
+  right: -160px;
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, #00E67633, transparent 70%);
+  filter: blur(40px);
+  opacity: 0.7;
+}
+
+.onboard-wrap {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 32px;
+  text-align: center;
+}
+
+.onboard-title {
+  font-size: 42px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+.onboard-subtitle {
+  font-size: 18px;
+  color: #475569;
+  margin-bottom: 40px;
+}
+
+/* Card */
+.onboard-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 40px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  transition: box-shadow .3s ease, transform .3s ease;
+}
+
+.onboard-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 26px 48px rgba(0,0,0,0.12);
+}
+
+.onboard-card-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 24px;
+}
+
+/* Form */
+.onboard-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.onboard-input {
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  font-size: 16px;
+  transition: border .25s ease, box-shadow .25s ease;
+}
+
+.onboard-input:focus {
+  border-color: #00B86B;
+  box-shadow: 0 0 0 4px rgba(0,184,107,0.15);
+}
+
+.onboard-btn.primary {
+  padding: 16px;
+  background: #00B86B;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: background .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+
+.onboard-btn.primary:hover {
+  background: #00E676;
+  box-shadow: 0 14px 32px rgba(0,230,118,0.45);
+  transform: translateY(-4px);
+}
+
+/* Divider */
+.onboard-divider {
+  margin: 26px 0;
+  font-size: 14px;
+  color: #64748b;
+  position: relative;
+}
+
+.onboard-divider span {
+  background: #ffffff;
+  padding: 0 12px;
+  position: relative;
+  z-index: 2;
+}
+
+.onboard-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 1px;
+  width: 100%;
+  background: #e2e8f0;
+}
+
+/* ============================================
+   OAUTH — HORIZONTAL SOCIAL SIGNUP (PREMIUM)
+   ============================================ */
+
+.oauth-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.oauth-btn {
+  flex: 1;
+  min-width: 120px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+
+  transition: background .25s ease, transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+
+.oauth-btn img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.9;
+}
+
+.oauth-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.10);
+  border-color: #00B86B;
+}
+
+/* Provider Colors */
+.oauth-btn.github:hover {
+  background: #24292e;
+  color: #ffffff;
+}
+
+.oauth-btn.linkedin:hover {
+  background: #0A66C2;
+  color: #ffffff;
+}
+
+.oauth-btn.google:hover {
+  background: #EA4335;
+  color: #ffffff;
+}
+
+.oauth-btn.gmail:hover {
+  background: #D44638;
+  color: #ffffff;
+}
+
+/* Login Link */
+.login-text {
+  margin-top: 24px;
+  font-size: 15px;
+  color: #475569;
+}
+
+.login-text a {
+  color: #00B86B;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-text a:hover {
+  text-decoration: underline;
+}

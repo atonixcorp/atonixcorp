@@ -27,8 +27,7 @@ func main() {
 		logger.Error("db:", err)
 		return
 	}
-	store := storage.NewPostgresStore(db)
-
+	_ = db
 	// Analytics
 	transport := analytics.NewHTTPTransport("http://localhost:9090/events")
 	analyticsClient := analytics.NewClient(transport, logger)

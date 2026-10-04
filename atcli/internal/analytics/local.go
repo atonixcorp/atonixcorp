@@ -12,5 +12,9 @@ func Inc(metric string) {
 }
 
 func FlushLocalMetrics() {
-	SendEvent("cli-metrics", LocalMetrics)
+	payload := make(map[string]any, len(LocalMetrics))
+	for k, v := range LocalMetrics {
+		payload[k] = v
+	}
+	SendEvent("cli-metrics", payload)
 }

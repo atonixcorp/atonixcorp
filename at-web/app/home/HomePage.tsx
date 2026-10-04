@@ -10,8 +10,12 @@ import GlobalHeader from "../sections/header/GlobalHeader";
 
 // Sections
 import HeroSection from "../sections/hero/HeroSection";
+import CoreCapabilities from "../sections/capabilities/CoreCapabilities";
 import OperationalRail from "../sections/operational/OperationalRail";
-import HeroCorporate from "../sections/corporate/HeroCorporate";
+import PlatformOverview from "../sections/platform/PlatformOverview";
+import MissionSection from "../sections/mission/MissionSection";
+import TechnologySovereignty from "../sections/sovereignty/TechnologySovereignty";
+import StrategicRoadmap from "../sections/roadmap/StrategicRoadmap";
 import Footer from "../sections/footer/Footer";
 
 export default function HomePage() {
@@ -22,8 +26,13 @@ export default function HomePage() {
       <GlobalHeader />
 
       <HeroSection />
+      <CoreCapabilities />
       <OperationalRail />
-      <HeroCorporate />
+      <PlatformOverview />
+      <MissionSection />
+      <TechnologySovereignty />
+      <StrategicRoadmap />
+    
 
       <Footer />
     </main>

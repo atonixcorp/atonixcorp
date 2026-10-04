@@ -17,6 +17,7 @@ type User struct {
 type UserStore interface {
 	GetUserByEmail(email string) (*User, error)
 	CreateUser(email, password, domain string) (*User, error)
+	Authenticate(email, password string) (string, error)
 }
 
 type userStore struct {
@@ -66,16 +67,16 @@ func (s *userStore) CreateUser(email, password, domain string) (*User, error) {
 	}, nil
 }
 
-// Authenticate verifies email + password
-func (s *userStore) Authenticate(email, password string) (*User, error) {
+// Authenticate verifies email + password and returns the user ID.
+func (s *userStore) Authenticate(email, password string) (string, error) {
 	u, err := s.GetUserByEmail(email)
 	if err != nil {
-		return nil, errors.New("invalid credentials")
+		return "", errors.New("invalid credentials")
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)) != nil {
-		return nil, errors.New("invalid credentials")
+		return "", errors.New("invalid credentials")
 	}
 
-	return u, nil
+	return u.ID, nil
 }

@@ -1,19 +1,20 @@
 "use client";
+
 import "../../styles/MissionSection.css";
 
 export default function MissionSection() {
   return (
     <section className="mission" id="mission">
-      <div className="wrap mission-grid">
+      <div className="mission-wrap">
 
         {/* Left Heading */}
         <div className="mission-heading">
-          <p className="section-index">02 / Mission</p>
+          <p className="mission-index">02 / Mission</p>
 
-          <h2>
+          <h2 className="mission-title">
             Build.<br />
             Protect.<br />
-            <em>Innovate.</em><br />
+            <span className="mission-accent">Innovate.</span><br />
             Scale.
           </h2>
         </div>

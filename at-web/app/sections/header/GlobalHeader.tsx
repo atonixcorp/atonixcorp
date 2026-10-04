@@ -36,7 +36,7 @@ const navigation: NavItem[] = [
     ],
   },
   {
-    label: "Use Cases",
+    label: "Uses",
     items: [
       { label: "Enterprise Workloads", href: "#usecases-enterprise" },
       { label: "Scientific Research & HPC", href: "#usecases-hpc" },
@@ -77,7 +77,7 @@ const navigation: NavItem[] = [
     ],
   },
   {
-    label: "Developer Hub",
+    label: "DevHub",
     items: [
       { label: "Documentation", href: "#developer-docs" },
       { label: "API Reference", href: "#developer-api" },
@@ -143,7 +143,7 @@ export default function GlobalHeader() {
             priority
           />
           <span>
-            ATONIX<span>CORP</span>
+            ATONIXCORP
           </span>
         </a>
 

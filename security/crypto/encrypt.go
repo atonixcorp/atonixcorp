@@ -4,6 +4,8 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"io"
 )
 
@@ -36,7 +38,6 @@ func EncryptForAliceAndBob(plaintext []byte, km KeyManager) (*Envelope, error) {
 	}
 	ciphertext := gcm.Seal(nil, nonce, plaintext, nil)
 
-	// 3. Encrypt AES key with Alice’s and Bob’s public keys (RSA-OAEP)
 	alicePub, err := km.GetPublicKey("alice")
 	if err != nil {
 		return nil, err
@@ -61,4 +62,8 @@ func EncryptForAliceAndBob(plaintext []byte, km KeyManager) (*Envelope, error) {
 		EncryptedKeyForAlice: encKeyAlice,
 		EncryptedKeyForBob:   encKeyBob,
 	}, nil
+}
+
+func EncryptKeyWithRSA(plaintext []byte, key *rsa.PublicKey) ([]byte, error) {
+	return rsa.EncryptOAEP(sha256.New(), rand.Reader, key, plaintext, nil)
 }

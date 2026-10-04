@@ -39,7 +39,7 @@ func main() {
 	spamFilter := spam.NewSimpleFilter(logger)
 
 	// Domain service
-	domainSvc := domain.New(cfg.Domain.DefaultDomain)
+	domainSvc := domain.New(db)
 
 	// SMTP handler
 	handler := &smtp.DefaultHandler{}
@@ -48,7 +48,6 @@ func main() {
 	srv := smtp.NewServer(
 		smtp.Config{
 			ListenAddr: cfg.SMTP.ListenAddr,
-			Hostname:   cfg.SMTP.Hostname,
 			TLSCert:    cfg.SMTP.TLSCert,
 			TLSKey:     cfg.SMTP.TLSKey,
 		},

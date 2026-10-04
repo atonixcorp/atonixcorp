@@ -23,8 +23,7 @@ func main() {
 		logger.Error("db:", err)
 		return
 	}
-	store := storage.NewPostgresStore(db)
-
+	_ = db
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/inbox", func(w http.ResponseWriter, r *http.Request) {

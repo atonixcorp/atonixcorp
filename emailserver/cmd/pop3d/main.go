@@ -28,7 +28,7 @@ func main() {
 
 	authSvc := auth.NewUserStore(db)
 
-	srv := pop3.NewServer(cfg.POP3, logger, store, authSvc)
+	srv := pop3.NewServer(pop3.Config{ListenAddr: cfg.POP3.ListenAddr}, logger, store, authSvc)
 
 	logger.Info("Starting POP3 server...")
 	if err := srv.ListenAndServe(); err != nil {

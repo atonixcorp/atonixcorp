@@ -4,6 +4,11 @@ import (
 	"atonixcorp/security/crypto"
 )
 
+type Signer interface {
+	Sign(identity string, payload []byte) ([]byte, error)
+	Verify(identity string, payload, sig []byte) error
+}
+
 type CryptoSigner struct {
 	KM crypto.KeyManager
 }

@@ -1,9 +1,53 @@
+/* ============================================
+   ATONIXCORP — HERO WITH ANIMATED GRADIENT BORDER
+   ============================================ */
+
 .enterprise-hero {
   width: 100%;
-  background: #ffffff;
   padding: 120px 0;
+  background: #ffffff; /* WHITE BACKGROUND */
+  position: relative;
+  overflow: hidden;
 }
 
+/* Animated gradient border */
+.enterprise-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+
+  background: linear-gradient(
+    135deg,
+    #00E676,
+    #00B86B,
+    #004C56,
+    #00D4E8,
+    #00E676
+  );
+
+  background-size: 400% 400%;
+  animation: atonix-gradient 12s ease infinite;
+
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Gradient animation */
+@keyframes atonix-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Content wrapper */
 .enterprise-hero-wrap {
   max-width: 1400px;
   margin: 0 auto;
@@ -12,6 +56,8 @@
   grid-template-columns: 1fr 1fr;
   gap: 80px;
   align-items: center;
+  position: relative;
+  z-index: 2; /* keep content above border */
 }
 
 /* Left Content */
@@ -20,7 +66,7 @@
   font-weight: 600;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: #6b7280;
+  color: #004C56;
   margin-bottom: 24px;
 }
 
@@ -47,9 +93,10 @@
   max-width: 620px;
 }
 
+/* CTA Button */
 .enterprise-hero-action {
   display: inline-block;
-  background: #00A6A7;
+  background: #00B86B;
   color: #ffffff;
   padding: 16px 28px;
   border-radius: 8px;
@@ -60,7 +107,7 @@
 }
 
 .enterprise-hero-action:hover {
-  background: #4cd7d7;
+  background: #00E676;
   box-shadow: 0 10px 24px rgba(0, 166, 167, 0.35);
 }
 

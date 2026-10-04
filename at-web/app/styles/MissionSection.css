@@ -1,0 +1,153 @@
+/* ============================================
+   ATONIXCORP — MISSION SECTION (ENTERPRISE)
+   ============================================ */
+
+.mission {
+  width: 100%;
+  padding: 120px 0;
+  background: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glow accent */
+.mission::before {
+  content: "";
+  position: absolute;
+  top: -140px;
+  right: -140px;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, #00E67633, transparent 70%);
+  filter: blur(40px);
+  opacity: 0.7;
+}
+
+.mission-wrap {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 32px;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+}
+
+/* Section index */
+.mission-index {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: #004C56;
+  margin-bottom: 24px;
+  opacity: 0;
+  animation: fadeUp 0.6s ease forwards;
+}
+
+/* Title */
+.mission-title {
+  font-size: clamp(42px, 5vw, 64px);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #0f172a;
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards;
+  animation-delay: 0.1s;
+  position: relative;
+}
+
+/* Gradient accent word */
+.mission-accent {
+  background: linear-gradient(90deg, #00E676, #00B86B, #004C56, #00D4E8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Underline */
+.mission-title::after {
+  content: "";
+  display: block;
+  width: 140px;
+  height: 6px;
+  margin-top: 18px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #00E676, #00B86B, #004C56, #00D4E8);
+}
+
+/* Summary */
+.mission-summary {
+  font-size: 18px;
+  color: #334155;
+  line-height: 1.7;
+  margin-bottom: 32px;
+  max-width: 620px;
+  opacity: 0;
+  animation: fadeUp 1s ease forwards;
+  animation-delay: 0.2s;
+}
+
+/* List */
+.mission-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+  animation: fadeUp 1.1s ease forwards;
+  animation-delay: 0.3s;
+}
+
+.mission-list li {
+  font-size: 17px;
+  color: #1e293b;
+  margin-bottom: 14px;
+  padding-left: 18px;
+  position: relative;
+}
+
+/* Custom bullet */
+.mission-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 8px;
+  height: 8px;
+  background: #00B86B;
+  border-radius: 50%;
+}
+
+/* Fade-up animation */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .mission-wrap {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .mission-title::after {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .mission-summary {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .mission-list li {
+    text-align: left;
+  }
+}

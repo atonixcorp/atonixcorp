@@ -1,5 +1,18 @@
 /* ============================================
-   ATONIXCORP — ENTERPRISE FOOTER (PERFECTED)
+   GLOBAL LINK RESET — REMOVE UNDERLINES
+   ============================================ */
+
+.enterprise-footer a,
+.footer-grid a,
+.footer-mission a,
+.footer-legal a,
+.footer-social a {
+  text-decoration: none !important;
+}
+
+
+/* ============================================
+   ENTERPRISE FOOTER — BASE
    ============================================ */
 
 .enterprise-footer {
@@ -9,6 +22,7 @@
   border-top: 1px solid #0d253d;
   font-family: var(--font-geist-sans), sans-serif;
 }
+
 
 /* ============================================
    SOCIAL ICONS — POLISHED
@@ -40,6 +54,7 @@
   background: #ffffff18;
   transform: translateY(-2px);
 }
+
 
 /* ============================================
    TOP MISSION BLOCK — PREMIUM
@@ -116,6 +131,7 @@
   font-weight: 500;
 }
 
+
 /* ============================================
    GRID SECTION — PERFECTED
    ============================================ */
@@ -177,6 +193,7 @@
   color: #00a6a7;
 }
 
+
 /* ============================================
    LEGAL BAR — PREMIUM
    ============================================ */
@@ -212,6 +229,7 @@
   color: #e0eef6;
   font-weight: 700;
 }
+
 
 /* ============================================
    RESPONSIVE — POLISHED
@@ -253,4 +271,63 @@
   .footer-legal .back-top {
     justify-self: start;
   }
+}
+
+/* ============================================
+   FOOTER BADGES — STATUS • UPTIME • SLA
+   ============================================ */
+
+.footer-badges {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.footer-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #ffffff0a;
+  color: #d5e0e9;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  border: 1px solid #ffffff12;
+  box-shadow: 0 0 8px #00000033 inset;
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+
+.footer-badge:hover {
+  background: #ffffff18;
+  color: #00a6a7;
+  transform: translateY(-2px);
+}
+
+.footer-badge i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #42d5b5;
+  box-shadow: 0 0 8px #42d5b5;
+}
+
+/* Badge color variants */
+.footer-badge.status i {
+  background: #42d5b5; /* green */
+  box-shadow: 0 0 8px #42d5b5;
+}
+
+.footer-badge.uptime i {
+  background: #00a6a7; /* teal */
+  box-shadow: 0 0 8px #00a6a7;
+}
+
+.footer-badge.sla i {
+  background: #82b8dd; /* blue */
+  box-shadow: 0 0 8px #82b8dd;
 }

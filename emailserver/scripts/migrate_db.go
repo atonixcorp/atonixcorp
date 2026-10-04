@@ -8,7 +8,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func main() {
+func runMigrateDB() {
 	dsn := flag.String("dsn", "postgres://user:pass@localhost:5432/emailserver?sslmode=disable", "Postgres DSN")
 	flag.Parse()
 

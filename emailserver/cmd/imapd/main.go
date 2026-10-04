@@ -28,7 +28,7 @@ func main() {
 
 	authSvc := auth.NewUserStore(db)
 
-	srv := imap.NewServer(cfg.IMAP, logger, store, authSvc)
+	srv := imap.NewServer(imap.Config{ListenAddr: cfg.IMAP.ListenAddr}, logger, store, authSvc)
 
 	logger.Info("Starting IMAP server...")
 	if err := srv.ListenAndServe(); err != nil {
