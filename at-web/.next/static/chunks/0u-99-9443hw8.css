@@ -1,0 +1,1 @@
+.home-page{background:var(--paper);width:100%;min-height:100vh;color:var(--ink);flex-direction:column;display:flex}section{width:100%;animation:.4s both fadeIn;position:relative}@keyframes fadeIn{0%{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}section+section{margin-top:40px}@media (max-width:760px){section+section{margin-top:28px}}
