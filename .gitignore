@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /at-web/.next/
+/web/.next/
 /out/
 
 # frontend dependencies and build output
