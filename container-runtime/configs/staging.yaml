@@ -1,0 +1,26 @@
+env: prod
+node_name: prod-node-1
+registry_url: "https://registry.atonixcorp.cloud"
+
+api:
+  port: 8080
+  log_level: warn
+
+scheduler:
+  port: 7070
+  strategy: weighted_resources
+
+node_agent:
+  port: 9090
+  heartbeat_interval: 3s
+
+runtime:
+  backend: containerd
+  debug: false
+
+logging:
+  stream_buffer: 500
+  enable_debug: false
+
+metrics:
+  sample_interval: 10s

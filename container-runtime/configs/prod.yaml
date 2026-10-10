@@ -1,0 +1,26 @@
+env: staging
+node_name: staging-node-1
+registry_url: "https://registry.staging.atonixcorp.local"
+
+api:
+  port: 8080
+  log_level: info
+
+scheduler:
+  port: 7070
+  strategy: balanced
+
+node_agent:
+  port: 9090
+  heartbeat_interval: 5s
+
+runtime:
+  backend: containerd
+  debug: false
+
+logging:
+  stream_buffer: 200
+  enable_debug: false
+
+metrics:
+  sample_interval: 5s

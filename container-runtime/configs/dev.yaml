@@ -1,0 +1,26 @@
+env: dev
+node_name: dev-node-1
+registry_url: "http://localhost:5000"
+
+api:
+  port: 8080
+  log_level: debug
+
+scheduler:
+  port: 7070
+  strategy: least_loaded
+
+node_agent:
+  port: 9090
+  heartbeat_interval: 5s
+
+runtime:
+  backend: containerd
+  debug: true
+
+logging:
+  stream_buffer: 100
+  enable_debug: true
+
+metrics:
+  sample_interval: 2s

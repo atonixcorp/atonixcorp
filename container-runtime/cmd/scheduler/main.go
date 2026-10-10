@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"atonixcorp/container-runtime/internal/config"
 	"atonixcorp/container-runtime/internal/scheduler"
 
+	"atonixcorp/container-runtime/pkg/api"
 	"atonixcorp/container-runtime/pkg/models"
 	"atonixcorp/container-runtime/pkg/utils"
 )
@@ -21,7 +21,6 @@ type SchedulerService struct {
 }
 
 func main() {
-	cfg := config.Load()
 	log := utils.NewLogger("Scheduler")
 
 	service := &SchedulerService{
@@ -93,10 +92,10 @@ func (s *SchedulerService) handleNodes(w http.ResponseWriter, r *http.Request) {
 	s.Lock.RLock()
 	defer s.Lock.RUnlock()
 
-	var resp models.NodesResponse
+	var resp api.NodesResponse
 
 	for _, n := range s.Nodes {
-		resp.Nodes = append(resp.Nodes, models.NodeInfo{
+		resp.Nodes = append(resp.Nodes, api.NodeInfo{
 			Name:       n.Name,
 			CPU:        n.CPU,
 			MemoryMB:   n.MemoryMB,
