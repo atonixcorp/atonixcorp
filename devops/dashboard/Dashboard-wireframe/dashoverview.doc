@@ -1,0 +1,142 @@
+
+AtonixCorp DevSecOps Platform
+
+Document purpose. This defines the complete AtonixCorp DevSecOps
+
+experience from Run Pipeline through Settings. It gives product engineers, frontend developers, backend engineers, platform teams, security engineers, QA, SRE, and designers one implementation reference for navigation, workflows, data contracts, states, permissions, observability, and acceptance criteria.
+1. Platform Scope and Navigation	
+2. Run Pipeline and Project Onboarding	
+3. Pipelines, Deployments, and Artifacts	
+4. Infrastructure, Kubernetes, and Applications	
+5. Security Center and AI Operations	
+6. Automation Workspace	
+7. Observability and Cost Management	
+8. Reports, Settings, and Administration	
+9. Engineering Architecture and Data Contracts	
+10. Security, Quality, and Release Requirements	
+11. Definition of Done	
+
+1. Platform Scope and Navigation
+
+•	Primary navigation order: Dashboard → Pipelines → Deployments → Infrastructure → Kubernetes → Applications → Security → AI Operations → Automation → Observability → Cost Management → Reports → Settings.
+•	Global shell: product wordmark, workspace selector, universal search, environment indicator, notifications, help, user menu, breadcrumb, page title, contextual actions, and persistent left navigation.
+•	Shared states: loading, empty, onboarding, syncing, populated, degraded, permission denied, partial failure, offline, and destructive-action confirmation.
+•	Design baseline: responsive desktop-first layout; accessible color contrast; keyboard navigation; visible focus; tooltips for icons; timestamps in user locale; skeleton loaders instead of layout shifts.
+•	Tenancy: every API request and event must carry organization, workspace, project, environment, actor, correlation ID, and authorization context.
+
+2. Run Pipeline and Project Onboarding
+
+•	RunPipeline_EmptyState: detect zero projects; show Create Project and Import Project. Do not show pipeline controls until a project exists.
+•	ProjectSetup_Modal: create a native project or import from GitHub, GitLab, Bitbucket, Gerrit, Harness, Azure Repos, or custom Git URL.
+•	Authentication: use provider OAuth/App installation where available; display requested scopes before redirect; store tokens in the secrets service, never in browser storage.
+•	Repository selection: searchable, paginated list with repository type, default branch, access state, selected count, and bulk selection.
+•	Import orchestration: clone → language detection → Dockerfile/IaC detection → SBOM generation → security scan → pipeline-template preparation. Stream progress via server-sent events or WebSocket; persist resumable job state.
+•	Pipeline setup: Standard auto-detected template, Advanced editable steps, or Custom YAML. Validate schema, permissions, referenced secrets, and runner compatibility before creation.
+•	Ready state: confirm repo connection, active webhooks, CI/CD tokens, and security scanners; actions are Run Pipeline Now and View Pipeline Configuration.
+•	Core endpoints: POST /projects, POST /connections/source, GET /repositories, POST /imports, GET /jobs/{id}, POST /pipelines, POST /pipelines/{id}/runs.
+•	Events: project.created, repository.import.started|completed|failed, pipeline.created, pipeline.run.started|passed|failed|blocked.
+
+3. Pipelines, Deployments, and Artifacts
+
+•	Pipelines: CI, CD, security gates, SBOM, vulnerability scans, run history, stages, logs, artifacts, approvals, retries, cancellation, and YAML configuration.
+•	Deploy_Start: deploy latest pipeline artifact, a specific version, or an item from a container/Helm/artifact registry. Show application, environment, and prior deployment status.
+•	Environment selection: Production, Staging, QA, Development, or custom Kubernetes/VM targets with cluster, region, nodes, last deployment, and compliance state.
+•	Strategy: Rolling, Blue/Green, Canary, Recreate, or Shadow. Present risk, estimated rollout time, and AI recommendation; require explicit confirmation for high-risk production changes.
+•	Artifact selection: search and filter by version, digest, type, provenance, signature, security result, SBOM availability, and creation time. Deploy immutable digest, not mutable tag.
+•	Security gates: SBOM, CVE, dependencies, container, IaC, secrets, compliance, and AI threat score. Failed gates block by default. Override requires RBAC, justification, approver, expiry, and audit entry.
+•	Configuration: replicas, requests/limits, variables, Vault secrets, ConfigMaps, ingress, HPA, rollback threshold, YAML, Helm values, and manifest editor. Redact secrets in UI and logs.
+•	Execution: environment preparation → artifact pull → pod creation → health checks → traffic routing → post-deployment verification. Stream logs, events, pod state, allocation, traffic weight, and anomaly signals.
+•	Verification and summary: health, errors, latency, logs, metrics, traces, security re-scan, AI anomaly result, version, strategy, duration, gate results, audit record, and rollback action.
+•	Core endpoints/events: GET /artifacts; POST /deployments; GET /deployments/{id}/stream; POST /deployments/{id}/rollback; deployment.started|stage.changed|verified|failed|rolled_back.
+
+4. Infrastructure, Kubernetes, and Applications
+
+•	Infrastructure empty state: detect no connected resources and offer Open Pipeline Control. Providers: Kubernetes, AWS, Azure, GCP, VM, bare metal/on-prem, and custom SSH/API endpoint.
+•	Connection: collect cluster name, API server, authentication method, namespaces, and previewed RBAC. Validate credentials server-side and return least-privilege remediation.
+•	Agent installation: Kubernetes Helm chart, VM binary, or cloud IAM/Lambda agent. Use short-lived enrollment tokens, signed packages, rotation, heartbeat, and version compatibility checks.
+•	Synchronization: connect → validate → install agent → nodes → workloads → capacity → security posture. Jobs must be idempotent and resumable.
+•	Populated workspace: clusters, nodes, workloads, CPU/memory/storage capacity, networking, security posture, connected services, sync freshness, and Pipeline Control for deployments, rollouts, rollbacks, checks, traffic, and autoscaling.
+•	Kubernetes module: clusters, nodes, pods, workloads, HPA, ingress/load balancers, namespaces, events, manifests, and policy status. Destructive actions require scoped permissions and confirmation.
+•	Applications module: microservices, APIs, versions, dependencies, runtime security, ownership, environments, SLOs, deployed artifact, health, and related pipelines.
+•	Core endpoints/events: POST /infrastructure/connections; POST /agents/enroll; GET /infrastructure/sync/{id}; GET /clusters; GET /workloads; agent.connected|heartbeat.missed; cluster.synced; workload.health.changed.
+
+5. Security Center and AI Operations
+
+•	Security onboarding: connect SAST, DAST, container scanning, SBOM/dependencies, IaC security, cloud posture, OPA/Kyverno policy engines, and runtime threat detection.
+•	SAST: provider, authentication, repositories, branches, detected languages, OWASP/CWE/custom rules. Support baseline suppression with owner, reason, and expiry.
+•	Container security: registry URL/provider, authentication, namespaces, image discovery, SBOM generation, signature/provenance verification, and continuous re-scan.
+•	IaC security: Terraform/Helm/Kubernetes, repositories, CIS/NIST/custom policies, drift detection, pull-request annotations, and deploy-time enforcement.
+•	Security sync: connect sources, scan assets, generate SBOMs, sync posture/policies, build attack graph, calculate AI threat score. Expose live progress and per-source errors.
+•	Populated Security Center: critical/high alerts, compliance score, policy violations, vulnerabilities, AI risk score, alert timeline, MITRE ATT&CK mapping, CVE exploitability, affected components, fixes, SBOM viewer, policy findings, runtime alerts, and attack paths.
+•	Attack paths: visualize entry point → lateral movement → impact; every edge must cite observed evidence or modeled assumption. Show confidence, blast radius, and remediation priority.
+•	AI Operations: risk scoring, anomaly detection, predictive alerts, and generated reports. AI output is advisory, must show confidence and evidence, and cannot bypass policy or RBAC.
+•	Endpoints/events: POST /security/connections; GET /findings; GET /sboms; GET /attack-paths; POST /findings/{id}/suppress; finding.created|updated|resolved; policy.blocked; risk.score.changed.
+
+6. Automation Workspace
+
+•	Sources: pipeline events, deployment events, infrastructure signals, Kubernetes events, application releases, observability alerts, security findings, cost alerts, and custom webhooks.
+•	Pipeline automation: select pipelines; trigger on success, failure, or gate block; actions include notify, rollback, run job, and open ticket.
+•	Deployment automation: strategy, health, rollback, and traffic-routing triggers. Guard production actions with approvals and concurrency controls.
+•	Kubernetes automation: pod crashes, node pressure, autoscaling, and admission events with namespace/cluster scope.
+•	Observability automation: log patterns, metric thresholds, trace anomalies, and imported alert rules.
+•	Security automation: CVE severity, policy violations, runtime threats, auto-block deployment, and auto-patch. High-impact actions require RBAC and optional human approval.
+•	Workflow model: versioned graph of trigger → conditions → branches → actions. Support draft, validation, simulation, publish, pause, rollback, cloning, and history.
+•	Execution guarantees: idempotency key, retry policy, exponential backoff, timeout, dead-letter queue, deduplication, rate limits, and maximum recursion depth.
+•	Populated workspace: active workflows, remediation actions, delivery controls, trigger sources, success rate, AI score, drag-and-drop builder, workflow library, remediation feed, event stream, and AI recommendations.
+•	Endpoints/events: POST /automation/connections; POST /workflows; POST /workflows/{id}/simulate|publish; GET /executions; automation.triggered|action.started|completed|failed.
+
+7. Observability and Cost Management
+
+•	Observability: logs, metrics, traces, dashboards, alerts, service map, SLOs, error budgets, retention, and telemetry-source health.
+•	Correlation: propagate trace ID, deployment ID, pipeline run ID, service, version, environment, and tenant across events and telemetry.
+•	Queries: time range, environment, service, severity, version, region, cluster, and saved views. Long-running searches execute asynchronously and are cancellable.
+•	Alerting: threshold, anomaly, absence-of-data, and composite rules with routing, silences, maintenance windows, deduplication, and escalation.
+•	Cost Management: cloud spend, Kubernetes allocation, resource optimization, forecasts, budgets, alerts, tags, ownership, idle resources, and unit economics.
+•	Cost safety: recommendations must show expected savings, confidence, performance risk, affected resources, and approval path. Never resize or terminate automatically without policy authorization.
+•	Endpoints/events: GET /telemetry/logs|metrics|traces; POST /alerts/rules; GET /cost/spend|forecast|recommendations; alert.fired|resolved; budget.threshold.exceeded; optimization.created.
+
+8. Reports, Settings, and Administration
+
+•	Reports: security, compliance, deployment, cost, pipeline/DORA, reliability, and custom reports. Support filters, scheduled generation, access-controlled sharing, export, retention, and signed report metadata.
+•	User Management: invite, deactivate, suspend, SCIM status, SSO identity, MFA state, groups, last activity, and service accounts. Never expose secrets or raw authentication data.
+•	Roles & Permissions: organization, workspace, project, environment, and resource scopes. Provide built-in roles plus custom policies; show effective permissions and deny reasons.
+•	API Keys: named keys with scopes, owner, creation, last use, expiry, allowed IPs, rotation, and revocation. Display secret once; store only secure hash.
+•	Integrations: Git providers, registries, cloud, Kubernetes, Vault, ticketing, chat, SIEM, observability, and webhooks. Include health, last sync, scopes, retry, and disconnect.
+•	Audit Logs: immutable actor/action/resource/result records with timestamp, tenant, source IP, correlation ID, before/after metadata, export, retention, and integrity verification.
+•	Settings: organization profile, branding, environments, policies, notifications, retention, feature flags, agent channels, regional residency, billing/cost controls, and danger zone.
+•	Administrative safeguards: step-up authentication for sensitive changes, dual approval for policy bypass, confirmation text for destructive actions, and complete audit coverage.
+
+9. Engineering Architecture and Data Contracts
+
+•	Frontend: component-based web application with typed routes, shared design system, query cache, normalized error handling, feature flags, localization, and generated API client.
+•	Backend: API gateway plus domain services for identity, projects, source connections, pipelines, artifacts, deployments, infrastructure, security, automation, telemetry, cost, reports, and audit.
+•	Async platform: event bus, workflow/job engine, scheduler, stream gateway, notification service, and dead-letter processing. Every command returns a stable operation ID.
+•	Canonical resource envelope: id, tenantId, workspaceId, projectId, name, type, status, labels, createdAt, updatedAt, createdBy, version, links.
+•	Operation envelope: operationId, resourceId, state, percent, currentStep, startedAt, updatedAt, completedAt, error, warnings, retryable, correlationId.
+•	Error contract: code, message, userMessage, fieldErrors, correlationId, retryable, remediationUrl. UI must not render raw stack traces.
+•	Pagination: cursor-based lists with stable sorting, filters, total estimate where available, and cancellation.
+•	Versioning: additive API evolution by default; explicit version headers; schema registry for events; compatibility tests for agents and CLIs.
+•	Secrets: references only in application data; encryption in transit and at rest; redaction in logs; expiry and rotation; no secret values in analytics.
+
+10. Security, Quality, and Release Requirements
+
+•	Authentication: OIDC/SAML SSO, MFA, short-lived sessions, secure cookies, CSRF protection, device/session management, and service-account separation.
+•	Authorization: server-side policy enforcement on every request; deny by default; resource-scoped RBAC/ABAC; no security decisions based only on hidden UI controls.
+•	Supply chain: signed builds, provenance, dependency pinning, SBOM, secret scanning, branch protection, artifact signatures, and release attestations.
+•	Accessibility: WCAG-aligned contrast, semantic labels, keyboard operation, focus order, screen-reader announcements for progress/errors, and no color-only status.
+•	Performance targets: responsive shell, paginated data, virtualized large lists, progressive charts, backpressure for streams, and cached metadata with explicit freshness.
+•	Testing pyramid: unit tests for logic/components; contract tests for APIs/events; integration tests for providers; end-to-end tests for onboarding, pipeline, deployment, security, automation, and settings; load and chaos tests for streams/jobs.
+•	Required E2E journeys: import repo and run first pipeline; deploy approved artifact; block failed security gate; connect cluster and sync; create automation rule; investigate alert; generate report; rotate API key; inspect audit entry.
+•	Release gates: tests pass, no unresolved critical vulnerabilities, migrations validated, rollback tested, observability dashboards ready, runbooks updated, feature flag plan approved.
+
+11. Definition of Done
+
+•	All specified screens, empty states, onboarding paths, populated states, errors, permissions, and destructive confirmations are implemented.
+•	API schemas, events, authorization rules, audit coverage, and telemetry are documented and contract-tested.
+•	Loading, timeout, retry, partial failure, stale data, offline, and reconnect behavior are verified.
+•	Secrets are never exposed; sensitive actions require correct approval; security-gate overrides are attributable and time-bound.
+•	Accessibility, responsive behavior, localization, performance budgets, browser support, and end-to-end journeys pass.
+•	Operational dashboards, alerts, SLOs, support runbooks, rollback procedure, migration plan, and ownership are ready before production release.
+•	Final navigation acceptance: a user can move coherently from Run Pipeline through Deployments, Infrastructure, Kubernetes, Applications, Security, AI Operations, Automation, Observability, Cost Management, Reports, and Settings without losing project, environment, or authorization context.
+
+
