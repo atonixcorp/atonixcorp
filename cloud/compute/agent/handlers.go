@@ -1,50 +1,72 @@
 package agent
 
 import (
+	"fmt"
+
 	"atonixcorp/cloud/compute/hypervisor"
 	"atonixcorp/cloud/compute/rpc"
-	"fmt"
 )
 
-func (a *Agent) HandleMessage(msg rpc.RPCMessage) {
-	switch msg.Type {
+func (a *Agent) HandleMessage(msg rpc.RPCMessage) error {
+	if a.HV == nil {
+		return fmt.Errorf("hypervisor is not configured")
+	}
 
+	switch msg.Type {
 	case "vm.start":
-		vmID := msg.Payload.(string)
-		fmt.Println("Agent: start VM", vmID)
-		hv := hypervisor.NewLibvirtDriver()
-		hv.StartVM(vmID)
+		vmID, err := stringPayload(msg.Payload)
+		if err != nil {
+			return err
+		}
+		return a.HV.StartVM(vmID)
 
 	case "vm.pause":
-		vmID := msg.Payload.(string)
-		fmt.Println("Agent: pause VM", vmID)
-		hv := hypervisor.NewLibvirtDriver()
-		// TODO: implement pause via libvirt
-		_ = hv.StopVM(vmID) // placeholder
+		vmID, err := stringPayload(msg.Payload)
+		if err != nil {
+			return err
+		}
+		return a.HV.PauseVM(vmID)
 
 	case "vm.stop":
-		vmID := msg.Payload.(string)
-		fmt.Println("Agent: stop VM", vmID)
-		hv := hypervisor.NewLibvirtDriver()
-		hv.StopVM(vmID)
+		vmID, err := stringPayload(msg.Payload)
+		if err != nil {
+			return err
+		}
+		return a.HV.StopVM(vmID)
 
 	case "vm.reboot":
-		vmID := msg.Payload.(string)
-		fmt.Println("Agent: reboot VM", vmID)
-		hv := hypervisor.NewLibvirtDriver()
-		hv.RebootVM(vmID)
+		vmID, err := stringPayload(msg.Payload)
+		if err != nil {
+			return err
+		}
+		return a.HV.RebootVM(vmID)
 
 	case "vm.pin":
-		pin := msg.Payload.(hypervisor.CPUPinning)
-		fmt.Println("Agent: CPU pinning", pin)
-		hypervisor.PinCPU(pin.VMID, pin)
+		pin, ok := msg.Payload.(hypervisor.CPUPinning)
+		if !ok {
+			return fmt.Errorf("vm.pin payload must be hypervisor.CPUPinning")
+		}
+		return hypervisor.PinCPU(pin.VMID, pin)
 
 	case "vm.numa":
-		numa := msg.Payload.(hypervisor.NUMANode)
-		fmt.Println("Agent: NUMA placement", numa)
-		hypervisor.PlaceNUMA("vm", numa)
+		numa, ok := msg.Payload.(hypervisor.NUMANode)
+		if !ok {
+			return fmt.Errorf("vm.numa payload must be hypervisor.NUMANode")
+		}
+		if numa.VMID == "" {
+			return fmt.Errorf("vm.numa payload must include a VMID")
+		}
+		return hypervisor.PlaceNUMA(numa.VMID, numa)
 
 	default:
-		fmt.Println("Agent: unknown message:", msg.Type)
+		return fmt.Errorf("unknown compute agent message type %q", msg.Type)
 	}
+}
+
+func stringPayload(payload any) (string, error) {
+	value, ok := payload.(string)
+	if !ok || value == "" {
+		return "", fmt.Errorf("VM action payload must be a non-empty VM ID string")
+	}
+	return value, nil
 }

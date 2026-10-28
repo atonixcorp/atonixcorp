@@ -1,115 +1,105 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
-	"time"
+	"os/signal"
+	"strings"
+	"syscall"
 
+	databaseconfig "atonixcorp/cloud/database/config"
 	"atonixcorp/cloud/database/core"
 	"atonixcorp/cloud/database/openstack"
+	"atonixcorp/cloud/database/services"
 	"atonixcorp/cloud/database/store"
 
 	"gopkg.in/yaml.v3"
 )
 
-// Config structures
-type EnvConfig struct {
-	Environment string `yaml:"environment"`
-	Region      string `yaml:"region"`
-	Controller  struct {
-		ReconcileIntervalSeconds int `yaml:"reconcile_interval_seconds"`
-	} `yaml:"controller"`
+type runtimeConfig struct {
+	DefaultRegion string `yaml:"default_region"`
 }
 
-type OpenStackConfig struct {
-	Auth struct {
-		AuthURL   string `yaml:"auth_url"`
-		Username  string `yaml:"username"`
-		Password  string `yaml:"password"`
-		Domain    string `yaml:"domain"`
-		ProjectID string `yaml:"project_id"`
-	} `yaml:"auth"`
-
-	Endpoints struct {
-		Compute string `yaml:"compute"`
-		Network string `yaml:"network"`
-		Volume  string `yaml:"volume"`
-	} `yaml:"endpoints"`
-}
-
-type PlansConfig struct {
+type plansConfig struct {
 	Plans map[string]core.Plan `yaml:"plans"`
 }
 
-// YAML loader
-func loadYAML(path string, out interface{}) {
-	data, err := os.ReadFile(path)
+func main() {
+	configDir := envOrDefault("DATABASE_CONFIG_DIR", "./config")
+	var env runtimeConfig
+	var plans plansConfig
+	if err := loadYAML(configDir+"/env.yaml", &env); err != nil {
+		log.Fatalf("load database environment config: %v", err)
+	}
+	if err := loadYAML(configDir+"/plans.yaml", &plans); err != nil {
+		log.Fatalf("load database plans: %v", err)
+	}
+	dsn, err := databaseconfig.DatabaseDSN()
 	if err != nil {
-		log.Fatalf("Failed to read %s: %v", path, err)
+		log.Fatal(err)
 	}
-	if err := yaml.Unmarshal(data, out); err != nil {
-		log.Fatalf("Failed to parse %s: %v", path, err)
+	metadataStore, err := store.NewPostgresStore(dsn)
+	if err != nil {
+		log.Fatalf("connect database metadata store: %v", err)
 	}
+	defer metadataStore.Close()
+
+	engineImages := map[string]string{
+		"postgres:16":  os.Getenv("OPENSTACK_DATABASE_IMAGE_POSTGRES_16"),
+		"postgres:17":  os.Getenv("OPENSTACK_DATABASE_IMAGE_POSTGRES_17"),
+		"mysql:8.4":    os.Getenv("OPENSTACK_DATABASE_IMAGE_MYSQL_8_4"),
+		"mariadb:11.4": os.Getenv("OPENSTACK_DATABASE_IMAGE_MARIADB_11_4"),
+		"redis:7":      os.Getenv("OPENSTACK_DATABASE_IMAGE_REDIS_7"),
+	}
+	for id, plan := range plans.Plans {
+		plan.FlavorID = strings.TrimSpace(os.Getenv("OPENSTACK_DATABASE_FLAVOR_" + strings.ToUpper(id)))
+		plans.Plans[id] = plan
+	}
+	osConfig := openstack.AuthConfig{
+		AuthURL:         os.Getenv("OPENSTACK_AUTH_URL"),
+		Username:        os.Getenv("OPENSTACK_USERNAME"),
+		Password:        os.Getenv("OPENSTACK_PASSWORD"),
+		Domain:          envOrDefault("OPENSTACK_USER_DOMAIN", "default"),
+		ProjectID:       os.Getenv("OPENSTACK_PROJECT_ID"),
+		ComputeEndpoint: os.Getenv("OPENSTACK_COMPUTE_ENDPOINT"),
+		VolumeEndpoint:  os.Getenv("OPENSTACK_VOLUME_ENDPOINT"),
+		NetworkEndpoint: os.Getenv("OPENSTACK_NETWORK_ENDPOINT"),
+		DatabaseImages:  engineImages,
+		DatabaseNetwork: os.Getenv("OPENSTACK_DATABASE_NETWORK_ID"),
+		SecurityGroupID: os.Getenv("OPENSTACK_DATABASE_SECURITY_GROUP_ID"),
+	}
+	client, err := openstack.NewClient(osConfig)
+	if err != nil {
+		log.Fatalf("configure OpenStack database provider: %v", err)
+	}
+	controller := core.NewController(metadataStore, openstack.NewServiceClient(client))
+	controller.SetPlans(plans.Plans)
+	controller.SetProvisioningConfig(
+		engineImages, osConfig.DatabaseNetwork, osConfig.SecurityGroupID,
+	)
+	controller.SetDefaultRegion(envOrDefault("DATABASE_DEFAULT_REGION", env.DefaultRegion))
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	services.NewProvisioningService(controller).RunWorker(ctx)
 }
 
-func main() {
-	fmt.Println("AtonixCorp DBaaS Controller — Starting...")
-
-	// Load configs
-	var envCfg EnvConfig
-	var osCfg OpenStackConfig
-	var plansCfg PlansConfig
-
-	loadYAML("atonixcorp/cloud/database/config/env.yaml", &envCfg)
-	loadYAML("atonixcorp/cloud/database/config/openstack.yaml", &osCfg)
-	loadYAML("atonixcorp/cloud/database/config/plans.yaml", &plansCfg)
-
-	fmt.Println("Environment:", envCfg.Environment)
-	fmt.Println("Region:", envCfg.Region)
-	fmt.Println("Reconciler interval:", envCfg.Controller.ReconcileIntervalSeconds, "seconds")
-
-	// Metadata store (Postgres)
-	dsn := os.Getenv("ATONIXCORP_DB_DSN")
-	if dsn == "" {
-		log.Fatal("ATONIXCORP_DB_DSN environment variable is required")
-	}
-
-	store, err := store.NewPostgresStore(dsn)
+func loadYAML(path string, out any) error {
+	data, err := os.ReadFile(path)
 	if err != nil {
-		log.Fatalf("Failed to connect to metadata DB: %v", err)
+		return fmt.Errorf("read %s: %w", path, err)
 	}
-	defer store.Close()
-
-	// OpenStack client
-	osClient, err := openstack.NewClient(openstack.AuthConfig{
-		AuthURL:   osCfg.Auth.AuthURL,
-		Username:  osCfg.Auth.Username,
-		Password:  osCfg.Auth.Password,
-		Domain:    osCfg.Auth.Domain,
-		ProjectID: osCfg.Auth.ProjectID,
-	})
-	if err != nil {
-		log.Fatalf("Failed to authenticate with OpenStack: %v", err)
+	if err := yaml.Unmarshal(data, out); err != nil {
+		return fmt.Errorf("parse %s: %w", path, err)
 	}
+	return nil
+}
 
-	openStackService := openstack.NewServiceClient(osClient)
-
-	// Controller
-	controller := core.NewController(store, openStackService)
-	controller.SetPlans(plansCfg.Plans)
-
-	// Reconciler
-	reconciler := core.NewReconciler(
-		store,
-		openStackService,
-		time.Duration(envCfg.Controller.ReconcileIntervalSeconds)*time.Second,
-	)
-
-	fmt.Println("Starting reconciler loop...")
-	reconciler.Start()
-
-	// Controller runs forever
-	fmt.Println("AtonixCorp DBaaS Controller is running.")
-	select {}
+func envOrDefault(name, fallback string) string {
+	if value := strings.TrimSpace(os.Getenv(name)); value != "" {
+		return value
+	}
+	return fallback
 }

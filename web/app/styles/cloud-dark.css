@@ -1,0 +1,438 @@
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-primary: #76b6ff;
+  --color-primary-hover: #9acaff;
+  --color-primary-active: #c1ddff;
+  --color-secondary: #0a192b;
+  --color-background: #0a1422;
+  --color-surface: #111f31;
+  --color-surface-elevated: #192a40;
+  --color-border: #2a3d55;
+  --color-border-strong: #48617e;
+  --color-text-primary: #e7eef8;
+  --color-text-secondary: #a4b4c9;
+  --color-text-muted: #8a9db5;
+  --color-success: #5bd3a0;
+  --color-warning: #f0bf65;
+  --color-error: #ff8585;
+  --color-information: #85baff;
+  --shadow-raised: 0 10px 28px rgb(0 0 0 / 28%);
+  --focus-ring: 0 0 0 3px rgb(118 182 255 / 32%);
+}
+
+:root[data-theme="dark"] body {
+  color-scheme: dark;
+  color: var(--color-text-primary);
+  background: var(--color-background);
+}
+
+:root[data-theme="dark"] .cloud-shell,
+:root[data-theme="dark"] .compute-console,
+:root[data-theme="dark"] .container-console,
+:root[data-theme="dark"] .storage-console,
+:root[data-theme="dark"] .database-console,
+:root[data-theme="dark"] .network-console,
+:root[data-theme="dark"] .observability-page,
+:root[data-theme="dark"] .billing-page,
+:root[data-theme="dark"] .support-page,
+:root[data-theme="dark"] .security-workspace {
+  color: var(--color-text-primary);
+  background-color: var(--color-background);
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] .cloud-topbar,
+:root[data-theme="dark"] .compute-topbar,
+:root[data-theme="dark"] .container-topbar,
+:root[data-theme="dark"] .storage-topbar {
+  border-color: #263d59;
+  background: #0a192b;
+}
+
+:root[data-theme="dark"] .compute-sidebar,
+:root[data-theme="dark"] .compute-sidebar-note,
+:root[data-theme="dark"] .compute-state-panel,
+:root[data-theme="dark"] .compute-volume-row,
+:root[data-theme="dark"] .compute-choice-card,
+:root[data-theme="dark"] .compute-region-card,
+:root[data-theme="dark"] .compute-image-card,
+:root[data-theme="dark"] .compute-summary-card,
+:root[data-theme="dark"] .compute-detail-overview,
+:root[data-theme="dark"] .container-section-nav,
+:root[data-theme="dark"] .container-card,
+:root[data-theme="dark"] .container-detail-grid > div,
+:root[data-theme="dark"] .container-update-form,
+:root[data-theme="dark"] .storage-metrics article,
+:root[data-theme="dark"] .storage-table-panel,
+:root[data-theme="dark"] .storage-secondary-button,
+:root[data-theme="dark"] .storage-modal,
+:root[data-theme="dark"] .storage-operation,
+:root[data-theme="dark"] .storage-empty-state,
+:root[data-theme="dark"] .database-topbar,
+:root[data-theme="dark"] .database-panel,
+:root[data-theme="dark"] .network-panel,
+:root[data-theme="dark"] .network-unavailable,
+:root[data-theme="dark"] .security-sidebar,
+:root[data-theme="dark"] .security-panel,
+:root[data-theme="dark"] .security-metric-card,
+:root[data-theme="dark"] .security-empty-state {
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+}
+
+:root[data-theme="dark"] .compute-sidebar-heading,
+:root[data-theme="dark"] .compute-nav-link,
+:root[data-theme="dark"] .container-field > span,
+:root[data-theme="dark"] .container-field > label,
+:root[data-theme="dark"] .container-step,
+:root[data-theme="dark"] .database-scope label > span,
+:root[data-theme="dark"] .database-create-panel form label > span,
+:root[data-theme="dark"] .security-sidebar > button,
+:root[data-theme="dark"] .security-sidebar > p,
+:root[data-theme="dark"] .security-nav-mark {
+  color: var(--color-text-secondary);
+}
+
+:root[data-theme="dark"] .compute-nav-link:hover,
+:root[data-theme="dark"] .compute-nav-link:focus-visible,
+:root[data-theme="dark"] .container-step.active,
+:root[data-theme="dark"] .security-sidebar > button:hover,
+:root[data-theme="dark"] .security-sidebar > button.active {
+  color: var(--color-primary);
+  background: #1b3049;
+}
+
+:root[data-theme="dark"] .compute-nav-link.active,
+:root[data-theme="dark"] .storage-tabs button.active,
+:root[data-theme="dark"] .container-step.active {
+  color: var(--color-primary);
+}
+
+:root[data-theme="dark"] .compute-table-toolbar h2,
+:root[data-theme="dark"] .compute-detail-overview h2,
+:root[data-theme="dark"] .compute-field,
+:root[data-theme="dark"] .compute-instance-status,
+:root[data-theme="dark"] .compute-table,
+:root[data-theme="dark"] .compute-secondary-button,
+:root[data-theme="dark"] .compute-choice-card,
+:root[data-theme="dark"] .compute-region-card,
+:root[data-theme="dark"] .compute-image-card,
+:root[data-theme="dark"] .compute-summary-card {
+  color: var(--color-text-primary);
+}
+
+:root[data-theme="dark"] .compute-secondary-button,
+:root[data-theme="dark"] .compute-filter input,
+:root[data-theme="dark"] .compute-field input,
+:root[data-theme="dark"] .compute-field select,
+:root[data-theme="dark"] .compute-field textarea,
+:root[data-theme="dark"] .compute-volume-row input,
+:root[data-theme="dark"] .compute-volume-row select {
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+  background: #0c1929;
+}
+
+:root[data-theme="dark"] .compute-table th {
+  color: var(--color-text-secondary);
+  background: #18283d;
+}
+
+:root[data-theme="dark"] .compute-table th,
+:root[data-theme="dark"] .compute-table td,
+:root[data-theme="dark"] .compute-volume-row {
+  border-color: var(--color-border);
+}
+
+:root[data-theme="dark"] .compute-choice-card.selected,
+:root[data-theme="dark"] .compute-region-card.selected,
+:root[data-theme="dark"] .compute-image-card.selected {
+  border-color: #397fbb;
+  background: #152e47;
+}
+
+:root[data-theme="dark"] .compute-eyebrow,
+:root[data-theme="dark"] .compute-table-toolbar p,
+:root[data-theme="dark"] .compute-instance-name small {
+  color: var(--color-text-secondary);
+}
+
+:root[data-theme="dark"] .storage-operation,
+:root[data-theme="dark"] .storage-modal {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+:root[data-theme="dark"] .storage-table th {
+  color: var(--color-text-secondary);
+  background: #18283d;
+}
+
+:root[data-theme="dark"] .storage-table td,
+:root[data-theme="dark"] .storage-panel-heading,
+:root[data-theme="dark"] .storage-modal > header {
+  border-color: var(--color-border);
+}
+
+:root[data-theme="dark"] .storage-tabs button,
+:root[data-theme="dark"] .storage-field,
+:root[data-theme="dark"] .storage-operation > button,
+:root[data-theme="dark"] .storage-modal > header > button {
+  color: var(--color-text-secondary);
+}
+
+:root[data-theme="dark"] .storage-field input[readonly] {
+  color: var(--color-text-secondary);
+  background: #142338;
+}
+
+:root[data-theme="dark"] .storage-status {
+  color: var(--color-text-secondary);
+  background: #1c2b40;
+}
+
+:root[data-theme="dark"] .storage-pending {
+  border-color: var(--color-border-strong);
+  background: rgb(17 31 49 / 65%);
+}
+
+:root[data-theme="dark"] .container-field input,
+:root[data-theme="dark"] .container-field select,
+:root[data-theme="dark"] .container-field textarea,
+:root[data-theme="dark"] .container-update-form input,
+:root[data-theme="dark"] .container-update-form select,
+:root[data-theme="dark"] .container-update-form textarea,
+:root[data-theme="dark"] .storage-heading-actions select,
+:root[data-theme="dark"] .database-scope select,
+:root[data-theme="dark"] .database-create-panel input,
+:root[data-theme="dark"] .database-create-panel select,
+:root[data-theme="dark"] .security-scope-bar select,
+:root[data-theme="dark"] .security-workspace select,
+:root[data-theme="dark"] .security-wizard input,
+:root[data-theme="dark"] .security-wizard select,
+:root[data-theme="dark"] .security-wizard textarea,
+:root[data-theme="dark"] .billing-page input,
+:root[data-theme="dark"] .billing-page select,
+:root[data-theme="dark"] .billing-page textarea,
+:root[data-theme="dark"] .support-page input,
+:root[data-theme="dark"] .support-page select,
+:root[data-theme="dark"] .support-page textarea {
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+  background-color: #0c1929;
+}
+
+:root[data-theme="dark"] .storage-table th,
+:root[data-theme="dark"] .container-table th,
+:root[data-theme="dark"] .database-table th {
+  color: var(--color-text-secondary);
+  background: #18283d;
+}
+
+:root[data-theme="dark"] .storage-table td,
+:root[data-theme="dark"] .container-table th,
+:root[data-theme="dark"] .container-table td,
+:root[data-theme="dark"] .database-table th,
+:root[data-theme="dark"] .database-table td,
+:root[data-theme="dark"] .database-panel-heading {
+  border-color: var(--color-border);
+}
+
+:root[data-theme="dark"] .database-brand,
+:root[data-theme="dark"] .database-heading h1,
+:root[data-theme="dark"] .database-panel-heading h2 {
+  color: var(--color-text-primary);
+}
+
+:root[data-theme="dark"] .database-heading p:not(.database-eyebrow),
+:root[data-theme="dark"] .database-empty,
+:root[data-theme="dark"] .database-eyebrow {
+  color: var(--color-text-secondary);
+}
+
+:root[data-theme="dark"] .database-table-wrap th {
+  color: var(--color-text-secondary);
+  background: #18283d;
+}
+
+:root[data-theme="dark"] .database-table-wrap td,
+:root[data-theme="dark"] .database-table-wrap td strong {
+  color: var(--color-text-primary);
+}
+
+:root[data-theme="dark"] .database-table-wrap th,
+:root[data-theme="dark"] .database-table-wrap td,
+:root[data-theme="dark"] .database-panel-heading {
+  border-color: var(--color-border);
+}
+
+:root[data-theme="dark"] .container-success,
+:root[data-theme="dark"] .security-demo-state {
+  border-color: #315d52;
+  color: #b7ead2;
+  background: #142d2a;
+}
+
+:root[data-theme="dark"] .container-info,
+:root[data-theme="dark"] .security-demo-banner {
+  border-color: #315474;
+  color: #c0dcf5;
+  background: #14283b;
+}
+
+:root[data-theme="dark"] .container-alert,
+:root[data-theme="dark"] .database-alert,
+:root[data-theme="dark"] .database-unconfigured {
+  border-color: #693d43;
+  color: #ffc0ba;
+  background: #321f2a;
+}
+
+:root[data-theme="dark"] .database-notice {
+  border-color: #315d52;
+  color: #b7ead2;
+  background: #142d2a;
+}
+
+:root[data-theme="dark"] .storage-environment {
+  border-color: #65532f;
+  color: #f0d99f;
+  background: #302b20;
+}
+
+:root[data-theme="dark"] .storage-alert {
+  border-color: #693d43;
+  color: #ffc0ba;
+  background: #321f2a;
+}
+
+:root[data-theme="dark"] .observability-card,
+:root[data-theme="dark"] .observability-health-grid article,
+:root[data-theme="dark"] .billing-nav,
+:root[data-theme="dark"] .billing-section,
+:root[data-theme="dark"] .support-card {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 14%);
+}
+
+:root[data-theme="dark"] .observability-table th,
+:root[data-theme="dark"] .observability-table td,
+:root[data-theme="dark"] .support-ticket-list article {
+  border-color: var(--color-border);
+}
+
+:root[data-theme="dark"] .observability-table th {
+  color: var(--color-text-secondary);
+  background: #18283d;
+}
+
+:root[data-theme="dark"] .billing-unavailable {
+  border-color: #66512d;
+  background: #2b281f;
+}
+
+:root[data-theme="dark"] .billing-unavailable > span {
+  color: #f0d99f;
+  background: #493c25;
+}
+
+:root[data-theme="dark"] .support-notice,
+:root[data-theme="dark"] .support-success {
+  border-color: #315474;
+  background: #14283b;
+}
+
+:root[data-theme="dark"] .support-success {
+  border-color: #315d52;
+  background: #142d2a;
+}
+
+:root[data-theme="dark"] .security-demo-banner button,
+:root[data-theme="dark"] .security-demo-banner a,
+:root[data-theme="dark"] .security-sidebar > button.active {
+  color: var(--color-primary);
+}
+
+:root[data-theme="dark"] .security-empty-icon {
+  background: #1b3049;
+}
+
+:root[data-theme="dark"] .security-severity.critical {
+  color: #ffb4ad;
+  background: #482528;
+}
+
+:root[data-theme="dark"] .security-severity.high {
+  color: #ffc18d;
+  background: #49301f;
+}
+
+:root[data-theme="dark"] .security-severity.medium {
+  color: #f0d47a;
+  background: #433920;
+}
+
+:root[data-theme="dark"] .security-severity.low,
+:root[data-theme="dark"] .security-badge.neutral {
+  color: #a9d2fa;
+  background: #1c3045;
+}
+
+:root[data-theme="dark"] .security-notice {
+  border-color: #315474;
+  color: #c0dcf5;
+  background: #14283b;
+}
+
+:root[data-theme="dark"] .security-error {
+  border-color: #693d43;
+  color: #ffc0ba;
+  background: #321f2a;
+}
+
+:root[data-theme="dark"] .observability-service-notice {
+  border-color: #315474;
+  color: #c0dcf5;
+  background: #14283b;
+}
+
+:root[data-theme="dark"] .observability-error {
+  border-color: #693d43;
+  color: #ffc0ba;
+  background: #321f2a;
+}
+
+:root[data-theme="dark"] .observability-health-available {
+  border-color: #315d52;
+  color: #b7ead2;
+  background: #142d2a;
+}
+
+:root[data-theme="dark"] .observability-health-configured-unverified {
+  border-color: #66512d;
+  color: #f0d99f;
+  background: #2b281f;
+}
+
+:root[data-theme="dark"] .observability-health-failed {
+  border-color: #693d43;
+  color: #ffc0ba;
+  background: #321f2a;
+}
+
+:root[data-theme="dark"] :is(
+  .compute-console,
+  .container-console,
+  .storage-console,
+  .database-console,
+  .network-console,
+  .observability-page,
+  .billing-page,
+  .support-page,
+  .security-workspace
+) :is(input, select, textarea) {
+  color-scheme: dark;
+}

@@ -5,13 +5,16 @@ import (
 	"fmt"
 )
 
-// GenerateID creates a random unique ID with a prefix.
-// Example: nat-3f9c2a1b8e
+// GenerateID creates a UUID suitable for the PostgreSQL UUID resource columns.
 func GenerateID(prefix string) string {
-	b := make([]byte, 5)
+	_ = prefix
+	b := make([]byte, 16)
 	_, err := rand.Read(b)
 	if err != nil {
-		return prefix + "-xxxxxx"
+		panic(fmt.Errorf("generate resource ID: %w", err))
 	}
-	return fmt.Sprintf("%s-%x", prefix, b)
+	b[6] = b[6]&0x0f | 0x40
+	b[8] = b[8]&0x3f | 0x80
+	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
+		b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }

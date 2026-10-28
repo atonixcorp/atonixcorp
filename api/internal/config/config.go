@@ -8,17 +8,18 @@ import (
 )
 
 type Config struct {
-	DBHost        string
-	DBUser        string
-	DBPassword    string
-	DBName        string
-	DBPort        string
-	JWTSecret     string
-	SMTPHost      string
-	SMTPPort      string
-	SMTPUser      string
-	SMTPPassword  string
-	SMTPRecipient string
+	DBHost           string
+	DBUser           string
+	DBPassword       string
+	DBName           string
+	DBPort           string
+	JWTSecret        string
+	SMTPHost         string
+	SMTPPort         string
+	SMTPUser         string
+	SMTPPassword     string
+	SMTPRecipient    string
+	SponsorRecipient string
 }
 
 // LoadConfig loads environment variables from .env and OS environment
@@ -29,20 +30,28 @@ func LoadConfig() *Config {
 	}
 
 	cfg := &Config{
-		DBHost:        getEnv("DB_HOST"),
-		DBUser:        getEnv("DB_USER"),
-		DBPassword:    getEnv("DB_PASSWORD"),
-		DBName:        getEnv("DB_NAME"),
-		DBPort:        getEnv("DB_PORT"),
-		JWTSecret:     getEnv("JWT_SECRET"),
-		SMTPHost:      getEnv("SMTP_HOST"),
-		SMTPPort:      getEnv("SMTP_PORT"),
-		SMTPUser:      getEnv("SMTP_USER"),
-		SMTPPassword:  getEnv("SMTP_PASSWORD"),
-		SMTPRecipient: getEnv("SMTP_RECIPIENT"),
+		DBHost:           getEnv("DB_HOST"),
+		DBUser:           getEnv("DB_USER"),
+		DBPassword:       getEnv("DB_PASSWORD"),
+		DBName:           getEnv("DB_NAME"),
+		DBPort:           getEnv("DB_PORT"),
+		JWTSecret:        getEnv("JWT_SECRET"),
+		SMTPHost:         getEnv("SMTP_HOST"),
+		SMTPPort:         getEnv("SMTP_PORT"),
+		SMTPUser:         getEnv("SMTP_USER"),
+		SMTPPassword:     getEnv("SMTP_PASSWORD"),
+		SMTPRecipient:    getEnv("SMTP_RECIPIENT"),
+		SponsorRecipient: getOptionalEnv("SPONSOR_RECIPIENT", "sponsors@atonixcorp.com"),
 	}
 
 	return cfg
+}
+
+func getOptionalEnv(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
 }
 
 // getEnv ensures required variables exist

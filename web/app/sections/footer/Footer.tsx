@@ -100,6 +100,9 @@ export default function Footer() {
           <Link href="/#mission">Mission & mandate</Link>
           <Link href="/#sovereignty">Corporate governance</Link>
           <Link href="/#roadmap">Strategic roadmap</Link>
+          <Link href="https://www.atonixcorp.com/sponsor" target="_blank" rel="noopener noreferrer">
+            Sponsor AtonixCorp
+          </Link>
         </nav>
 
         <nav aria-label="Infrastructure links">

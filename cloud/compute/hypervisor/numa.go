@@ -3,6 +3,7 @@ package hypervisor
 import "fmt"
 
 type NUMANode struct {
+	VMID     string
 	ID       int
 	CPUs     []int
 	MemoryMB int

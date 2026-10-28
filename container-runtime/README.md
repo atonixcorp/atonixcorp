@@ -1,7 +1,7 @@
 # AtonixCorp Container Runtime
 ##  Cloud • Automated Compute • Intelligent Container Execution
 
-The **AtonixCorp Container Runtime** is the core execution engine of the AtonixCorp Sovereign Cloud Stack. It provides a fully automated, secure, and governed environment for building, storing, scheduling, and running containers across distributed compute nodes. The runtime abstracts away all complexity of Docker, Kubernetes, and container orchestration, enabling developers to deploy workloads with zero setup while giving operators full control, observability, and governance.
+The **AtonixCorp Container Runtime** is the core execution engine of the AtonixCorp Cloud Stack. It provides a fully automated, secure, and governed environment for building, storing, scheduling, and running containers across distributed compute nodes. The runtime abstracts away all complexity of Docker, Kubernetes, and container orchestration, enabling developers to deploy workloads with zero setup while giving operators full control, observability, and governance.
 
 ---
 

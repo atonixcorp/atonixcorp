@@ -8,6 +8,8 @@ import { useEffect, useRef, useState } from "react";
 type NavItem = {
   label: string;
   href?: string;
+  target?: "_blank";
+  rel?: string;
   items?: { label: string; href: string }[];
 };
 
@@ -108,6 +110,12 @@ const navigation: NavItem[] = [
       { label: "Careers", href: "mailto:info@atonixcorp.com" },
     ],
   },
+  {
+    label: "Sponsor",
+    href: "https://www.atonixcorp.com/sponsor",
+    target: "_blank",
+    rel: "noopener noreferrer",
+  },
 ];
 
 export default function GlobalHeader() {
@@ -191,7 +199,13 @@ export default function GlobalHeader() {
                 </div>
               </div>
             ) : (
-              <a className="nav-trigger home-link" href={resolveHref(item.href)} key={item.label}>
+              <a
+                className="nav-trigger home-link"
+                href={resolveHref(item.href)}
+                target={item.target}
+                rel={item.rel}
+                key={item.label}
+              >
                 {item.label}
               </a>
             )
@@ -216,7 +230,7 @@ export default function GlobalHeader() {
         {navigation.map((item) => (
           <div key={item.label} className="mobile-nav-group">
             {item.href ? (
-              <a href={resolveHref(item.href)} onClick={closeAll}>
+              <a href={resolveHref(item.href)} target={item.target} rel={item.rel} onClick={closeAll}>
                 {item.label}
               </a>
             ) : (

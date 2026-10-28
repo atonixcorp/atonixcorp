@@ -2,6 +2,7 @@ package openstack
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 type NetworkClient struct {
@@ -13,16 +14,19 @@ func NewNetworkClient(os *Client) *NetworkClient {
 }
 
 func (n *NetworkClient) CreatePort(networkID, sgID string) (string, error) {
+	if networkID == "" || n.os.NetworkEndpoint == "" {
+		return "", fmt.Errorf("Neutron endpoint and network ID are required")
+	}
 	payload := map[string]interface{}{
 		"port": map[string]interface{}{
 			"network_id": networkID,
-			"security_groups": []string{
-				sgID,
-			},
 		},
 	}
+	if sgID != "" {
+		payload["port"].(map[string]interface{})["security_groups"] = []string{sgID}
+	}
 
-	data, err := n.os.do("POST", n.os.AuthURL+"/ports", payload)
+	data, err := n.os.do("POST", n.os.NetworkEndpoint+"/ports", payload)
 	if err != nil {
 		return "", err
 	}
@@ -32,7 +36,11 @@ func (n *NetworkClient) CreatePort(networkID, sgID string) (string, error) {
 			ID string `json:"id"`
 		} `json:"port"`
 	}
-	json.Unmarshal(data, &resp)
-
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return "", fmt.Errorf("decode Neutron port response: %w", err)
+	}
+	if resp.Port.ID == "" {
+		return "", fmt.Errorf("Neutron response omitted port ID")
+	}
 	return resp.Port.ID, nil
 }

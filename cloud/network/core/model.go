@@ -4,11 +4,12 @@ package core
 // NETWORK
 // -----------------------------
 type Network struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	CIDR     string `json:"cidr"`
-	TenantID string `json:"tenant_id"`
-	External bool   `json:"external"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CIDR      string `json:"cidr"`
+	TenantID  string `json:"tenant_id"`
+	ProjectID string `json:"project_id"`
+	External  bool   `json:"external"`
 }
 
 // -----------------------------

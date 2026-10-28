@@ -1,21 +1,21 @@
 backends:
   ovn:
-    enabled: true
+    enabled: false
     nbctl_path: "/usr/bin/ovn-nbctl"
     sbctl_path: "/usr/bin/ovn-sbctl"
     bridge: "br-int"
 
   frr:
-    enabled: true
+    enabled: false
     config_path: "/etc/frr/frr.conf"
     reload_command: "systemctl reload frr"
 
   dnsmasq:
-    enabled: true
+    enabled: false
     config_dir: "/etc/dnsmasq.d"
 
   datacenter:
-    enabled: true
+    enabled: false
     mode: "vxlan"        # vlan | vxlan
     vlan_range: "100-4000"
     vni_range: "10000-20000"
@@ -36,4 +36,4 @@ backends:
     token: "REPLACE_ME"
 
   generic:
-    enabled: true        # fallback backend
+    enabled: false

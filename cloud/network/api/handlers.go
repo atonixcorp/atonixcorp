@@ -2,17 +2,26 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
+	"log"
 	"net/http"
 
 	"atnetwork/core"
+	"github.com/gorilla/mux"
 )
 
 type Handler struct {
 	Controller *core.Controller
+	Policy     core.Policy
 }
 
-func NewHandler(controller *core.Controller) *Handler {
-	return &Handler{Controller: controller}
+func NewHandler(controller *core.Controller, policies ...core.Policy) *Handler {
+	policy := core.NewPolicy()
+	if len(policies) > 0 && policies[0] != nil {
+		policy = policies[0]
+	}
+	return &Handler{Controller: controller, Policy: policy}
 }
 
 // -----------------------------
@@ -21,25 +30,60 @@ func NewHandler(controller *core.Controller) *Handler {
 
 func (h *Handler) CreateNetwork(w http.ResponseWriter, r *http.Request) {
 	var req CreateNetworkRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), 400)
+	if err := decodeRequest(w, r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Request body is invalid.")
 		return
 	}
 
 	n := core.Network{
-		ID:       core.GenerateID("net"),
-		Name:     req.Name,
-		CIDR:     req.CIDR,
-		TenantID: req.TenantID,
-		External: req.External,
+		ID:        core.GenerateID("net"),
+		Name:      req.Name,
+		CIDR:      req.CIDR,
+		TenantID:  mux.Vars(r)["tenantID"],
+		ProjectID: mux.Vars(r)["projectID"],
+		External:  false,
 	}
 
+	if err := h.Policy.ValidateNetwork(n); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_NETWORK", err.Error())
+		return
+	}
 	if err := h.Controller.CreateNetwork(n); err != nil {
-		http.Error(w, err.Error(), 500)
+		if errors.Is(err, core.ErrBackendUnavailable) {
+			writeError(w, http.StatusServiceUnavailable, "NETWORK_BACKEND_UNAVAILABLE", "Network provisioning is currently unavailable.")
+			return
+		}
+		if errors.Is(err, core.ErrCIDROverlap) {
+			writeError(w, http.StatusConflict, "CIDR_CONFLICT", "The requested address range overlaps an existing network.")
+			return
+		}
+		log.Printf("create network: %v", err)
+		writeError(w, http.StatusInternalServerError, "NETWORK_CREATE_FAILED", "Network provisioning could not be completed.")
 		return
 	}
 
-	json.NewEncoder(w).Encode(n)
+	writeJSON(w, http.StatusCreated, n)
+}
+
+func (h *Handler) ListNetworks(w http.ResponseWriter, r *http.Request) {
+	tenantID, projectID := mux.Vars(r)["tenantID"], mux.Vars(r)["projectID"]
+	networks, err := h.Controller.ListNetworksInProject(tenantID, projectID)
+	if err != nil {
+		log.Printf("list project networks: %v", err)
+		writeError(w, http.StatusInternalServerError, "NETWORK_LIST_FAILED", "Networks could not be loaded.")
+		return
+	}
+	if networks == nil {
+		networks = []core.Network{}
+	}
+	writeJSON(w, http.StatusOK, networks)
+}
+
+func (h *Handler) Capabilities(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{
+		"network_provisioning": h.Controller.NetworkProvisioningEnabled(),
+		"resources":            []string{"networks", "subnets"},
+	})
 }
 
 // -----------------------------
@@ -48,8 +92,8 @@ func (h *Handler) CreateNetwork(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CreateSubnet(w http.ResponseWriter, r *http.Request) {
 	var req CreateSubnetRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), 400)
+	if err := decodeRequest(w, r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Request body is invalid.")
 		return
 	}
 
@@ -60,12 +104,36 @@ func (h *Handler) CreateSubnet(w http.ResponseWriter, r *http.Request) {
 		GatewayIP: req.GatewayIP,
 	}
 
+	if err := h.Policy.ValidateSubnet(s); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_SUBNET", err.Error())
+		return
+	}
+	network, err := h.Controller.GetNetworkInProject(
+		req.NetworkID, mux.Vars(r)["tenantID"], mux.Vars(r)["projectID"],
+	)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "NETWORK_NOT_FOUND", "Network not found.")
+		return
+	}
+	if err := h.Policy.ValidateSubnetInNetwork(s, network); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_SUBNET", err.Error())
+		return
+	}
 	if err := h.Controller.CreateSubnet(s); err != nil {
-		http.Error(w, err.Error(), 500)
+		if errors.Is(err, core.ErrBackendUnavailable) {
+			writeError(w, http.StatusServiceUnavailable, "NETWORK_BACKEND_UNAVAILABLE", "Network provisioning is currently unavailable.")
+			return
+		}
+		if errors.Is(err, core.ErrCIDROverlap) {
+			writeError(w, http.StatusConflict, "CIDR_CONFLICT", "The requested subnet overlaps an existing subnet.")
+			return
+		}
+		log.Printf("create subnet: %v", err)
+		writeError(w, http.StatusInternalServerError, "SUBNET_CREATE_FAILED", "Subnet provisioning could not be completed.")
 		return
 	}
 
-	json.NewEncoder(w).Encode(s)
+	writeJSON(w, http.StatusCreated, s)
 }
 
 // -----------------------------
@@ -74,8 +142,8 @@ func (h *Handler) CreateSubnet(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CreateRouter(w http.ResponseWriter, r *http.Request) {
 	var req CreateRouterRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), 400)
+	if err := decodeRequest(w, r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Request body is invalid.")
 		return
 	}
 
@@ -96,8 +164,8 @@ func (h *Handler) CreateRouter(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) AttachRouterInterface(w http.ResponseWriter, r *http.Request) {
 	var req AttachRouterInterfaceRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), 400)
+	if err := decodeRequest(w, r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Request body is invalid.")
 		return
 	}
 
@@ -122,8 +190,8 @@ func (h *Handler) AttachRouterInterface(w http.ResponseWriter, r *http.Request) 
 
 func (h *Handler) CreatePort(w http.ResponseWriter, r *http.Request) {
 	var req CreatePortRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), 400)
+	if err := decodeRequest(w, r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Request body is invalid.")
 		return
 	}
 
@@ -148,8 +216,8 @@ func (h *Handler) CreatePort(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CreateSecurityGroup(w http.ResponseWriter, r *http.Request) {
 	var req CreateSecurityGroupRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), 400)
+	if err := decodeRequest(w, r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Request body is invalid.")
 		return
 	}
 
@@ -173,8 +241,8 @@ func (h *Handler) CreateSecurityGroup(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CreateFloatingIP(w http.ResponseWriter, r *http.Request) {
 	var req CreateFloatingIPRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), 400)
+	if err := decodeRequest(w, r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "Request body is invalid.")
 		return
 	}
 
@@ -192,4 +260,36 @@ func (h *Handler) CreateFloatingIP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(fip)
+}
+
+func decodeRequest(w http.ResponseWriter, r *http.Request, target any) error {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(target); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return errors.New("request must contain one JSON value")
+	}
+	return nil
+}
+
+func writeError(w http.ResponseWriter, status int, code, message string) {
+	writeJSON(w, status, map[string]string{"code": code, "error": message})
+}
+
+func writeJSON(w http.ResponseWriter, status int, value any) {
+	payload, err := json.Marshal(value)
+	if err != nil {
+		log.Printf("encode networking API response: %v", err)
+		http.Error(w, "could not encode response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if _, err := w.Write(append(payload, '\n')); err != nil {
+		log.Printf("write networking API response: %v", err)
+		return
+	}
 }

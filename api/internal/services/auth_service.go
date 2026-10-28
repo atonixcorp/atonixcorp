@@ -6,11 +6,13 @@ import (
 	"errors"
 
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type AuthService interface {
 	Signup(user *models.User) error
 	Login(email, password string) (*models.User, error)
+	GetByID(id uint) (*models.User, error)
 }
 
 type authService struct {
@@ -22,13 +24,14 @@ func NewAuthService(repo repositories.UserRepository) AuthService {
 }
 
 func (s *authService) Signup(user *models.User) error {
-	// Check if email already exists
-	existing, _ := s.repo.FindByEmail(user.Email)
-	if existing != nil {
+	existing, err := s.repo.FindByEmail(user.Email)
+	if err == nil && existing != nil {
 		return errors.New("email already registered")
 	}
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return errors.New("could not check account email")
+	}
 
-	// Hash password
 	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), 14)
 	if err != nil {
 		return errors.New("failed to hash password")
@@ -50,4 +53,8 @@ func (s *authService) Login(email, password string) (*models.User, error) {
 	}
 
 	return user, nil
+}
+
+func (s *authService) GetByID(id uint) (*models.User, error) {
+	return s.repo.FindByID(id)
 }

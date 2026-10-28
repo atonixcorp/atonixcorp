@@ -1,10 +1,8 @@
 package api
 
 type CreateNetworkRequest struct {
-	Name     string `json:"name"`
-	CIDR     string `json:"cidr"`
-	TenantID string `json:"tenant_id"`
-	External bool   `json:"external"`
+	Name string `json:"name"`
+	CIDR string `json:"cidr"`
 }
 
 type CreateSubnetRequest struct {

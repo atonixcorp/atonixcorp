@@ -1,7 +1,9 @@
-package atnetwork
+package main
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"atnetwork/agents/node"
@@ -16,30 +18,37 @@ import (
 )
 
 func main() {
-	// ---------------------------------------------------------
-	// 1. Load configuration
-	// ---------------------------------------------------------
-	envCfg, err := config.LoadEnv("atnetwork/config/env.yaml")
+	configDir := os.Getenv("ATNETWORK_CONFIG_DIR")
+	if configDir == "" {
+		configDir = "./config"
+	}
+	envCfg, err := config.LoadEnv(configDir + "/env.yaml")
 	if err != nil {
-		panic(fmt.Errorf("failed to load env.yaml: %w", err))
+		log.Fatalf("load networking environment config: %v", err)
 	}
 
-	backendsCfg, err := config.LoadBackends("atnetwork/config/backends.yaml")
+	backendsCfg, err := config.LoadBackends(configDir + "/backends.yaml")
 	if err != nil {
-		panic(fmt.Errorf("failed to load backends.yaml: %w", err))
+		log.Fatalf("load networking backend config: %v", err)
 	}
 
-	// ---------------------------------------------------------
-	// 2. Initialize PostgreSQL store
-	// ---------------------------------------------------------
-	store, err := core.NewPostgresStore(envCfg.DatabaseConnectionString())
+	dsn := os.Getenv("ATNETWORK_DATABASE_DSN")
+	if dsn == "" {
+		dsn = envCfg.DatabaseConnectionString()
+	}
+	store, err := core.NewPostgresStore(dsn)
 	if err != nil {
-		panic(fmt.Errorf("failed to connect to PostgreSQL: %w", err))
+		log.Fatalf("connect networking store: %v", err)
+	}
+	defer store.Close()
+	migrationsDir := os.Getenv("ATNETWORK_MIGRATIONS_DIR")
+	if migrationsDir == "" {
+		migrationsDir = "./migrations"
+	}
+	if err := store.Migrate(migrationsDir); err != nil {
+		log.Fatalf("migrate networking store: %v", err)
 	}
 
-	// ---------------------------------------------------------
-	// 3. Initialize backends dynamically
-	// ---------------------------------------------------------
 	var backends []core.Backend
 
 	if backendsCfg.OVN.Enabled {
@@ -76,15 +85,9 @@ func main() {
 
 	fmt.Println("ATN: Loaded backends:", len(backends))
 
-	// ---------------------------------------------------------
-	// 4. Initialize controller
-	// ---------------------------------------------------------
 	controller := core.NewController(store, backends)
 	policy := core.NewPolicy()
 
-	// ---------------------------------------------------------
-	// 5. Start reconciler
-	// ---------------------------------------------------------
 	reconciler := core.NewReconciler(
 		store,
 		backends,
@@ -92,22 +95,18 @@ func main() {
 	)
 	reconciler.Start()
 
-	fmt.Println("ATN: Reconciler started")
-
-	// ---------------------------------------------------------
-	// 6. Start node agent (per-node)
-	// ---------------------------------------------------------
 	if envCfg.Agent.Enabled {
 		agent := node.NewNodeAgent(envCfg.Environment.NodeID, store)
 		agent.Start()
 		fmt.Println("ATN: Node agent started for node:", envCfg.Environment.NodeID)
 	}
 
-	// ---------------------------------------------------------
-	// 7. Start API server
-	// ---------------------------------------------------------
-	fmt.Println("ATN: API server starting on :8080")
-	if err := api.StartHTTP(controller, policy); err != nil {
-		panic(err)
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET environment variable is required")
+	}
+	fmt.Println("ATN: Networking API starting on :8080")
+	if err := api.StartHTTP(controller, policy, store, jwtSecret); err != nil {
+		log.Fatalf("start networking API: %v", err)
 	}
 }

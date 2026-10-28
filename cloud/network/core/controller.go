@@ -1,8 +1,11 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 )
+
+var ErrBackendUnavailable = errors.New("verified network backend is not configured")
 
 // Controller orchestrates all operations between the store and backends.
 type Controller struct {
@@ -23,17 +26,37 @@ func NewController(store Store, backends []Backend) *Controller {
 //
 
 func (c *Controller) CreateNetwork(n Network) error {
+	if err := NewPolicy().ValidateNetwork(n); err != nil {
+		return fmt.Errorf("validate network: %w", err)
+	}
+	backend, ok := c.verifiedNetworkBackend()
+	if !ok {
+		return ErrBackendUnavailable
+	}
+	if err := backend.ApplyNetwork(n); err != nil {
+		return fmt.Errorf("backend network apply failed: %w", err)
+	}
+	if err := backend.VerifyNetwork(n); err != nil {
+		return fmt.Errorf("verify network provisioning: %w", err)
+	}
 	if err := c.store.CreateNetwork(n); err != nil {
 		return fmt.Errorf("store network: %w", err)
 	}
 
-	for _, b := range c.backends {
-		if err := b.ApplyNetwork(n); err != nil {
-			return fmt.Errorf("backend network apply failed: %w", err)
-		}
-	}
-
 	return nil
+}
+
+func (c *Controller) GetNetworkInProject(id, tenantID, projectID string) (Network, error) {
+	return c.store.GetNetworkInProject(id, tenantID, projectID)
+}
+
+func (c *Controller) ListNetworksInProject(tenantID, projectID string) ([]Network, error) {
+	return c.store.ListNetworksInProject(tenantID, projectID)
+}
+
+func (c *Controller) NetworkProvisioningEnabled() bool {
+	_, ok := c.verifiedNetworkBackend()
+	return ok
 }
 
 //
@@ -41,17 +64,47 @@ func (c *Controller) CreateNetwork(n Network) error {
 //
 
 func (c *Controller) CreateSubnet(s Subnet) error {
+	if err := NewPolicy().ValidateSubnet(s); err != nil {
+		return fmt.Errorf("validate subnet: %w", err)
+	}
+	network, err := c.store.GetNetwork(s.NetworkID)
+	if err != nil {
+		return fmt.Errorf("get parent network: %w", err)
+	}
+	if err := NewPolicy().ValidateSubnetInNetwork(s, network); err != nil {
+		return fmt.Errorf("validate subnet: %w", err)
+	}
+	backend, ok := c.verifiedNetworkBackend()
+	if !ok {
+		return ErrBackendUnavailable
+	}
+	if err := backend.ApplySubnet(s); err != nil {
+		return fmt.Errorf("backend subnet apply failed: %w", err)
+	}
+	if err := backend.VerifySubnet(s); err != nil {
+		return fmt.Errorf("verify subnet provisioning: %w", err)
+	}
 	if err := c.store.CreateSubnet(s); err != nil {
 		return fmt.Errorf("store subnet: %w", err)
 	}
 
-	for _, b := range c.backends {
-		if err := b.ApplySubnet(s); err != nil {
-			return fmt.Errorf("backend subnet apply failed: %w", err)
+	return nil
+}
+
+type verifiedNetworkBackend interface {
+	ApplyNetwork(Network) error
+	VerifyNetwork(Network) error
+	ApplySubnet(Subnet) error
+	VerifySubnet(Subnet) error
+}
+
+func (c *Controller) verifiedNetworkBackend() (verifiedNetworkBackend, bool) {
+	for _, backend := range c.backends {
+		if verified, ok := backend.(verifiedNetworkBackend); ok {
+			return verified, true
 		}
 	}
-
-	return nil
+	return nil, false
 }
 
 //

@@ -1,0 +1,19 @@
+services:
+  api:
+    environment:
+      STORAGE_DRIVER: libvirt-qemu
+      LIBVIRT_URI: ${LIBVIRT_URI:-qemu+unix:///system?socket=/run/libvirt/libvirt-sock}
+      LIBVIRT_STORAGE_PATH: /var/lib/atonixcorp-libvirt-storage
+    group_add:
+      - ${LIBVIRT_GID:?Set LIBVIRT_GID in the root .env file}
+    volumes:
+      - type: bind
+        source: ${LIBVIRT_SOCKET_HOST_PATH:?Set LIBVIRT_SOCKET_HOST_PATH in the root .env file}
+        target: /run/libvirt/libvirt-sock
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${LIBVIRT_STORAGE_HOST_PATH:?Set LIBVIRT_STORAGE_HOST_PATH in the root .env file}
+        target: /var/lib/atonixcorp-libvirt-storage
+        bind:
+          create_host_path: false

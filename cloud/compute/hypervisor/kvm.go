@@ -1,29 +1,31 @@
 package hypervisor
 
-import "fmt"
-
-type KVM struct{}
+type KVM struct {
+	libvirt *LibvirtDriver
+}
 
 func NewKVM() *KVM {
-	return &KVM{}
+	return &KVM{libvirt: NewLibvirtDriver()}
 }
 
 func (k *KVM) StartVM(id string) error {
-	fmt.Println("KVM: start VM", id)
-	return nil
+	return k.libvirt.StartVM(id)
 }
 
 func (k *KVM) StopVM(id string) error {
-	fmt.Println("KVM: stop VM", id)
-	return nil
+	return k.libvirt.StopVM(id)
+}
+
+func (k *KVM) PauseVM(id string) error {
+	return k.libvirt.PauseVM(id)
 }
 
 func (k *KVM) RebootVM(id string) error {
-	fmt.Println("KVM: reboot VM", id)
-	return nil
+	return k.libvirt.RebootVM(id)
 }
 
 func (k *KVM) GetState(id string) (VMState, error) {
-	fmt.Println("KVM: get state for VM", id)
-	return VMRunning, nil
+	return k.libvirt.GetState(id)
 }
+
+var _ Hypervisor = (*KVM)(nil)

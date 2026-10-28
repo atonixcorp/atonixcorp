@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+
+	"atonixcorp/cloud/hpc/database/model"
 )
 
 type RuntimeIntegration struct {
@@ -24,4 +26,12 @@ func (ri *RuntimeIntegration) InjectForK8s(datasetID, pod string) string {
 	fmt.Printf("Runtime injected for K8s: dataset=%s pod=%s mount=%s\n",
 		datasetID, pod, mount)
 	return mount
+}
+
+func (ri *RuntimeIntegration) DatabaseForSlurm(databaseID string) (model.ManagedDatabase, error) {
+	database, ok := ri.DB.ManagedDatabase(databaseID)
+	if !ok {
+		return model.ManagedDatabase{}, fmt.Errorf("managed database %q is not registered", databaseID)
+	}
+	return database, nil
 }

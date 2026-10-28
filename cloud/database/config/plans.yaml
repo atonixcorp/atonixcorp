@@ -9,7 +9,9 @@ plans:
     read_replicas: 0
     engines:
       - "postgres"
-      - "mongo"
+      - "mysql"
+      - "mariadb"
+      - "redis"
     price_usd: 12
 
     node_pricing:
@@ -27,8 +29,8 @@ plans:
     read_replicas: 1
     engines:
       - "postgres"
-      - "timescale"
-      - "mongo"
+      - "mysql"
+      - "mariadb"
       - "redis"
     price_usd: 40
 
@@ -47,8 +49,8 @@ plans:
     read_replicas: 2
     engines:
       - "postgres"
-      - "timescale"
-      - "mongo"
+      - "mysql"
+      - "mariadb"
       - "redis"
     price_usd: 120
 

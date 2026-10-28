@@ -1,647 +1,195 @@
-
-
-x-api-environment: &api-environment
-  DJANGO_SETTINGS_MODULE: atonixcorp_api.settings
-  PYTHONUNBUFFERED: "1"
-  DATABASE_URL: ${DATABASE_URL:-postgres://atonixcorp:atonixcorppassword@db:5432/atonixcorp}
-  DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,api.atonixcorp.com,atonixcorp.com,www.atonixcorp.com,login.atonixcorp.com}
-  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://atonixcorp.com,https://www.atonixcorp.com,http://atonixcorp.com,http://www.atonixcorp.com}
-  CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://atonixcorp.com,https://www.atonixcorp.com,http://atonixcorp.com,http://www.atonixcorp.com}
-  FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-https://atonixcorp.com}
-  BACKEND_BASE_URL: ${BACKEND_BASE_URL:-https://api.atonixcorp.com}
-  APPROVAL_NOTIFICATION_BASE_URL: ${APPROVAL_NOTIFICATION_BASE_URL:-https://atonixcorp.com}
-  AI_ENABLE_EXTERNAL_MODELS: ${AI_ENABLE_EXTERNAL_MODELS:-0}
-  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-  ANTHROPIC_API_BASE_URL: ${ANTHROPIC_API_BASE_URL:-https://api.anthropic.com}
-  CLAUDE_OPUS_MODEL: ${CLAUDE_OPUS_MODEL:-claude-opus-4-1}
-  CLAUDE_SONNET_MODEL: ${CLAUDE_SONNET_MODEL:-claude-sonnet-4-0}
-  AI_DEFAULT_MAX_TOKENS: ${AI_DEFAULT_MAX_TOKENS:-2000}
-  BANKING_TOKEN_ENCRYPTION_KEY: ${BANKING_TOKEN_ENCRYPTION_KEY:-local-dev-banking-key-change-me}
-  GOVERNANCE_SIGNING_KEY: ${GOVERNANCE_SIGNING_KEY:-}
-  EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
-  EMAIL_HOST: ${EMAIL_HOST:-smtp-relay.brevo.com}
-  EMAIL_PORT: ${EMAIL_PORT:-587}
-  EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
-  EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
-  EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
-  EMAIL_USE_SSL: ${EMAIL_USE_SSL:-False}
-  # REQUIRE_EMAIL_VERIFICATION is intentionally NOT set here: `environment` overrides
-  # `env_file`, so pinning it would ignore api/.env. Set it in api/.env instead.
-  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-no-reply@atonixcorp.com}
-  ORGANIZATION_EMAIL_DOMAIN: ${ORGANIZATION_EMAIL_DOMAIN:-atonixcorp.com}
-  PLAID_CLIENT_ID: ${PLAID_CLIENT_ID:-}
-  PLAID_CLIENT_SECRET: ${PLAID_CLIENT_SECRET:-}
-  PLAID_OAUTH_AUTHORIZE_URL: ${PLAID_OAUTH_AUTHORIZE_URL:-}
-  YODLEE_CLIENT_ID: ${YODLEE_CLIENT_ID:-}
-  YODLEE_CLIENT_SECRET: ${YODLEE_CLIENT_SECRET:-}
-  YODLEE_OAUTH_AUTHORIZE_URL: ${YODLEE_OAUTH_AUTHORIZE_URL:-}
-  FINICITY_CLIENT_ID: ${FINICITY_CLIENT_ID:-}
-  FINICITY_CLIENT_SECRET: ${FINICITY_CLIENT_SECRET:-}
-  FINICITY_OAUTH_AUTHORIZE_URL: ${FINICITY_OAUTH_AUTHORIZE_URL:-}
-  BANKING_SYNC_INTERVAL_SECONDS: ${BANKING_SYNC_INTERVAL_SECONDS:-86400}
-  APPROVAL_DIGEST_INTERVAL_SECONDS: ${APPROVAL_DIGEST_INTERVAL_SECONDS:-86400}
-  APPROVAL_DIGEST_LOOKBACK_HOURS: ${APPROVAL_DIGEST_LOOKBACK_HOURS:-24}
-
-x-api-service: &api-service
-  build:
-    context: ./api
-    dockerfile: Dockerfile
-  working_dir: /app
-  init: true
-  volumes:
-    - ./api:/app
-    - ./email-templates:/email-templates:ro
-  env_file:
-    - path: ./api/.env
-      required: false
-  environment: *api-environment
-
 services:
   db:
     image: postgres:14-alpine
-    container_name: atonixcorp-db
     restart: unless-stopped
     environment:
       POSTGRES_DB: atonixcorp
       POSTGRES_USER: atonixcorp
-      POSTGRES_PASSWORD: atonixcorppassword
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-atonixcorp-local-password}
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U atonixcorp -d atonixcorp"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 10s
-
-  api-migrate:
-    <<: *api-service
-    container_name: atonixcorp-api-migrate
-    command: ["python", "manage.py", "migrate", "--noinput"]
-    restart: "no"
-    depends_on:
-      db:
-        condition: service_healthy
+      retries: 12
 
   api:
-    <<: *api-service
-    container_name: atonixcorp-api
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    build:
+      context: ./api
+      dockerfile: Dockerfile
     restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_USER: atonixcorp
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-atonixcorp-local-password}
+      DB_NAME: atonixcorp
+      DB_PORT: "5432"
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the root .env file}
+      CONTAINER_SECRET_KEY: ${CONTAINER_SECRET_KEY:?Set CONTAINER_SECRET_KEY in the root .env file}
+      KUBECONFIG: /run/secrets/container-kubeconfig
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local-file}
+      STORAGE_DATA_DIR: /var/lib/atonixcorp-storage
+      CINDER_AUTH_URL: ${CINDER_AUTH_URL:-}
+      CINDER_USERNAME: ${CINDER_USERNAME:-}
+      CINDER_PASSWORD: ${CINDER_PASSWORD:-}
+      CINDER_PROJECT_ID: ${CINDER_PROJECT_ID:-}
+      CINDER_USER_DOMAIN_ID: ${CINDER_USER_DOMAIN_ID:-default}
+      CINDER_REGION: ${CINDER_REGION:-}
+      CINDER_INTERFACE: ${CINDER_INTERFACE:-public}
+      CINDER_VOLUME_TYPE_IDS: ${CINDER_VOLUME_TYPE_IDS:-}
+      CINDER_AVAILABILITY_ZONES: ${CINDER_AVAILABILITY_ZONES:-}
+      CEILOMETER_API_URL: ${CEILOMETER_API_URL:-}
+      OBSERVABILITY_PROMETHEUS_URL: ${OBSERVABILITY_PROMETHEUS_URL:-}
+      OBSERVABILITY_PROMETHEUS_TOKEN: ${OBSERVABILITY_PROMETHEUS_TOKEN:-}
+      OBSERVABILITY_SLURM_API_URL: ${OBSERVABILITY_SLURM_API_URL:-}
+    volumes:
+      - type: bind
+        source: ${CONTAINER_KUBECONFIG:-/dev/null}
+        target: /run/secrets/container-kubeconfig
+        read_only: true
+        bind:
+          create_host_path: false
+      - storage_data:/var/lib/atonixcorp-storage
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:8080:8080"
     depends_on:
       db:
         condition: service_healthy
-      api-migrate:
-        condition: service_completed_successfully
     healthcheck:
       test:
         [
-          "CMD-SHELL",
-          "python -c \"from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/status', timeout=3)\" || exit 1",
+          "CMD",
+          "/bin/sh",
+          "-c",
+          "wget -q -O - http://127.0.0.1:8080/health >/dev/null",
         ]
-      interval: 30s
-      timeout: 5s
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  database:
+    build:
+      context: ./cloud/database
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_USER: atonixcorp
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-atonixcorp-local-password}
+      DB_NAME: atonixcorp
+      DB_PORT: "5432"
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the root .env file}
+      DATABASE_CONFIG_DIR: /app/config
+      DATABASE_API_ADDR: :8085
+      OPENSTACK_AUTH_URL: ${OPENSTACK_AUTH_URL:-}
+      OPENSTACK_USERNAME: ${OPENSTACK_USERNAME:-}
+      OPENSTACK_PASSWORD: ${OPENSTACK_PASSWORD:-}
+      OPENSTACK_USER_DOMAIN: ${OPENSTACK_USER_DOMAIN:-default}
+      OPENSTACK_PROJECT_ID: ${OPENSTACK_PROJECT_ID:-}
+      OPENSTACK_COMPUTE_ENDPOINT: ${OPENSTACK_COMPUTE_ENDPOINT:-}
+      OPENSTACK_VOLUME_ENDPOINT: ${OPENSTACK_VOLUME_ENDPOINT:-}
+      OPENSTACK_NETWORK_ENDPOINT: ${OPENSTACK_NETWORK_ENDPOINT:-}
+      OPENSTACK_DATABASE_NETWORK_ID: ${OPENSTACK_DATABASE_NETWORK_ID:-}
+      OPENSTACK_DATABASE_SECURITY_GROUP_ID: ${OPENSTACK_DATABASE_SECURITY_GROUP_ID:-}
+      OPENSTACK_DATABASE_FLAVOR_BASIC: ${OPENSTACK_DATABASE_FLAVOR_BASIC:-}
+      OPENSTACK_DATABASE_FLAVOR_STANDARD: ${OPENSTACK_DATABASE_FLAVOR_STANDARD:-}
+      OPENSTACK_DATABASE_FLAVOR_PREMIUM: ${OPENSTACK_DATABASE_FLAVOR_PREMIUM:-}
+      OPENSTACK_DATABASE_IMAGE_POSTGRES_16: ${OPENSTACK_DATABASE_IMAGE_POSTGRES_16:-}
+      OPENSTACK_DATABASE_IMAGE_POSTGRES_17: ${OPENSTACK_DATABASE_IMAGE_POSTGRES_17:-}
+      OPENSTACK_DATABASE_IMAGE_MYSQL_8_4: ${OPENSTACK_DATABASE_IMAGE_MYSQL_8_4:-}
+      OPENSTACK_DATABASE_IMAGE_MARIADB_11_4: ${OPENSTACK_DATABASE_IMAGE_MARIADB_11_4:-}
+      OPENSTACK_DATABASE_IMAGE_REDIS_7: ${OPENSTACK_DATABASE_IMAGE_REDIS_7:-}
+    expose:
+      - "8085"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/atdb-health"]
+      interval: 10s
+      timeout: 3s
       retries: 5
       start_period: 20s
-
-  banking-sync:
-    <<: *api-service
-    container_name: atonixcorp-banking-sync
-    command:
-      - /bin/sh
-      - -c
-      - |
-        while true; do
-          python manage.py sync_banking_integrations;
-          sleep "$${BANKING_SYNC_INTERVAL_SECONDS:-86400}";
-        done
-    restart: unless-stopped
     depends_on:
+      db:
+        condition: service_healthy
       api:
         condition: service_healthy
 
-  approval-digest:
-    <<: *api-service
-    container_name: atonixcorp-approval-digest
-    command:
-      - /bin/sh
-      - -c
-      - |
-        while true; do
-          python manage.py send_approval_notification_digest --hours "$${APPROVAL_DIGEST_LOOKBACK_HOURS:-24}";
-          sleep "$${APPROVAL_DIGEST_INTERVAL_SECONDS:-86400}";
-        done
-    restart: unless-stopped
-    depends_on:
-      api:
-        condition: service_healthy
-
-  app:
+  compute:
     build:
-      context: .
-      dockerfile: ./app/Dockerfile
-    container_name: atonixcorp-app
-    command: ["npm", "start"]
-    init: true
+      context: ./cloud/compute
+      dockerfile: Dockerfile
     restart: unless-stopped
+    environment:
+      COMPUTE_API_TOKEN: ${COMPUTE_API_TOKEN:?Set COMPUTE_API_TOKEN in the root .env file}
+      COMPUTE_NODE_TOKEN: ${COMPUTE_NODE_TOKEN:?Set COMPUTE_NODE_TOKEN in the root .env file}
+      COMPUTE_STORE_PATH: /var/lib/atonixcorp-compute/instances.json
+    expose:
+      - "8580"
+    volumes:
+      - compute_data:/var/lib/atonixcorp-compute
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8580/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  networking:
+    build:
+      context: ./cloud/network
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      ATNETWORK_CONFIG_DIR: /etc/atnetwork/config
+      ATNETWORK_MIGRATIONS_DIR: /app/migrations
+      ATNETWORK_DATABASE_DSN: host=db user=atonixcorp password=${POSTGRES_PASSWORD:-atonixcorp-local-password} dbname=atonixcorp port=5432 sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the root .env file}
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:8080
+      DATABASE_API_URL: http://database:8085
+      NETWORK_API_URL: http://networking:8080
+      COMPUTE_API_URL: http://compute:8580
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
+      HOSTNAME: 0.0.0.0
     ports:
       - "127.0.0.1:3000:3000"
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./app:/app
-      - /app/node_modules
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-      HOST: 0.0.0.0
-      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
     depends_on:
       api:
         condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"require('http').get('http://127.0.0.1:3000', (res) => process.exit(res.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\"",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-
-  console-app:
-    build:
-      context: .
-      dockerfile: ./consoleapp/Dockerfile
-    container_name: atonixcorp-console-app
-    command: ["npm", "start"]
-    init: true
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3002:3002"
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./consoleapp:/app
-      - /app/node_modules
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-      HOST: 0.0.0.0
-      PORT: 3002
-      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000}
-      REACT_APP_AUTH_APP_URL: ${REACT_APP_AUTH_APP_URL:-http://localhost:3001}
-      REACT_APP_ENTERPRISE_APP_URL: ${REACT_APP_ENTERPRISE_APP_URL:-http://localhost:3003}
-    depends_on:
-      api:
+      compute:
         condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"require('http').get('http://127.0.0.1:3002', (res) => process.exit(res.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\"",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-
-  login-api:
-    build:
-      context: .
-      dockerfile: ./loginapi/Dockerfile
-    container_name: atonixcorp-login-api
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-    working_dir: /workspace/loginapi
-    init: true
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:8001:8000"
-    volumes:
-      - ./loginapi:/workspace/loginapi
-      - ./api:/workspace/api
-      - ./email-templates:/workspace/email-templates:ro
-    env_file:
-      - path: ./api/.env
-        required: false
-    environment:
-      DJANGO_SETTINGS_MODULE: loginapi.settings
-      PYTHONUNBUFFERED: "1"
-      PYTHONPATH: /workspace/api:/workspace/loginapi
-      DATABASE_URL: ${DATABASE_URL:-postgres://atonixcorp:atonixcorppassword@db:5432/atonixcorp}
-      DJANGO_ALLOWED_HOSTS: ${LOGIN_DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,login.atonixcorp.com}
-      CORS_ALLOWED_ORIGINS: ${LOGIN_CORS_ALLOWED_ORIGINS:-https://login.atonixcorp.com,http://localhost:3001,http://127.0.0.1:3001}
-      CSRF_TRUSTED_ORIGINS: ${LOGIN_CSRF_TRUSTED_ORIGINS:-https://login.atonixcorp.com,http://localhost:3001,http://127.0.0.1:3001}
-      FRONTEND_BASE_URL: ${LOGIN_FRONTEND_BASE_URL:-https://login.atonixcorp.com}
-      BACKEND_BASE_URL: ${LOGIN_BACKEND_BASE_URL:-https://login.atonixcorp.com}
-      APPROVAL_NOTIFICATION_BASE_URL: ${LOGIN_FRONTEND_BASE_URL:-https://login.atonixcorp.com}
-      AI_ENABLE_EXTERNAL_MODELS: ${AI_ENABLE_EXTERNAL_MODELS:-0}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ANTHROPIC_API_BASE_URL: ${ANTHROPIC_API_BASE_URL:-https://api.anthropic.com}
-      CLAUDE_OPUS_MODEL: ${CLAUDE_OPUS_MODEL:-claude-opus-4-1}
-      CLAUDE_SONNET_MODEL: ${CLAUDE_SONNET_MODEL:-claude-sonnet-4-0}
-      AI_DEFAULT_MAX_TOKENS: ${AI_DEFAULT_MAX_TOKENS:-2000}
-      BANKING_TOKEN_ENCRYPTION_KEY: ${BANKING_TOKEN_ENCRYPTION_KEY:-local-dev-banking-key-change-me}
-      GOVERNANCE_SIGNING_KEY: ${GOVERNANCE_SIGNING_KEY:-}
-      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
-      EMAIL_HOST: ${EMAIL_HOST:-smtp-relay.brevo.com}
-      EMAIL_PORT: ${EMAIL_PORT:-587}
-      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
-      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
-      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
-      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-False}
-      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-no-reply@atonixcorp.com}
-      ORGANIZATION_EMAIL_DOMAIN: ${ORGANIZATION_EMAIL_DOMAIN:-atonixcorp.com}
-    depends_on:
-      db:
+      database:
         condition: service_healthy
-      api-migrate:
-        condition: service_completed_successfully
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "python -c \"from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/status', timeout=3)\" || exit 1",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
-  login-app:
-    build:
-      context: .
-      dockerfile: ./loginapp/Dockerfile
-    container_name: atonixcorp-login-app
-    command: ["npm", "start"]
-    init: true
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3001:3001"
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./loginapp:/app
-      - /app/node_modules
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-      HOST: 0.0.0.0
-      PORT: 3001
-      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
-      REACT_APP_AUTH_API_URL: ${REACT_APP_AUTH_API_URL:-http://localhost:8001}
-      REACT_APP_MAIN_APP_URL: ${REACT_APP_MAIN_APP_URL:-http://localhost:3000}
-      REACT_APP_CONSOLE_APP_URL: ${REACT_APP_CONSOLE_APP_URL:-http://localhost:3002}
-      REACT_APP_ENTERPRISE_APP_URL: ${REACT_APP_ENTERPRISE_APP_URL:-http://localhost:3003}
-    depends_on:
-      login-api:
+      networking:
         condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"require('http').get('http://127.0.0.1:3001', (res) => process.exit(res.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\"",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-
-  blog-media-api:
-    build:
-      context: .
-      dockerfile: ./blogmediaapi/Dockerfile
-    container_name: atonixcorp-blog-media-api
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-    working_dir: /workspace/blogmediaapi
-    init: true
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:8007:8000"
-    volumes:
-      - ./blogmediaapi:/workspace/blogmediaapi
-      - ./api:/workspace/api
-      - ./email-templates:/workspace/email-templates:ro
-    env_file:
-      - path: ./api/.env
-        required: false
-    environment:
-      DJANGO_SETTINGS_MODULE: blogmediaapi.settings
-      PYTHONUNBUFFERED: "1"
-      PYTHONPATH: /workspace/api:/workspace/blogmediaapi
-      DATABASE_URL: ${DATABASE_URL:-postgres://atonixcorp:atonixcorppassword@db:5432/atonixcorp}
-      DJANGO_ALLOWED_HOSTS: ${BLOG_MEDIA_DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,media.atonixcorp.com}
-      CORS_ALLOWED_ORIGINS: ${BLOG_MEDIA_CORS_ALLOWED_ORIGINS:-https://media.atonixcorp.com,http://localhost:3008,http://127.0.0.1:3008}
-      CSRF_TRUSTED_ORIGINS: ${BLOG_MEDIA_CSRF_TRUSTED_ORIGINS:-https://media.atonixcorp.com,http://localhost:3008,http://127.0.0.1:3008}
-      BLOG_MEDIA_FRONTEND_BASE_URL: ${BLOG_MEDIA_FRONTEND_BASE_URL:-https://media.atonixcorp.com}
-      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
-      EMAIL_HOST: ${EMAIL_HOST:-smtp-relay.brevo.com}
-      EMAIL_PORT: ${EMAIL_PORT:-587}
-      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
-      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
-      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
-      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-False}
-      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-no-reply@atonixcorp.com}
-      ORGANIZATION_EMAIL_DOMAIN: ${ORGANIZATION_EMAIL_DOMAIN:-atonixcorp.com}
-    depends_on:
-      db:
-        condition: service_healthy
-      api-migrate:
-        condition: service_completed_successfully
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "python -c \"from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/status', timeout=3)\" || exit 1",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
-  blog-media-app:
-    build:
-      context: .
-      dockerfile: ./blogmediaapp/Dockerfile
-    container_name: atonixcorp-blog-media-app
-    command: ["npm", "start"]
-    init: true
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3008:3008"
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./blogmediaapp:/app
-      - /app/node_modules
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-      HOST: 0.0.0.0
-      PORT: 3008
-      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
-      REACT_APP_MEDIA_API_URL: ${REACT_APP_MEDIA_API_URL:-http://localhost:8007}
-    depends_on:
-      blog-media-api:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"require('http').get('http://127.0.0.1:3008', (res) => process.exit(res.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\"",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-
-  enterprise-app:
-    build:
-      context: .
-      dockerfile: ./enterpriseapp/Dockerfile
-    container_name: atonixcorp-enterprise-app
-    command: ["npm", "start"]
-    init: true
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3003:3003"
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./enterpriseapp:/app
-      - /app/node_modules
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-      HOST: 0.0.0.0
-      PORT: 3003
-      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000}
-      REACT_APP_AUTH_APP_URL: ${REACT_APP_AUTH_APP_URL:-http://localhost:3001}
-      REACT_APP_CONSOLE_APP_URL: ${REACT_APP_CONSOLE_APP_URL:-http://localhost:3002}
-    depends_on:
-      api:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"require('http').get('http://127.0.0.1:3003', (res) => process.exit(res.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\"",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-
-  workspace-app:
-    build:
-      context: .
-      dockerfile: ./workspaceapp/Dockerfile
-    container_name: atonixcorp-workspace-app
-    command: ["npm", "start"]
-    init: true
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3006:3006"
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./workspaceapp:/app
-      - /app/node_modules
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-      HOST: 0.0.0.0
-      PORT: 3006
-      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000}
-      REACT_APP_AUTH_APP_URL: ${REACT_APP_AUTH_APP_URL:-http://localhost:3001}
-      REACT_APP_CONSOLE_APP_URL: ${REACT_APP_CONSOLE_APP_URL:-http://localhost:3002}
-      REACT_APP_ENTERPRISE_APP_URL: ${REACT_APP_ENTERPRISE_APP_URL:-http://localhost:3003}
-      REACT_APP_ENTITY_APP_URL: ${REACT_APP_ENTITY_APP_URL:-http://localhost:3005}
-      REACT_APP_EQUITY_APP_URL: ${REACT_APP_EQUITY_APP_URL:-http://localhost:3004}
-    depends_on:
-      api:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"require('http').get('http://127.0.0.1:3006', (res) => process.exit(res.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\"",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-
-  entity-app:
-    build:
-      context: .
-      dockerfile: ./entityapp/Dockerfile
-    container_name: atonixcorp-entity-app
-    command: ["npm", "start"]
-    init: true
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3005:3005"
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./entityapp:/app
-      - /app/node_modules
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-      HOST: 0.0.0.0
-      PORT: 3005
-      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000}
-      REACT_APP_AUTH_APP_URL: ${REACT_APP_AUTH_APP_URL:-http://localhost:3001}
-      REACT_APP_CONSOLE_APP_URL: ${REACT_APP_CONSOLE_APP_URL:-http://localhost:3002}
-      REACT_APP_ENTERPRISE_APP_URL: ${REACT_APP_ENTERPRISE_APP_URL:-http://localhost:3003}
-      REACT_APP_WORKSPACE_APP_URL: ${REACT_APP_WORKSPACE_APP_URL:-http://localhost:3006}
-      REACT_APP_EQUITY_APP_URL: ${REACT_APP_EQUITY_APP_URL:-http://localhost:3004}
-    depends_on:
-      api:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"require('http').get('http://127.0.0.1:3005', (res) => process.exit(res.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\"",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-
-  equity-app:
-    build:
-      context: .
-      dockerfile: ./equityapp/Dockerfile
-    container_name: atonixcorp-equity-app
-    command: ["npm", "start"]
-    init: true
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3004:3004"
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./equityapp:/app
-      - /app/node_modules
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-      HOST: 0.0.0.0
-      PORT: 3004
-      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000}
-      REACT_APP_AUTH_APP_URL: ${REACT_APP_AUTH_APP_URL:-http://localhost:3001}
-      REACT_APP_CONSOLE_APP_URL: ${REACT_APP_CONSOLE_APP_URL:-http://localhost:3002}
-      REACT_APP_ENTERPRISE_APP_URL: ${REACT_APP_ENTERPRISE_APP_URL:-http://localhost:3003}
-      REACT_APP_WORKSPACE_APP_URL: ${REACT_APP_WORKSPACE_APP_URL:-http://localhost:3006}
-      REACT_APP_ENTITY_APP_URL: ${REACT_APP_ENTITY_APP_URL:-http://localhost:3005}
-    depends_on:
-      api:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"require('http').get('http://127.0.0.1:3004', (res) => process.exit(res.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\"",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-
-  apache:
-    image: httpd:2.4-alpine
-    container_name: atonixcorp-apache
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./deploy/apache2/docker/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
-      - ./deploy/apache2/docker/atonixcorp-vhosts-tls.conf:/usr/local/apache2/conf/extra/atonixcorp-vhosts-tls.conf:ro
-      - ./deploy/apache2/docker/atonixcorp-vhosts-http.conf:/usr/local/apache2/conf/extra/atonixcorp-vhosts-http.conf:ro
-      - ./deploy/apache2/docker/entrypoint.sh:/usr/local/apache2/conf/extra/entrypoint.sh:ro
-      - ${APACHE_CERTS_DIR:-/etc/letsencrypt}:/usr/local/apache2/conf/letsencrypt:ro
-    command: ["/bin/sh", "/usr/local/apache2/conf/extra/entrypoint.sh"]
-    depends_on:
-      api:
-        condition: service_healthy
-      app:
-        condition: service_healthy
-      console-app:
-        condition: service_healthy
-      enterprise-app:
-        condition: service_healthy
-      workspace-app:
-        condition: service_healthy
-      entity-app:
-        condition: service_healthy
-      equity-app:
-        condition: service_healthy
-      blog-media-app:
-        condition: service_healthy
-      login-api:
-        condition: service_healthy
-      login-app:
-        condition: service_healthy
-
-  cli:
-    build:
-      context: .
-      dockerfile: ./atonixcorpcli/Dockerfile
-    container_name: atonixcorp-cli
-    profiles: ["devtools"]
-    environment:
-      ATONIXCORP_API_URL: http://api:8000
-    command: ["atonixcorp", "sandbox-status"]
-    depends_on:
-      api:
-        condition: service_healthy
-
-  toolbox:
-    build:
-      context: .
-      dockerfile: ./toolbox/Dockerfile
-    container_name: atonixcorp-toolbox
-    profiles: ["devtools"]
-    command: ["atonixcorp-toolbox", "sandbox-entity", "1"]
-
-  sdk-shell:
-    build:
-      context: .
-      dockerfile: ./atonixcorpsdk/Dockerfile
-    container_name: atonixcorp-sdk-shell
-    profiles: ["devtools"]
-
-  mobile-metro:
-    build:
-      context: .
-      dockerfile: ./atonixcorpmobile/Dockerfile
-    container_name: atonixcorp-mobile-metro
-    profiles: ["mobile"]
-    command: ["npx", "react-native", "start", "--host", "0.0.0.0", "--port", "8081"]
-    init: true
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:8081:8081"
-    volumes:
-      - ./atonixcorpmobile:/app
-      - /app/node_modules
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"require('http').get('http://127.0.0.1:8081/status', (res) => { let body = ''; res.on('data', (chunk) => body += chunk); res.on('end', () => process.exit(body.trim() === 'packager-status:running' ? 0 : 1)); }).on('error', () => process.exit(1))\"",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
 
 volumes:
   postgres_data:
+  compute_data:
+  storage_data:

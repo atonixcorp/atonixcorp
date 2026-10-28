@@ -8,11 +8,12 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- NETWORKS
 -- ============================================================
 
-CREATE TABLE networks (
+CREATE TABLE IF NOT EXISTS networks (
     id              UUID PRIMARY KEY,
     name            TEXT NOT NULL,
     cidr            CIDR NOT NULL,
     tenant_id       TEXT NOT NULL,
+    project_id      TEXT NOT NULL,
     external        BOOLEAN DEFAULT FALSE,
     status          TEXT DEFAULT 'ACTIVE',
     created_at      TIMESTAMP DEFAULT NOW(),
@@ -23,7 +24,7 @@ CREATE TABLE networks (
 -- SUBNETS
 -- ============================================================
 
-CREATE TABLE subnets (
+CREATE TABLE IF NOT EXISTS subnets (
     id              UUID PRIMARY KEY,
     network_id      UUID REFERENCES networks(id) ON DELETE CASCADE,
     cidr            CIDR NOT NULL,
@@ -37,7 +38,7 @@ CREATE TABLE subnets (
 -- ROUTERS
 -- ============================================================
 
-CREATE TABLE routers (
+CREATE TABLE IF NOT EXISTS routers (
     id                  UUID PRIMARY KEY,
     name                TEXT NOT NULL,
     tenant_id           TEXT NOT NULL,
@@ -51,7 +52,7 @@ CREATE TABLE routers (
 -- ROUTER INTERFACES
 -- ============================================================
 
-CREATE TABLE router_interfaces (
+CREATE TABLE IF NOT EXISTS router_interfaces (
     id          UUID PRIMARY KEY,
     router_id   UUID REFERENCES routers(id) ON DELETE CASCADE,
     subnet_id   UUID REFERENCES subnets(id) ON DELETE CASCADE,
@@ -63,7 +64,7 @@ CREATE TABLE router_interfaces (
 -- PORTS
 -- ============================================================
 
-CREATE TABLE ports (
+CREATE TABLE IF NOT EXISTS ports (
     id          UUID PRIMARY KEY,
     network_id  UUID REFERENCES networks(id) ON DELETE CASCADE,
     device_id   TEXT NOT NULL,
@@ -77,7 +78,7 @@ CREATE TABLE ports (
 -- PORT IPs
 -- ============================================================
 
-CREATE TABLE port_ips (
+CREATE TABLE IF NOT EXISTS port_ips (
     id          UUID PRIMARY KEY,
     port_id     UUID REFERENCES ports(id) ON DELETE CASCADE,
     ip_address  INET NOT NULL
@@ -87,7 +88,7 @@ CREATE TABLE port_ips (
 -- SECURITY GROUPS
 -- ============================================================
 
-CREATE TABLE security_groups (
+CREATE TABLE IF NOT EXISTS security_groups (
     id          UUID PRIMARY KEY,
     name        TEXT NOT NULL,
     tenant_id   TEXT NOT NULL,
@@ -99,7 +100,7 @@ CREATE TABLE security_groups (
 -- SECURITY GROUP RULES
 -- ============================================================
 
-CREATE TABLE security_group_rules (
+CREATE TABLE IF NOT EXISTS security_group_rules (
     id            UUID PRIMARY KEY,
     sg_id         UUID REFERENCES security_groups(id) ON DELETE CASCADE,
     direction     TEXT NOT NULL,      -- ingress | egress
@@ -113,7 +114,7 @@ CREATE TABLE security_group_rules (
 -- PORT ↔ SECURITY GROUP MAPPING
 -- ============================================================
 
-CREATE TABLE port_security_groups (
+CREATE TABLE IF NOT EXISTS port_security_groups (
     port_id UUID REFERENCES ports(id) ON DELETE CASCADE,
     sg_id   UUID REFERENCES security_groups(id) ON DELETE CASCADE,
     PRIMARY KEY (port_id, sg_id)
@@ -123,7 +124,7 @@ CREATE TABLE port_security_groups (
 -- FLOATING IPs
 -- ============================================================
 
-CREATE TABLE floating_ips (
+CREATE TABLE IF NOT EXISTS floating_ips (
     id              UUID PRIMARY KEY,
     tenant_id       TEXT NOT NULL,
     external_ip     INET NOT NULL,
@@ -136,7 +137,7 @@ CREATE TABLE floating_ips (
 -- NAT RULES
 -- ============================================================
 
-CREATE TABLE nat_rules (
+CREATE TABLE IF NOT EXISTS nat_rules (
     id          UUID PRIMARY KEY,
     router_id   UUID REFERENCES routers(id) ON DELETE CASCADE,
     external_ip INET NOT NULL,
@@ -149,7 +150,7 @@ CREATE TABLE nat_rules (
 -- BACKEND STATE (OVN, FRR, Neutron, Fabric, CNI)
 -- ============================================================
 
-CREATE TABLE backend_state (
+CREATE TABLE IF NOT EXISTS backend_state (
     id            UUID PRIMARY KEY,
     backend_name  TEXT NOT NULL,
     resource_type TEXT NOT NULL,
@@ -163,7 +164,7 @@ CREATE TABLE backend_state (
 -- EVENTS (AUDIT + RECONCILER)
 -- ============================================================
 
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
     id            UUID PRIMARY KEY,
     resource_id   UUID,
     resource_type TEXT,

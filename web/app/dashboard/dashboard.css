@@ -1,13 +1,13 @@
 .cloud-dashboard {
-  --cloud-ink: #0b2145;
-  --cloud-muted: #60749a;
-  --cloud-blue: #0878ea;
+  --cloud-ink: var(--color-text-primary);
+  --cloud-muted: var(--color-text-secondary);
+  --cloud-blue: var(--color-primary);
   --cloud-teal: #008d99;
   --cloud-green: #08b87a;
   min-height: 100vh;
   color: var(--cloud-ink);
-  background: #f5f7fb;
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  font-family: var(--font-sans);
 }
 
 .cloud-dashboard *,
@@ -955,7 +955,8 @@
   padding: 0 17px 16px;
 }
 
-.cloud-quick-grid button {
+.cloud-quick-grid button,
+.cloud-quick-grid a {
   display: flex;
   min-width: 0;
   min-height: 58px;
@@ -967,28 +968,35 @@
   color: #0a234b;
   background: #ffffff;
   cursor: pointer;
+  text-decoration: none;
   text-align: left;
   transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
 
-.cloud-quick-grid button:hover {
+.cloud-quick-grid button:hover,
+.cloud-quick-grid a:hover {
   transform: translateY(-1px);
   border-color: #b5d2e2;
   box-shadow: 0 5px 14px rgba(24, 51, 90, 0.07);
 }
 
-.cloud-quick-grid button > svg {
+.cloud-quick-grid button > svg,
+.cloud-quick-grid a > svg {
   width: 26px;
   height: 26px;
   flex: 0 0 26px;
   color: #087be5;
 }
 
-.cloud-quick-grid button:nth-child(2) > svg { color: #7648e8; }
-.cloud-quick-grid button:nth-child(3) > svg { color: #087be5; }
-.cloud-quick-grid button:nth-child(4) > svg { color: #0089ce; }
+.cloud-quick-grid button:nth-child(2) > svg,
+.cloud-quick-grid a:nth-child(2) > svg { color: #7648e8; }
+.cloud-quick-grid button:nth-child(3) > svg,
+.cloud-quick-grid a:nth-child(3) > svg { color: #087be5; }
+.cloud-quick-grid button:nth-child(4) > svg,
+.cloud-quick-grid a:nth-child(4) > svg { color: #0089ce; }
 
-.cloud-quick-grid button > span {
+.cloud-quick-grid button > span,
+.cloud-quick-grid a > span {
   display: flex;
   min-width: 0;
   flex: 1;
@@ -996,14 +1004,16 @@
   gap: 4px;
 }
 
-.cloud-quick-grid button strong {
+.cloud-quick-grid button strong,
+.cloud-quick-grid a strong {
   overflow: hidden;
   font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.cloud-quick-grid button small {
+.cloud-quick-grid button small,
+.cloud-quick-grid a small {
   overflow: hidden;
   color: #61789f;
   font-size: 9px;
@@ -1011,7 +1021,8 @@
   white-space: nowrap;
 }
 
-.cloud-quick-grid button b {
+.cloud-quick-grid button b,
+.cloud-quick-grid a b {
   color: #3f6eaf;
   font-size: 20px;
   font-weight: 400;
@@ -1470,7 +1481,8 @@
     padding-left: 11px;
   }
 
-  .cloud-quick-grid button {
+  .cloud-quick-grid button,
+  .cloud-quick-grid a {
     gap: 8px;
     padding: 7px;
   }
@@ -2449,6 +2461,7 @@
 .cloud-dashboard[data-theme="dark"] .cloud-popover,
 .cloud-dashboard[data-theme="dark"] .cloud-panel,
 .cloud-dashboard[data-theme="dark"] .cloud-quick-grid button,
+.cloud-dashboard[data-theme="dark"] .cloud-quick-grid a,
 .cloud-dashboard[data-theme="dark"] .cloud-map-pin,
 .cloud-dashboard[data-theme="dark"] .cloud-create-modal,
 .cloud-dashboard[data-theme="dark"] .cloud-security-ring {
@@ -2482,6 +2495,7 @@
 .cloud-dashboard[data-theme="dark"] .cloud-chart-ylabels,
 .cloud-dashboard[data-theme="dark"] .cloud-chart-xlabels,
 .cloud-dashboard[data-theme="dark"] .cloud-quick-grid button small,
+.cloud-dashboard[data-theme="dark"] .cloud-quick-grid a small,
 .cloud-dashboard[data-theme="dark"] .cloud-map-pin small,
 .cloud-dashboard[data-theme="dark"] .cloud-map-legend,
 .cloud-dashboard[data-theme="dark"] .cloud-page-footer,
@@ -2501,7 +2515,9 @@
 .cloud-dashboard[data-theme="dark"] .cloud-security-footer strong,
 .cloud-dashboard[data-theme="dark"] .cloud-cost-total strong,
 .cloud-dashboard[data-theme="dark"] .cloud-quick-grid button,
+.cloud-dashboard[data-theme="dark"] .cloud-quick-grid a,
 .cloud-dashboard[data-theme="dark"] .cloud-quick-grid button b,
+.cloud-dashboard[data-theme="dark"] .cloud-quick-grid a b,
 .cloud-dashboard[data-theme="dark"] .cloud-activity-panel table,
 .cloud-dashboard[data-theme="dark"] .cloud-activity-panel th,
 .cloud-dashboard[data-theme="dark"] .cloud-resource-table td strong,
@@ -2569,7 +2585,8 @@
   stroke: #2b3e56;
 }
 
-.cloud-dashboard[data-theme="dark"] .cloud-quick-grid button:hover {
+.cloud-dashboard[data-theme="dark"] .cloud-quick-grid button:hover,
+.cloud-dashboard[data-theme="dark"] .cloud-quick-grid a:hover {
   border-color: #3c617e;
   background: #1b2d43;
 }

@@ -1,24 +1,19 @@
 package rpc
 
-import "fmt"
-
-// LocalRPC is a simple in-memory RPC backend.
-// It is NOT distributed — only for testing.
+// LocalRPC is an in-memory RPC backend for development and tests only.
 type LocalRPC struct {
-	last RPCMessage
+	messages chan RPCMessage
 }
 
 func NewLocalRPC() *LocalRPC {
-	return &LocalRPC{}
+	return &LocalRPC{messages: make(chan RPCMessage, 64)}
 }
 
 func (l *LocalRPC) Send(msg RPCMessage) error {
-	fmt.Println("local rpc: send", msg.Type)
-	l.last = msg
+	l.messages <- msg
 	return nil
 }
 
 func (l *LocalRPC) Receive() (RPCMessage, error) {
-	fmt.Println("local rpc: receive", l.last.Type)
-	return l.last, nil
+	return <-l.messages, nil
 }

@@ -7,9 +7,40 @@
 
 html, body {
   min-height: 100%;
-  font-family: Inter, system-ui, sans-serif;
+  font-family: var(--font-sans);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
 
-  /* REMOVE the forced dark background */
-  background: #ffffff; /* pure white default */
-  color: #000000;      /* pure black default */
+body { line-height: 1.5; }
+
+button, input, select, textarea { font: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: var(--z-overlay);
+  top: var(--space-3);
+  left: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  transform: translateY(calc(-100% - var(--space-4)));
+  border-radius: var(--radius-md);
+  color: #fff;
+  background: var(--color-secondary);
+  font-weight: 700;
+}
+
+.skip-link:focus { transform: translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

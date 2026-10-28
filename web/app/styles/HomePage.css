@@ -274,3 +274,138 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Cloud platform visual system for the home page; the hero content remains unchanged. */
+.home-page {
+  background: #fff;
+  color: #13233b;
+}
+
+.home-page .operational-rail {
+  padding: clamp(24px, 4vw, 46px) 0;
+  background: #f2f6fb;
+}
+
+.home-page .rail-wrap {
+  width: min(100% - 40px, 1320px);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-page .rail-item {
+  min-height: 184px;
+  padding: 22px;
+  border: 1px solid #dfe7f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgb(19 35 59 / 4%);
+}
+
+.home-page .rail-item:nth-child(n) {
+  border-right: 1px solid #dfe7f0;
+}
+
+.home-page .rail-item:hover {
+  background: #f8fcff;
+  box-shadow: 0 14px 28px rgb(19 35 59 / 8%);
+}
+
+.home-page .platform-overview {
+  background:
+    radial-gradient(ellipse at 86% 20%, rgb(0 166 167 / 17%), transparent 34%),
+    linear-gradient(125deg, #081d37, #0d3152 72%, #0b3b51);
+}
+
+.home-page .platform-index,
+.home-page .platform-title,
+.home-page .platform-lead,
+.home-page .platform-description {
+  color: #edf5ff;
+}
+
+.home-page .platform-overview-story {
+  border-color: rgb(211 229 247 / 22%);
+}
+
+.home-page .platform-mission-link {
+  color: #c2d4e9;
+}
+
+.home-page .capabilities,
+.home-page .mission,
+.home-page .roadmap {
+  background: #f3f6fa;
+}
+
+.home-page .cap-card,
+.home-page .sov-card,
+.home-page .phase-card {
+  border-color: #dce5ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgb(15 39 68 / 5%);
+}
+
+.home-page .cap-card:hover,
+.home-page .sov-card:hover,
+.home-page .phase-card:hover {
+  border-color: #b4d2e6;
+  box-shadow: 0 16px 34px rgb(15 39 68 / 9%);
+}
+
+.home-page .cap-name,
+.home-page .sov-name,
+.home-page .phase-name,
+.home-page .mission-title,
+.home-page .sov-title,
+.home-page .roadmap-title {
+  color: #102748;
+}
+
+.home-page .cap-summary,
+.home-page .cap-description,
+.home-page .mission-summary,
+.home-page .mission-list li,
+.home-page .sov-description,
+.home-page .phase-description {
+  color: #50647b;
+}
+
+.home-page .contact-section {
+  background:
+    radial-gradient(ellipse at 50% 115%, rgb(0 166 167 / 12%), transparent 55%),
+    #eaf1f8;
+}
+
+.home-page .contact-section h2 {
+  color: #102748;
+}
+
+.home-page .contact-actions a:not(.contact-action-primary) {
+  border-color: #d4dfeb;
+  color: #19374b;
+  background: #fff;
+}
+
+@media (max-width: 900px) {
+  .home-page .rail-wrap {
+    width: calc(100% - 40px);
+  }
+
+  .home-page .rail-item:nth-child(n) {
+    border-bottom: 1px solid #dfe7f0;
+  }
+}
+
+@media (max-width: 700px) {
+  .home-page .rail-wrap {
+    width: calc(100% - 32px);
+  }
+
+  .home-page .rail-item {
+    min-height: 165px;
+  }
+}

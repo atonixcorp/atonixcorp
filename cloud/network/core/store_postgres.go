@@ -2,6 +2,10 @@ package core
 
 import (
 	"database/sql"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
 
 	_ "github.com/lib/pq"
 )
@@ -15,8 +19,63 @@ func NewPostgresStore(conn string) (*PostgresStore, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &PostgresStore{db: db}, nil
+}
+
+func (s *PostgresStore) Close() error {
+	return s.db.Close()
+}
+
+func (s *PostgresStore) Migrate(directory string) error {
+	if _, err := s.db.Exec(`
+		CREATE TABLE IF NOT EXISTS networking_schema_migrations (
+			name TEXT PRIMARY KEY,
+			applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)
+	`); err != nil {
+		return fmt.Errorf("create migration ledger: %w", err)
+	}
+	files, err := filepath.Glob(filepath.Join(directory, "*.sql"))
+	if err != nil {
+		return fmt.Errorf("find networking migrations: %w", err)
+	}
+	sort.Strings(files)
+	for _, path := range files {
+		name := filepath.Base(path)
+		var applied bool
+		if err := s.db.QueryRow(
+			`SELECT EXISTS (SELECT 1 FROM networking_schema_migrations WHERE name = $1)`,
+			name,
+		).Scan(&applied); err != nil {
+			return fmt.Errorf("check migration %s: %w", name, err)
+		}
+		if applied {
+			continue
+		}
+		sqlText, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read migration %s: %w", name, err)
+		}
+		tx, err := s.db.Begin()
+		if err != nil {
+			return fmt.Errorf("begin migration %s: %w", name, err)
+		}
+		if _, err := tx.Exec(string(sqlText)); err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("apply migration %s: %w", name, err)
+		}
+		if _, err := tx.Exec(
+			`INSERT INTO networking_schema_migrations (name) VALUES ($1)`,
+			name,
+		); err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("record migration %s: %w", name, err)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("commit migration %s: %w", name, err)
+		}
+	}
+	return nil
 }
 
 //
@@ -24,15 +83,45 @@ func NewPostgresStore(conn string) (*PostgresStore, error) {
 //
 
 func (s *PostgresStore) CreateNetwork(n Network) error {
-	_, err := s.db.Exec(`
-        INSERT INTO networks (id, name, cidr, tenant_id, external)
-        VALUES ($1, $2, $3, $4, $5)
-    `, n.ID, n.Name, n.CIDR, n.TenantID, n.External)
-	return err
+	if err := NewPolicy().ValidateNetwork(n); err != nil {
+		return fmt.Errorf("validate network: %w", err)
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin network allocation: %w", err)
+	}
+	defer tx.Rollback()
+	var lockResult any
+	if err := tx.QueryRow(`SELECT pg_advisory_xact_lock(hashtext($1))`, n.TenantID).Scan(&lockResult); err != nil {
+		return fmt.Errorf("lock tenant address space: %w", err)
+	}
+	var overlaps bool
+	if err := tx.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1 FROM networks
+			WHERE tenant_id = $1 AND cidr && $2::cidr
+		)
+	`, n.TenantID, n.CIDR).Scan(&overlaps); err != nil {
+		return fmt.Errorf("check tenant address space: %w", err)
+	}
+	if overlaps {
+		return ErrCIDROverlap
+	}
+	_, err = tx.Exec(`
+        INSERT INTO networks (id, name, cidr, tenant_id, project_id, external)
+        VALUES ($1, $2, $3, $4, $5, $6)
+    `, n.ID, n.Name, n.CIDR, n.TenantID, n.ProjectID, n.External)
+	if err != nil {
+		return fmt.Errorf("insert network: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit network allocation: %w", err)
+	}
+	return nil
 }
 
 func (s *PostgresStore) ListNetworks() ([]Network, error) {
-	rows, err := s.db.Query(`SELECT id, name, cidr, tenant_id, external FROM networks`)
+	rows, err := s.db.Query(`SELECT id, name, cidr, tenant_id, project_id, external FROM networks`)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +130,7 @@ func (s *PostgresStore) ListNetworks() ([]Network, error) {
 	var nets []Network
 	for rows.Next() {
 		var n Network
-		if err := rows.Scan(&n.ID, &n.Name, &n.CIDR, &n.TenantID, &n.External); err != nil {
+		if err := rows.Scan(&n.ID, &n.Name, &n.CIDR, &n.TenantID, &n.ProjectID, &n.External); err != nil {
 			return nil, err
 		}
 		nets = append(nets, n)
@@ -52,10 +141,68 @@ func (s *PostgresStore) ListNetworks() ([]Network, error) {
 func (s *PostgresStore) GetNetwork(id string) (Network, error) {
 	var n Network
 	err := s.db.QueryRow(`
-        SELECT id, name, cidr, tenant_id, external
+        SELECT id, name, cidr, tenant_id, project_id, external
         FROM networks WHERE id = $1
-    `, id).Scan(&n.ID, &n.Name, &n.CIDR, &n.TenantID, &n.External)
+    `, id).Scan(&n.ID, &n.Name, &n.CIDR, &n.TenantID, &n.ProjectID, &n.External)
 	return n, err
+}
+
+func (s *PostgresStore) GetNetworkInProject(id, tenantID, projectID string) (Network, error) {
+	var network Network
+	err := s.db.QueryRow(`
+		SELECT id, name, cidr, tenant_id, project_id, external
+		FROM networks
+		WHERE id = $1 AND tenant_id = $2 AND project_id = $3
+	`, id, tenantID, projectID).Scan(
+		&network.ID, &network.Name, &network.CIDR, &network.TenantID,
+		&network.ProjectID, &network.External,
+	)
+	return network, err
+}
+
+func (s *PostgresStore) ListNetworksInProject(tenantID, projectID string) ([]Network, error) {
+	rows, err := s.db.Query(`
+		SELECT id, name, cidr, tenant_id, project_id, external
+		FROM networks
+		WHERE tenant_id = $1 AND project_id = $2
+		ORDER BY created_at, id
+	`, tenantID, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	networks := make([]Network, 0)
+	for rows.Next() {
+		var network Network
+		if err := rows.Scan(
+			&network.ID, &network.Name, &network.CIDR, &network.TenantID,
+			&network.ProjectID, &network.External,
+		); err != nil {
+			return nil, err
+		}
+		networks = append(networks, network)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return networks, nil
+}
+
+func (s *PostgresStore) AuthorizeProject(userID, tenantID, projectID string) (bool, error) {
+	var authorized bool
+	err := s.db.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1
+			FROM projects p
+			JOIN project_memberships pm ON pm.project_id = p.id
+			JOIN tenant_memberships tm ON tm.tenant_id = p.tenant_id
+			WHERE p.id = $1
+			  AND p.tenant_id = $2
+			  AND pm.user_id = $3
+			  AND tm.user_id = $3
+		)
+	`, projectID, tenantID, userID).Scan(&authorized)
+	return authorized, err
 }
 
 //
@@ -63,11 +210,53 @@ func (s *PostgresStore) GetNetwork(id string) (Network, error) {
 //
 
 func (s *PostgresStore) CreateSubnet(sub Subnet) error {
-	_, err := s.db.Exec(`
+	if err := NewPolicy().ValidateSubnet(sub); err != nil {
+		return fmt.Errorf("validate subnet: %w", err)
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin subnet allocation: %w", err)
+	}
+	defer tx.Rollback()
+	var lockResult any
+	if err := tx.QueryRow(`SELECT pg_advisory_xact_lock(hashtext($1))`, sub.NetworkID).Scan(&lockResult); err != nil {
+		return fmt.Errorf("lock network address space: %w", err)
+	}
+	var network Network
+	if err := tx.QueryRow(`
+		SELECT id, name, cidr, tenant_id, external
+		FROM networks WHERE id = $1
+	`).Scan(
+		&network.ID, &network.Name, &network.CIDR, &network.TenantID, &network.External,
+	); err != nil {
+		return fmt.Errorf("load parent network: %w", err)
+	}
+	if err := NewPolicy().ValidateSubnetInNetwork(sub, network); err != nil {
+		return fmt.Errorf("validate subnet against network: %w", err)
+	}
+	var overlaps bool
+	if err := tx.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1 FROM subnets
+			WHERE network_id = $1 AND cidr && $2::cidr
+		)
+	`, sub.NetworkID, sub.CIDR).Scan(&overlaps); err != nil {
+		return fmt.Errorf("check network address space: %w", err)
+	}
+	if overlaps {
+		return ErrCIDROverlap
+	}
+	_, err = tx.Exec(`
         INSERT INTO subnets (id, network_id, cidr, gateway_ip)
         VALUES ($1, $2, $3, $4)
     `, sub.ID, sub.NetworkID, sub.CIDR, sub.GatewayIP)
-	return err
+	if err != nil {
+		return fmt.Errorf("insert subnet: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit subnet allocation: %w", err)
+	}
+	return nil
 }
 
 func (s *PostgresStore) ListSubnets() ([]Subnet, error) {

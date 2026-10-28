@@ -4,6 +4,9 @@ type Store interface {
 	// Network
 	CreateNetwork(Network) error
 	GetNetwork(id string) (Network, error)
+	GetNetworkInProject(id, tenantID, projectID string) (Network, error)
+	ListNetworksInProject(tenantID, projectID string) ([]Network, error)
+	AuthorizeProject(userID, tenantID, projectID string) (bool, error)
 
 	// Subnet
 	CreateSubnet(Subnet) error

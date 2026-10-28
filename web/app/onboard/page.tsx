@@ -2,11 +2,16 @@
 
 import "../styles/Onboard.css";
 import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
 import TopHeader from "../sections/header/TopHeader";
 import GlobalHeader from "../sections/header/GlobalHeader";
 import Footer from "../sections/footer/Footer";
 
 export default function OnboardPage() {
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [created, setCreated] = useState(false);
   return (
     <main className="onboard-page">
 
@@ -41,7 +46,34 @@ export default function OnboardPage() {
               <span className="onboard-card-step">01 <i /> 02</span>
             </div>
 
-            <form className="onboard-form">
+            <form className="onboard-form" onSubmit={(event) => {
+              event.preventDefault();
+              const form = event.currentTarget;
+              const data = new FormData(form);
+              const password = String(data.get("password") ?? "");
+              if (password !== String(data.get("confirmPassword") ?? "")) {
+                setError("Passwords do not match.");
+                return;
+              }
+              setSubmitting(true);
+              setError("");
+              void fetch("/api/auth/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  fullName: String(data.get("name") ?? ""),
+                  email: String(data.get("email") ?? ""),
+                  password,
+                }),
+              }).then(async (response) => {
+                const result = await response.json().catch(() => null) as { error?: string } | null;
+                if (!response.ok) throw new Error(result?.error || "Could not create account.");
+                setCreated(true);
+                form.reset();
+              }).catch((submitError: unknown) => {
+                setError(submitError instanceof Error ? submitError.message : "Could not create account.");
+              }).finally(() => setSubmitting(false));
+            }}>
               <label className="onboard-field">
                 <span>Full name</span>
                 <input
@@ -73,6 +105,8 @@ export default function OnboardPage() {
                     placeholder="Create a password"
                     autoComplete="new-password"
                     className="onboard-input"
+                    minLength={12}
+                    maxLength={72}
                     required
                   />
                 </label>
@@ -88,10 +122,12 @@ export default function OnboardPage() {
                   />
                 </label>
               </div>
-              <button className="onboard-btn primary" type="submit">
-                Create account <span aria-hidden="true">→</span>
+              <button className="onboard-btn primary" type="submit" disabled={submitting}>
+                {submitting ? "Creating account…" : "Create account"} <span aria-hidden="true">→</span>
               </button>
             </form>
+            {error && <p className="login-notice" role="alert">{error}</p>}
+            {created && <p className="login-notice" role="status">Account created. <Link href="/login">Sign in to open your workspace.</Link></p>}
 
             <div className="onboard-divider"><span>or continue with</span></div>
 
@@ -115,7 +151,7 @@ export default function OnboardPage() {
             </div>
 
             <p className="login-text">
-              Already have an account? <a href="/login">Sign in <span aria-hidden="true">→</span></a>
+              Already have an account? <Link href="/login">Sign in <span aria-hidden="true">→</span></Link>
             </p>
           </div>
         </div>

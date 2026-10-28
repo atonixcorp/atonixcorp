@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"sync"
 
 	"atonixcorp/cloud/hpc/database/io"
 	"atonixcorp/cloud/hpc/database/model"
@@ -20,6 +21,8 @@ type DatabaseService struct {
 	Metrics   map[string]*monitoring.DatasetMetrics
 	IOMetrics map[string]*monitoring.IOMetrics
 	Health    map[string]*monitoring.HealthStatus
+	managedDatabaseMu sync.RWMutex
+	ManagedDatabases map[string]model.ManagedDatabase
 }
 
 func NewDatabaseService() *DatabaseService {
@@ -34,7 +37,27 @@ func NewDatabaseService() *DatabaseService {
 		Metrics:   make(map[string]*monitoring.DatasetMetrics),
 		IOMetrics: make(map[string]*monitoring.IOMetrics),
 		Health:    make(map[string]*monitoring.HealthStatus),
+		ManagedDatabases: make(map[string]model.ManagedDatabase),
 	}
+}
+
+func (db *DatabaseService) RegisterManagedDatabase(database model.ManagedDatabase) error {
+	if database.ID == "" || database.Engine == "" || database.Endpoint == "" ||
+		database.Port == 0 || database.DatabaseName == "" || database.CredentialRef == "" ||
+		database.NetworkID == "" || !database.TLSRequired {
+		return fmt.Errorf("database connection requires identity, private network, credential reference, and TLS")
+	}
+	db.managedDatabaseMu.Lock()
+	defer db.managedDatabaseMu.Unlock()
+	db.ManagedDatabases[database.ID] = database
+	return nil
+}
+
+func (db *DatabaseService) ManagedDatabase(id string) (model.ManagedDatabase, bool) {
+	db.managedDatabaseMu.RLock()
+	defer db.managedDatabaseMu.RUnlock()
+	database, ok := db.ManagedDatabases[id]
+	return database, ok
 }
 
 func (db *DatabaseService) RegisterDataset(meta *model.Dataset) {

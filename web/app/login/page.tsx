@@ -9,11 +9,9 @@ import TopHeader from "../sections/header/TopHeader";
 import GlobalHeader from "../sections/header/GlobalHeader";
 import Footer from "../sections/footer/Footer";
 
-const DEMO_EMAIL = "demo@example.com";
-const DEMO_PASSWORD = "admin123";
-
 export default function LoginSignup() {
   const [loginError, setLoginError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
   return (
@@ -58,14 +56,19 @@ export default function LoginSignup() {
                 const formData = new FormData(event.currentTarget);
                 const email = String(formData.get("email") ?? "").trim().toLowerCase();
                 const password = String(formData.get("password") ?? "");
-
-                if (email !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
-                  setLoginError("Email or password is incorrect. Use the demo credentials below.");
-                  return;
-                }
-
-                sessionStorage.setItem("atonixcorp-demo-user", email);
-                router.push("/dashboard");
+                setSubmitting(true);
+                setLoginError("");
+                void fetch("/api/auth/login", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email, password }),
+                }).then(async (response) => {
+                  const payload = await response.json().catch(() => null) as { error?: string } | null;
+                  if (!response.ok) throw new Error(payload?.error || "Could not sign in.");
+                  router.push("/dashboard");
+                }).catch((error: unknown) => {
+                  setLoginError(error instanceof Error ? error.message : "Could not sign in.");
+                }).finally(() => setSubmitting(false));
               }}
             >
               <label className="login-field">
@@ -92,19 +95,13 @@ export default function LoginSignup() {
                   onChange={() => setLoginError("")}
                 />
               </label>
-              <button className="login-btn primary" type="submit">
-                Sign in <span aria-hidden="true">→</span>
+              <button className="login-btn primary" type="submit" disabled={submitting}>
+                {submitting ? "Signing in…" : "Sign in"} <span aria-hidden="true">→</span>
               </button>
             </form>
             {loginError && <p className="login-notice" role="alert">{loginError}</p>}
-            <div className="login-demo-credentials">
-              <strong>Demo access</strong>
-              <span>Email <code>demo@example.com</code></span>
-              <span>Password <code>admin123</code></span>
-              <small>For this dashboard prototype only. Do not use these credentials for a real account.</small>
-            </div>
             <p className="login-dashboard-preview">
-              Or <Link href="/dashboard">preview the dashboard without signing in <span aria-hidden="true">→</span></Link>
+              Need an account? <Link href="/onboard">Request access <span aria-hidden="true">→</span></Link>
             </p>
 
             <div className="login-divider"><span>or continue with</span></div>

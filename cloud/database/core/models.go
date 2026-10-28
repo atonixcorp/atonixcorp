@@ -8,18 +8,41 @@ const (
 	EngineTimescale = "timescale"
 	EngineMongo     = "mongo"
 	EngineRedis     = "redis"
+	EngineMySQL     = "mysql"
+	EngineMariaDB   = "mariadb"
 )
 
 type Plan struct {
 	CPU          int         `yaml:"cpu"`
 	MemoryMB     int         `yaml:"memory_mb"`
 	StorageGB    int         `yaml:"storage_gb"`
+	FlavorID     string      `yaml:"flavor_id"`
 	HA           bool        `yaml:"ha"`
 	Backups      string      `yaml:"backups"`
 	ReadReplicas int         `yaml:"read_replicas"`
 	Engines      []string    `yaml:"engines"`
 	PriceUSD     float64     `yaml:"price_usd"`
 	NodePricing  NodePricing `yaml:"node_pricing"`
+}
+
+type EngineCatalogEntry struct {
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Category    string   `json:"category"`
+	Description string   `json:"description"`
+	Port        int      `json:"port"`
+	Versions    []string `json:"versions"`
+	Enabled     bool     `json:"enabled"`
+}
+
+type PlanCatalogEntry struct {
+	ID        string   `json:"id"`
+	CPU       int      `json:"cpu"`
+	MemoryMB  int      `json:"memory_mb"`
+	StorageGB int      `json:"storage_gb"`
+	Engines   []string `json:"engines"`
+	HighAvail bool     `json:"high_availability"`
+	Enabled   bool     `json:"enabled"`
 }
 
 type NodePricing struct {
@@ -30,25 +53,51 @@ type NodePricing struct {
 
 // DBInstance represents a database instance provisioned on OpenStack.
 type DBInstance struct {
-	ID        string `json:"id"`
-	TenantID  string `json:"tenant_id"`
-	Name      string `json:"name"`
-	Engine    string `json:"engine"`
-	Plan      string `json:"plan"`
-	CPU       int    `json:"cpu"`
-	MemoryMB  int    `json:"memory_mb"`
-	StorageGB int    `json:"storage_gb"`
-	Region    string `json:"region"`
-	Status    string `json:"status"`
-	Endpoint  string `json:"endpoint"`
+	ID              string `json:"id"`
+	TenantID        string `json:"tenant_id"`
+	ProjectID       string `json:"project_id"`
+	Name            string `json:"name"`
+	Engine          string `json:"engine"`
+	EngineVersion   string `json:"engine_version"`
+	Plan            string `json:"plan"`
+	WorkloadProfile string `json:"workload_profile"`
+	CPU             int    `json:"cpu"`
+	MemoryMB        int    `json:"memory_mb"`
+	StorageGB       int    `json:"storage_gb"`
+	Region          string `json:"region"`
+	Status          string `json:"status"`
+	Endpoint        string `json:"endpoint"`
+	Port            int    `json:"port"`
+	NetworkID       string `json:"-"`
 
 	// OpenStack resources
-	OpenStackServerID  string `json:"openstack_server_id"`
-	OpenStackVolumeID  string `json:"openstack_volume_id"`
-	OpenStackNetworkID string `json:"openstack_network_id"`
+	OpenStackServerID       string `json:"-"`
+	OpenStackVolumeID       string `json:"-"`
+	OpenStackVolumeAttached bool   `json:"-"`
+	OpenStackNetworkID      string `json:"-"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type DatabaseOperation struct {
+	ID         string    `json:"id"`
+	DatabaseID string    `json:"database_id"`
+	TenantID   string    `json:"tenant_id"`
+	ProjectID  string    `json:"project_id"`
+	Status     string    `json:"status"`
+	Stage      string    `json:"stage"`
+	Reason     string    `json:"reason,omitempty"`
+	Attempt    int       `json:"attempt"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+type CreateDatabaseResult struct {
+	Database       *DBInstance        `json:"database"`
+	Operation      *DatabaseOperation `json:"operation"`
+	StatusURL      string             `json:"status_url"`
+	EventStreamURL string             `json:"event_stream_url"`
 }
 
 // Backup metadata
@@ -71,12 +120,15 @@ type DBMetrics struct {
 
 // CreateInstanceRequest is the payload from API/UI.
 type CreateInstanceRequest struct {
-	TenantID  string `json:"tenant_id"`
-	Name      string `json:"name"`
-	Engine    string `json:"engine"`
-	Plan      string `json:"plan"`
-	CPU       int    `json:"cpu"`
-	MemoryMB  int    `json:"memory_mb"`
-	StorageGB int    `json:"storage_gb"`
-	Region    string `json:"region"`
+	TenantID        string `json:"tenant_id"`
+	ProjectID       string `json:"project_id"`
+	Name            string `json:"name"`
+	Engine          string `json:"engine"`
+	EngineVersion   string `json:"engine_version"`
+	Plan            string `json:"plan"`
+	WorkloadProfile string `json:"workload_profile"`
+	CPU             int    `json:"cpu"`
+	MemoryMB        int    `json:"memory_mb"`
+	StorageGB       int    `json:"storage_gb"`
+	Region          string `json:"region"`
 }

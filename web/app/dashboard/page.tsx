@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useCloudTheme } from "@/app/shared/lib/cloud-theme";
 import "./dashboard.css";
 
 type Service = {
@@ -56,7 +57,6 @@ const navigation: Service[] = [
   { name: "Networking", icon: "network", kind: "Network" },
   { name: "Security", icon: "security", kind: "Security policy" },
   { name: "AI & Machine Learning", icon: "ai", kind: "AI workspace" },
-  { name: "DevSecOps", icon: "devsecops", kind: "CI/CD pipeline" },
   { name: "Observability", icon: "observability", kind: "Observability" },
   { name: "Billing", icon: "billing", kind: "Billing" },
 ];
@@ -68,7 +68,6 @@ const resourceTypes = [
   { label: "Database", icon: "database" },
   { label: "Network", icon: "network" },
   { label: "AI workspace", icon: "ai" },
-  { label: "CI/CD pipeline", icon: "devsecops" },
   { label: "Security policy", icon: "security" },
 ];
 
@@ -101,9 +100,6 @@ const regions = [
   "Asia Pacific · ap-southeast",
   "South America · sa-east",
 ];
-const devSecOpsDashboardUrl =
-  process.env.NEXT_PUBLIC_DEVSECOPS_DASHBOARD_URL ?? "http://localhost:3002";
-
 function DashboardIcon({ name }: { name: string }) {
   const paths: Record<string, string> = {
     home: "M3 10.5 12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 19.5v-9ZM9 21v-7h6v7",
@@ -114,7 +110,6 @@ function DashboardIcon({ name }: { name: string }) {
     network: "M12 12V4m0 8-7 5m7-5 7 5M12 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM5 15a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm14 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z",
     security: "M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Zm-3-11 2 2 4-4",
     ai: "M9 3a3 3 0 0 0-3 3v1a3 3 0 0 0-2 3 3 3 0 0 0 1 2.2A3.5 3.5 0 0 0 7 19h2m6-16a3 3 0 0 1 3 3v1a3 3 0 0 1 2 3 3 3 0 0 1-1 2.2A3.5 3.5 0 0 1 17 19h-2m-3-16v18m-5-9h5m2 0h5m-10 4h3m2-8h3",
-    devsecops: "M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Zm-2-11 1.5 1.5L15 9",
     observability: "M3 3v18h18M7 14l4-4 4 3 6-7",
     billing: "M3 6h18v12H3zM3 10h18m-14 4h4",
     globe: "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z",
@@ -154,7 +149,7 @@ function ResourceCard({
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, toggleTheme] = useCloudTheme();
   const [selectedService, setSelectedService] = useState("Home");
   const [resources, setResources] = useState<CloudResource[]>([]);
   const [activities, setActivities] = useState(initialActivities);
@@ -166,7 +161,8 @@ export default function DashboardPage() {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [toast, setToast] = useState("");
-  const [userEmail, setUserEmail] = useState("demo@example.com");
+  const [userEmail, setUserEmail] = useState("");
+  const [authStatus, setAuthStatus] = useState<"loading" | "authenticated" | "unauthenticated" | "unavailable">("loading");
   const [agentModels, setAgentModels] = useState<AgentModel[]>([]);
   const [agentError, setAgentError] = useState("");
   const [agentConnected, setAgentConnected] = useState(false);
@@ -204,29 +200,32 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      try {
-        const savedTheme = localStorage.getItem("atonixcorp-cloud-theme");
-        if (savedTheme === "dark" || savedTheme === "light") setTheme(savedTheme);
-      } catch {
-        setToast("Theme preference could not be loaded from this browser.");
-      }
-    }, 0);
-    return () => window.clearTimeout(timeout);
-  }, []);
-
-  useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      setUserEmail(sessionStorage.getItem("atonixcorp-demo-user") ?? "demo@example.com");
-      try {
-        const saved = localStorage.getItem("atonixcorp-demo-resources");
-        if (saved) setResources(JSON.parse(saved) as CloudResource[]);
-      } catch {
-        setToast("Saved demo resources could not be loaded from this browser.");
-      }
+      void fetch("/api/auth/session", { cache: "no-store" }).then(async (response) => {
+        const payload = await response.json().catch(() => null) as {
+          user?: { email?: string };
+        } | null;
+        if (response.status === 401) {
+          setAuthStatus("unauthenticated");
+          router.replace("/login");
+          return;
+        }
+        if (!response.ok || !payload?.user?.email) {
+          setAuthStatus("unavailable");
+          return;
+        }
+        setUserEmail(payload.user.email);
+        setAuthStatus("authenticated");
+        try {
+          const saved = localStorage.getItem("atonixcorp-demo-resources");
+          if (saved) setResources(JSON.parse(saved) as CloudResource[]);
+        } catch {
+          setToast("Saved dashboard resources could not be loaded from this browser.");
+        }
+      }).catch(() => setAuthStatus("unavailable"));
     });
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
@@ -316,16 +315,32 @@ export default function DashboardPage() {
       : `${trimmedName} added to your demo workspace.`);
   };
 
-  const signOut = () => {
-    sessionStorage.removeItem("atonixcorp-demo-user");
+  const signOut = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
   };
 
   const suggestedAction = selected.kind === "home" ? resourceTypes[0].label : selected.kind;
   const canCreate = resourceTypes.some((item) => item.label === suggestedAction);
 
+  if (authStatus !== "authenticated") {
+    return (
+      <main className="cloud-dashboard">
+        <a className="skip-link" href="#cloud-account-state">Skip to main content</a>
+        <section className="cloud-empty-state" role={authStatus === "unavailable" ? "alert" : undefined}>
+          <h1 id="cloud-account-state" tabIndex={-1}>{authStatus === "unavailable" ? "Account service unavailable" : "Checking your account…"}</h1>
+          <p>{authStatus === "unavailable"
+            ? "The dashboard requires an authenticated account session. Please retry after the account service is available."
+            : "Your authenticated session is being verified."}</p>
+          {authStatus === "unavailable" && <button type="button" onClick={() => window.location.reload()}>Retry</button>}
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="cloud-dashboard" data-theme={theme}>
+      <a className="skip-link" href="#cloud-content">Skip to main content</a>
       <header className="cloud-topbar">
         <Link className="cloud-brand" href="/dashboard" aria-label="AtonixCorp Cloud dashboard" onClick={() => setSelectedService("Home")}>
           <Image src="/atonixcorp-icon.png" alt="" width={42} height={42} priority />
@@ -344,6 +359,11 @@ export default function DashboardPage() {
               onKeyDown={(event) => {
                 if (event.key === "Escape") setQuery("");
                 if (event.key === "Enter" && searchMatches[0]) {
+                  if (searchMatches[0].name === "Observability") {
+                    router.push("/observability");
+                    setQuery("");
+                    return;
+                  }
                   setSelectedService(searchMatches[0].name);
                   setQuery("");
                 }
@@ -355,12 +375,56 @@ export default function DashboardPage() {
           {query && (
             <div className="cloud-search-results" role="listbox" aria-label="Search results">
               {searchMatches.map((item) => (
-                <button key={item.name} type="button" onClick={() => { setSelectedService(item.name); setQuery(""); }}>
+                <button key={item.name} type="button" onClick={() => {
+                  setQuery("");
+                  if (item.name === "Compute") {
+                    router.push("/compute");
+                    return;
+                  }
+                  if (item.name === "Containers") {
+                    router.push("/containers");
+                    return;
+                  }
+                  if (item.name === "Storage") {
+                    router.push("/storage");
+                    return;
+                  }
+                  if (item.name === "Databases") {
+                    router.push("/cloud/databases");
+                    return;
+                  }
+                  if (item.name === "Networking") {
+                    router.push("/networking");
+                    return;
+                  }
+                  if (item.name === "Observability") {
+                    router.push("/observability");
+                    return;
+                  }
+                  if (item.name === "Billing") {
+                    router.push("/billing");
+                    return;
+                  }
+                  setSelectedService(item.name);
+                }}>
                   <DashboardIcon name={item.icon} /><span>{item.name}</span><small>Service</small>
                 </button>
               ))}
               {resourceMatches.map((resource) => (
-                <button key={resource.id} type="button" onClick={() => { setSelectedService(navigation.find((item) => item.kind === resource.kind)?.name ?? "Home"); setQuery(resource.name); }}>
+                <button key={resource.id} type="button" onClick={() => {
+                  if (resource.kind === "Virtual machine") {
+                    setQuery("");
+                    router.push("/compute/instances");
+                    return;
+                  }
+                  if (resource.kind === "Storage bucket") {
+                    setQuery("");
+                    router.push("/storage");
+                    return;
+                  }
+                  setSelectedService(navigation.find((item) => item.kind === resource.kind)?.name ?? "Home");
+                  setQuery(resource.name);
+                }}>
                   <DashboardIcon name={resourceTypes.find((item) => item.label === resource.kind)?.icon ?? "compute"} /><span>{resource.name}</span><small>{resource.kind}</small>
                 </button>
               ))}
@@ -374,15 +438,7 @@ export default function DashboardPage() {
             type="button"
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            onClick={() => {
-              const nextTheme = theme === "dark" ? "light" : "dark";
-              setTheme(nextTheme);
-              try {
-                localStorage.setItem("atonixcorp-cloud-theme", nextTheme);
-              } catch {
-                setToast("Theme changed, but this browser could not save your preference.");
-              }
-            }}
+            onClick={toggleTheme}
           >
             <DashboardIcon name={theme === "dark" ? "sun" : "moon"} />
           </button>
@@ -414,13 +470,13 @@ export default function DashboardPage() {
           <div className="cloud-popover-wrap">
             <button className="cloud-profile" type="button" aria-label="Open account menu" aria-expanded={profileOpen} onClick={() => { setProfileOpen(!profileOpen); setNotificationOpen(false); }}>
               <span className="cloud-avatar">{userEmail.slice(0, 2).toUpperCase()}</span>
-              <span><strong>{userEmail.split("@")[0]}</strong><small>Demo account</small></span>
+              <span><strong>{userEmail.split("@")[0]}</strong><small>Account</small></span>
               <span className="cloud-chevron">⌄</span>
             </button>
             {profileOpen && (
               <div className="cloud-popover cloud-profile-popover">
                 <strong>{userEmail}</strong>
-                <small>Local demo session</small>
+                <small>Authenticated account</small>
                 <button type="button" onClick={signOut}>Sign out</button>
               </div>
             )}
@@ -432,10 +488,70 @@ export default function DashboardPage() {
         <aside className="cloud-sidebar" aria-label="Cloud services">
           <nav>
             {navigation.map((item) => (
-              item.name === "DevSecOps" ? (
-                <a key={item.name} className="cloud-nav-item" href={devSecOpsDashboardUrl}>
-                  <DashboardIcon name={item.icon} /><span>{item.name}</span><span className="cloud-nav-external" aria-hidden="true">↗</span>
-                </a>
+              item.name === "Compute" ? (
+                <Link
+                  key={item.name}
+                  className="cloud-nav-item"
+                  href="/compute"
+                >
+                  <DashboardIcon name={item.icon} /><span>{item.name}</span>
+                </Link>
+              ) : item.name === "Containers" ? (
+                <Link
+                  key={item.name}
+                  className="cloud-nav-item"
+                  href="/containers"
+                >
+                  <DashboardIcon name={item.icon} /><span>{item.name}</span>
+                </Link>
+              ) : item.name === "Storage" ? (
+                <Link
+                  key={item.name}
+                  className="cloud-nav-item"
+                  href="/storage"
+                >
+                  <DashboardIcon name={item.icon} /><span>{item.name}</span>
+                </Link>
+              ) : item.name === "Databases" ? (
+                <Link
+                  key={item.name}
+                  className="cloud-nav-item"
+                  href="/cloud/databases"
+                >
+                  <DashboardIcon name={item.icon} /><span>{item.name}</span>
+                </Link>
+              ) : item.name === "Networking" ? (
+                <Link
+                  key={item.name}
+                  className="cloud-nav-item"
+                  href="/networking"
+                >
+                  <DashboardIcon name={item.icon} /><span>{item.name}</span>
+                </Link>
+              ) : item.name === "Security" ? (
+                <Link
+                  key={item.name}
+                  className="cloud-nav-item"
+                  href="/security"
+                >
+                  <DashboardIcon name={item.icon} /><span>{item.name}</span>
+                </Link>
+              ) : item.name === "Observability" ? (
+                <Link
+                  key={item.name}
+                  className="cloud-nav-item"
+                  href="/observability"
+                >
+                  <DashboardIcon name={item.icon} /><span>{item.name}</span>
+                </Link>
+              ) : item.name === "Billing" ? (
+                <Link
+                  key={item.name}
+                  className="cloud-nav-item"
+                  href="/billing"
+                >
+                  <DashboardIcon name={item.icon} /><span>{item.name}</span>
+                </Link>
               ) : (
                 <button
                   key={item.name}
@@ -463,7 +579,7 @@ export default function DashboardPage() {
         </aside>
 
         <div className="cloud-main">
-          <div className="cloud-content">
+          <div className="cloud-content" id="cloud-content" tabIndex={-1}>
             <div className="cloud-page-heading" id="overview">
               <div>
                 <p className="cloud-eyebrow">{selectedService === "Home" ? "WELCOME TO ATONIXCORP CLOUD" : `ATONIXCORP CLOUD / ${selectedService.toUpperCase()}`}</p>
@@ -471,7 +587,7 @@ export default function DashboardPage() {
                 <p>{selectedService === "Home" ? "Monitor and manage your cloud workspace from one place." : selectedService === "AI & Machine Learning" ? "AI & Machine Learning workspace in your AtonixCorp demo environment." : `${selectedService} workspace in your AtonixCorp demo environment.`}</p>
               </div>
               <div className="cloud-heading-actions">
-                {selectedService !== "AI & Machine Learning" && (
+                {selectedService !== "AI & Machine Learning" && selectedService !== "Billing" && (
                   <button className="cloud-create-button" type="button" onClick={() => openCreate(canCreate ? suggestedAction : undefined)}>
                     <DashboardIcon name="plus" /> Create resource <span>⌄</span>
                   </button>
@@ -493,17 +609,23 @@ export default function DashboardPage() {
                 <article className="cloud-panel cloud-resource-panel" id="resources">
                   <header className="cloud-panel-heading">
                     <div><h2>Resource summary</h2><p>Sample resources across all regions</p></div>
-                    <button type="button" onClick={() => setSelectedService("Compute")}>View services <span aria-hidden="true">→</span></button>
+                    <Link href="/compute">View services <span aria-hidden="true">→</span></Link>
                   </header>
                   <div className="cloud-resource-grid">
                     {resourceSummary.map((item) => (
-                      <ResourceCard key={item.kind} item={item} count={item.count + resources.filter((resource) => resource.kind === item.kind).length} onClick={() => setSelectedService(navigation.find((service) => service.kind === item.kind)?.name ?? "Home")} />
+                      <ResourceCard key={item.kind} item={item} count={item.count + resources.filter((resource) => resource.kind === item.kind).length} onClick={() => {
+                        if (item.kind === "Virtual machine") {
+                          router.push("/compute/instances");
+                          return;
+                        }
+                        setSelectedService(navigation.find((service) => service.kind === item.kind)?.name ?? "Home");
+                      }} />
                     ))}
                   </div>
                 </article>
 
                 <article className="cloud-panel cloud-health-panel">
-                  <header className="cloud-panel-heading"><div><h2>System health</h2><p>Demo status</p></div><button type="button" onClick={() => setSelectedService("Observability")}>Overview <span aria-hidden="true">→</span></button></header>
+                  <header className="cloud-panel-heading"><div><h2>System health</h2><p>Demo status</p></div><Link href="/observability">Overview <span aria-hidden="true">→</span></Link></header>
                   <div className="cloud-health-content">
                     <span className="cloud-health-check" aria-hidden="true">i</span>
                     <div><strong>Cloud connection not configured</strong><p>Connect an environment to see live health and availability.</p></div>
@@ -530,7 +652,7 @@ export default function DashboardPage() {
                 </article>
 
                 <article className="cloud-panel cloud-security-panel">
-                  <header className="cloud-panel-heading"><div><h2>Security posture</h2><p>Workspace overview</p></div><button type="button" onClick={() => setSelectedService("Security")}>View insights <span aria-hidden="true">→</span></button></header>
+                  <header className="cloud-panel-heading"><div><h2>Security posture</h2><p>Workspace overview</p></div><button type="button" onClick={() => router.push("/security")}>View insights <span aria-hidden="true">→</span></button></header>
                   <div className="cloud-security-content">
                     <div className="cloud-security-ring"><span>—</span></div>
                     <div><strong>Awaiting connection</strong><p>Security insights will appear when your environment is connected.</p></div>
@@ -539,7 +661,7 @@ export default function DashboardPage() {
                 </article>
 
                 <article className="cloud-panel cloud-cost-panel">
-                  <header className="cloud-panel-heading"><div><h2>Cost overview</h2><p>Sample trend · not a bill</p></div><button type="button" onClick={() => setSelectedService("Billing")}>View billing <span aria-hidden="true">→</span></button></header>
+                  <header className="cloud-panel-heading"><div><h2>Cost overview</h2><p>Sample trend · not a bill</p></div><button type="button" onClick={() => router.push("/billing")}>View billing <span aria-hidden="true">→</span></button></header>
                   <div className="cloud-cost-content">
                     <div className="cloud-cost-total"><span>Current month</span><strong>—</strong><small>Cost data unavailable</small></div>
                     <div className="cloud-chart" aria-label="Illustrative cost trend chart">
@@ -558,10 +680,10 @@ export default function DashboardPage() {
                 <article className="cloud-panel cloud-quick-panel">
                   <header className="cloud-panel-heading"><div><h2>Quick actions</h2><p>Common tasks · demo only</p></div></header>
                   <div className="cloud-quick-grid">
-                    <button type="button" onClick={() => openCreate("Virtual machine")}><DashboardIcon name="compute" /><span><strong>Launch instance</strong><small>Provision a virtual machine</small></span><b>›</b></button>
-                    <button type="button" onClick={() => openCreate("Kubernetes cluster")}><DashboardIcon name="containers" /><span><strong>Create cluster</strong><small>Deploy Kubernetes</small></span><b>›</b></button>
-                    <button type="button" onClick={() => openCreate("Database")}><DashboardIcon name="database" /><span><strong>Add database</strong><small>Set up a managed database</small></span><b>›</b></button>
-                    <button type="button" onClick={() => openCreate("Network")}><DashboardIcon name="network" /><span><strong>Configure network</strong><small>VPC, subnets, and more</small></span><b>›</b></button>
+                    <Link href="/compute/deploy"><DashboardIcon name="compute" /><span><strong>Launch instance</strong><small>Configure a virtual machine</small></span><b>›</b></Link>
+                    <Link href="/containers/deploy"><DashboardIcon name="containers" /><span><strong>Deploy container</strong><small>Launch an app on Kubernetes</small></span><b>›</b></Link>
+                    <Link href="/cloud/databases"><DashboardIcon name="database" /><span><strong>Add database</strong><small>Set up a managed database</small></span><b>›</b></Link>
+                    <Link href="/networking"><DashboardIcon name="network" /><span><strong>Configure network</strong><small>VPCs and address ranges</small></span><b>›</b></Link>
                   </div>
                 </article>
 
@@ -667,13 +789,13 @@ export default function DashboardPage() {
                   <div><strong>Recommendations never apply changes</strong><p>The Agent only provides advisory output. It does not provision resources, alter scaling, or modify Cloud configuration.</p></div>
                 </article>
               </section>
-            ) : selectedService === "Observability" || selectedService === "Billing" ? (
+            ) : selectedService === "Billing" ? (
               <article className="cloud-panel cloud-service-info">
                 <span className="cloud-service-info-icon"><DashboardIcon name={selected.icon} /></span>
                 <div>
-                  <p className="cloud-eyebrow">DEMO WORKSPACE</p>
-                  <h2>{selectedService} tools are ready to connect</h2>
-                  <p>There is no live cloud connection yet, so this workspace does not show real {selectedService.toLowerCase()} data. The navigation works in this prototype, and the view will be ready for service integration.</p>
+                  <p className="cloud-eyebrow">BILLING WORKSPACE</p>
+                  <h2>Billing data is not connected</h2>
+                  <p>Usage and billing data will appear when the billing service is integrated.</p>
                   <button className="cloud-create-button" type="button" onClick={() => setSelectedService("Home")}>Return to overview <span>→</span></button>
                 </div>
               </article>

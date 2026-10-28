@@ -1,7 +1,5 @@
 "use client";
 
-import "../styles/HomePage.css";
-
 // Top Ribbon
 import TopHeader from "../sections/header/TopHeader";
 
@@ -18,6 +16,7 @@ import TechnologySovereignty from "../sections/sovereignty/TechnologySovereignty
 import StrategicRoadmap from "../sections/roadmap/StrategicRoadmap";
 import ContactSection from "../sections/contact/ContactSection";
 import Footer from "../sections/footer/Footer";
+import "../styles/HomePage.css";
 
 export default function HomePage() {
   return (

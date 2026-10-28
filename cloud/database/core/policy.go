@@ -1,8 +1,14 @@
 package core
 
 import "fmt"
+import (
+	"regexp"
+	"strings"
+)
 
 type Policy struct{}
+
+var databaseNamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{1,62}$`)
 
 func NewPolicy() *Policy {
 	return &Policy{}
@@ -15,22 +21,23 @@ func (p *Policy) ValidateCreate(req CreateInstanceRequest) error {
 	if req.Name == "" {
 		return fmt.Errorf("name is required")
 	}
+	if !databaseNamePattern.MatchString(strings.ToLower(strings.TrimSpace(req.Name))) {
+		return fmt.Errorf("name must be 2-63 lowercase letters, numbers, or hyphens")
+	}
 
 	switch req.Engine {
-	case EnginePostgres, EngineTimescale, EngineMongo, EngineRedis:
+	case EnginePostgres, EngineMySQL, EngineMariaDB, EngineRedis:
 	default:
 		return fmt.Errorf("unsupported engine: %s", req.Engine)
 	}
 
-	if req.CPU < 1 {
-		return fmt.Errorf("cpu must be >= 1")
+	switch req.WorkloadProfile {
+	case "", "general-purpose", "transaction-processing", "analytics", "ai-ml", "hpc":
+	default:
+		return fmt.Errorf("unsupported workload profile: %s", req.WorkloadProfile)
 	}
-	if req.MemoryMB < 1024 {
-		return fmt.Errorf("memory must be >= 1024 MB")
+	if req.ProjectID == "" {
+		return fmt.Errorf("project_id is required")
 	}
-	if req.StorageGB < 10 {
-		return fmt.Errorf("storage must be >= 10 GB")
-	}
-
 	return nil
 }

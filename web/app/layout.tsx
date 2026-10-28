@@ -2,6 +2,7 @@
 
 import "./styles/base.css";
 import "./styles/theme.css";
+import "./styles/cloud-dark.css";
 import "./styles/layout.css";
 
 export const metadata = {

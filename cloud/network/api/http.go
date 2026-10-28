@@ -9,30 +9,33 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func StartHTTP(controller *core.Controller, policy core.Policy) error {
-	h := NewHandler(controller)
+func StartHTTP(controller *core.Controller, policy core.Policy, authorizer projectAuthorizer, jwtSecret string) error {
+	if authorizer == nil {
+		return fmt.Errorf("networking project authorizer is required")
+	}
+	if jwtSecret == "" {
+		return fmt.Errorf("networking JWT secret is required")
+	}
+	fmt.Println("ATN API listening on :8080")
+	return http.ListenAndServe(":8080", NewRouter(controller, policy, authorizer, jwtSecret))
+}
+
+func NewRouter(controller *core.Controller, policy core.Policy, authorizer projectAuthorizer, jwtSecret string) http.Handler {
+	h := NewHandler(controller, policy)
 
 	r := mux.NewRouter()
 
-	// NETWORK
-	r.HandleFunc("/v1/networks", h.CreateNetwork).Methods("POST")
-
-	// SUBNET
-	r.HandleFunc("/v1/subnets", h.CreateSubnet).Methods("POST")
-
-	// ROUTER
-	r.HandleFunc("/v1/routers", h.CreateRouter).Methods("POST")
-	r.HandleFunc("/v1/routers/attach-interface", h.AttachRouterInterface).Methods("POST")
-
-	// PORT
-	r.HandleFunc("/v1/ports", h.CreatePort).Methods("POST")
-
-	// SECURITY GROUP
-	r.HandleFunc("/v1/security-groups", h.CreateSecurityGroup).Methods("POST")
-
-	// FLOATING IP
-	r.HandleFunc("/v1/floatingips", h.CreateFloatingIP).Methods("POST")
-
-	fmt.Println("ATN API listening on :8080")
-	return http.ListenAndServe(":8080", r)
+	r.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	}).Methods(http.MethodGet)
+	r.Handle("/api/v1/networking/capabilities", authenticate(jwtSecret, http.HandlerFunc(h.Capabilities))).
+		Methods(http.MethodGet)
+	scoped := r.PathPrefix("/api/v1/networking/tenants/{tenantID}/projects/{projectID}").Subrouter()
+	scoped.Use(func(next http.Handler) http.Handler {
+		return authenticate(jwtSecret, authorizeProject(authorizer, next))
+	})
+	scoped.HandleFunc("/networks", h.ListNetworks).Methods(http.MethodGet)
+	scoped.HandleFunc("/networks", h.CreateNetwork).Methods(http.MethodPost)
+	scoped.HandleFunc("/networks/{networkID}/subnets", h.CreateSubnet).Methods(http.MethodPost)
+	return r
 }

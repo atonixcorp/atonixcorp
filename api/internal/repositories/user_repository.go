@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"atonixcorp/api/internal/models"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -21,7 +22,34 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 func (r *userRepository) Create(user *models.User) error {
-	return r.db.Create(user).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(user).Error; err != nil {
+			return err
+		}
+
+		tenant := models.Tenant{
+			Name: user.FullName + "'s workspace",
+			Slug: fmt.Sprintf("tenant-%d", user.ID),
+		}
+		if err := tx.Create(&tenant).Error; err != nil {
+			return err
+		}
+
+		project := models.Project{TenantID: tenant.ID, Name: "Default", Slug: "default"}
+		if err := tx.Create(&project).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Create(&models.TenantMembership{
+			TenantID: tenant.ID, UserID: user.ID, Role: "owner",
+		}).Error; err != nil {
+			return err
+		}
+
+		return tx.Create(&models.ProjectMembership{
+			ProjectID: project.ID, UserID: user.ID, Role: "owner",
+		}).Error
+	})
 }
 
 func (r *userRepository) FindByEmail(email string) (*models.User, error) {

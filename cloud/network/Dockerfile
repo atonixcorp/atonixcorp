@@ -9,7 +9,8 @@ RUN go mod download
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -o atnetwork ./main.go
+    go build -o atnetwork ./main.go \
+    && chmod 0755 atnetwork
 
 
 FROM debian:13-slim
@@ -19,6 +20,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     iproute2 \
     iptables \
+    wget \
     dnsmasq \
     frr \
     openvswitch-common \
@@ -28,7 +30,8 @@ WORKDIR /app
 
 COPY --from=builder /app/atnetwork /usr/local/bin/atnetwork
 COPY config /etc/atnetwork/config
+COPY migrations /app/migrations
 
-EXPOSE 5555
+EXPOSE 8080
 
 ENTRYPOINT ["/usr/local/bin/atnetwork"]
