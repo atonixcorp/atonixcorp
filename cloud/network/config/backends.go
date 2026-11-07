@@ -39,9 +39,7 @@ type BackendsConfig struct {
 	} `yaml:"kubernetes"`
 
 	Neutron struct {
-		Enabled  bool   `yaml:"enabled"`
-		Endpoint string `yaml:"endpoint"`
-		Token    string `yaml:"token"`
+		Enabled bool `yaml:"enabled"`
 	} `yaml:"neutron"`
 
 	ATCloud struct {

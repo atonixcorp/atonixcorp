@@ -5,38 +5,30 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   getCatalog,
-  getEstimate,
-  getSecurityCatalog,
-  deployInstances,
+  getProjects,
+  getTenants,
+  createNovaInstance,
 } from "../lib/api";
-import {
-  draftStorageKey,
-  restoreDraft,
-  saveDraft,
-  validateDraft,
-} from "../lib/deployment-state";
+import type { ComputeProject, ComputeTenant } from "../lib/api";
+import { restoreDraft, saveDraft } from "../lib/deployment-state";
 import type {
   ComputeCatalog,
-  ComputeEstimate,
-  ComputeSSHKey,
   DeploymentDraft,
 } from "../lib/types";
 import { initialDraft } from "../lib/types";
 import {
   ComputeTypeSection,
-  IdentitySection,
   ImageSection,
-  InitializationSection,
   NetworkSection,
   PlanSection,
   RegionSection,
   ReviewSection,
-  SecuritySection,
-  StorageSection,
 } from "../components/DeploymentSections";
 import { DeploymentSummary } from "../components/DeploymentSummary";
 
 const emptyCatalog: ComputeCatalog = {
+  provisioning_enabled: false,
+  pricing_available: false,
   compute_types: [],
   regions: [],
   images: [],
@@ -49,31 +41,33 @@ export default function DeployInstancePage() {
   const [catalog, setCatalog] = useState<ComputeCatalog>(emptyCatalog);
   const [catalogError, setCatalogError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [securityError, setSecurityError] = useState("");
-  const [sshKeys, setSSHKeys] = useState<ComputeSSHKey[]>([]);
+  const [scopeError, setScopeError] = useState("");
+  const [tenants, setTenants] = useState<ComputeTenant[]>([]);
+  const [projects, setProjects] = useState<ComputeProject[]>([]);
+  const [tenantID, setTenantID] = useState("");
+  const [projectID, setProjectID] = useState("");
   const [draft, setDraft] = useState<DeploymentDraft>(initialDraft);
   const [draftReady, setDraftReady] = useState(false);
-  const [estimate, setEstimate] = useState<ComputeEstimate>();
-  const [estimateError, setEstimateError] = useState("");
-  const [estimating, setEstimating] = useState(false);
   const [fieldError, setFieldError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [showReview, setShowReview] = useState(false);
   const [draftSaved, setDraftSaved] = useState(true);
-  const estimateRequest = useRef(0);
+  const [submitting, setSubmitting] = useState(false);
+  const idempotencyKey = useRef("");
 
   const update = useCallback((patch: Partial<DeploymentDraft>) => {
+    idempotencyKey.current = "";
     setDraft((current) => ({ ...current, ...patch }));
     setFieldError("");
     setSubmitError("");
   }, []);
 
   const loadCatalog = useCallback(async () => {
+    if (!tenantID || !projectID) return;
     setLoading(true);
     setCatalogError("");
     try {
-      const data = await getCatalog();
+      const data = await getCatalog(Number(tenantID), Number(projectID));
       setCatalog(data);
       setDraft((current) => {
         const saved = restoreDraft();
@@ -94,25 +88,60 @@ export default function DeployInstancePage() {
         return { ...base, computeType, region, plan, image, network };
       });
       setDraftReady(true);
-      try {
-        const security = await getSecurityCatalog();
-        setSSHKeys(security.sshKeys);
-        setSecurityError("");
-      } catch (error) {
-        setSSHKeys([]);
-        setSecurityError(error instanceof Error ? error.message : "Account security is unavailable.");
-      }
     } catch (error) {
       setCatalogError(error instanceof Error ? error.message : "Compute catalog is unavailable.");
     } finally {
       setLoading(false);
     }
+  }, [projectID, tenantID]);
+
+  useEffect(() => {
+    let active = true;
+    void getTenants().then((items) => {
+      if (!active) return;
+      setTenants(items);
+      setTenantID(items.length ? String(items[0].id) : "");
+      if (!items.length) {
+        setScopeError("No accessible workspaces were found.");
+        setLoading(false);
+      }
+    }).catch((error: unknown) => {
+      if (active) {
+        setScopeError(error instanceof Error ? error.message : "Could not load workspaces.");
+        setLoading(false);
+      }
+    });
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
+    if (!tenantID) {
+      setProjects([]);
+      setProjectID("");
+      return;
+    }
+    let active = true;
+    setProjectID("");
+    void getProjects(Number(tenantID)).then((items) => {
+      if (!active) return;
+      setProjects(items);
+      setProjectID(items.length ? String(items[0].id) : "");
+      setScopeError(items.length ? "" : "No accessible projects were found.");
+      if (!items.length) setLoading(false);
+    }).catch((error: unknown) => {
+      if (active) {
+        setScopeError(error instanceof Error ? error.message : "Could not load projects.");
+        setLoading(false);
+      }
+    });
+    return () => { active = false; };
+  }, [tenantID]);
+
+  useEffect(() => {
+    if (!tenantID || !projectID) return;
     const timeout = window.setTimeout(() => { void loadCatalog(); }, 0);
     return () => window.clearTimeout(timeout);
-  }, [loadCatalog]);
+  }, [loadCatalog, projectID, tenantID]);
 
   useEffect(() => {
     if (!draftReady) return;
@@ -126,43 +155,20 @@ export default function DeployInstancePage() {
   );
   const selectedPlan = availablePlans.find((plan) => plan.id === draft.plan);
 
-  useEffect(() => {
-    if (!draftReady) return;
-    const requestId = ++estimateRequest.current;
-    if (!draft.plan) {
-      const timeout = window.setTimeout(() => {
-        setEstimate(undefined);
-        setEstimating(false);
-        setEstimateError("");
-      }, 0);
-      return () => window.clearTimeout(timeout);
-    }
-    const timeout = window.setTimeout(() => {
-      setEstimating(true);
-      setEstimateError("");
-      void getEstimate(draft).then((result) => {
-        if (estimateRequest.current !== requestId) return;
-        setEstimate(result);
-      }).catch((error: unknown) => {
-        if (estimateRequest.current !== requestId) return;
-        setEstimate(undefined);
-        setEstimateError(error instanceof Error ? error.message : "Could not calculate the estimate.");
-      }).finally(() => {
-        if (estimateRequest.current === requestId) setEstimating(false);
-      });
-    }, 350);
-    return () => {
-      window.clearTimeout(timeout);
-      estimateRequest.current += 1;
-    };
-  }, [draft, draftReady]);
-
-  const validate = (requireSSHKey: boolean) => validateDraft(draft, catalog, sshKeys, requireSSHKey);
-  const allErrors = validate(true);
-  const missingAuthoritativePricing = !estimate || !estimate.authoritative;
+  const validate = () => {
+    if (!catalog.compute_types.some((item) => item.id === draft.computeType)) return { section: "compute-type", message: "Choose an available compute type." };
+    if (!catalog.regions.some((item) => item.id === draft.region && item.available)) return { section: "region", message: "Choose an available region." };
+    if (!catalog.images.some((item) => item.id === draft.image && item.available)) return { section: "image", message: "Choose an active provider image." };
+    if (!catalog.plans.some((item) => item.id === draft.plan && item.available)) return { section: "plan", message: "Choose an available provider flavor." };
+    if (!catalog.networks.some((item) => item.id === draft.network && item.available)) return { section: "network", message: "Choose an available provider network." };
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,62}$/.test(draft.name)) return { section: "identity", message: "Use 1–63 letters, numbers, dots, underscores, or hyphens for the instance name." };
+    return null;
+  };
+  const allErrors = validate();
   const deploymentBlocked = Boolean(
-    loading || catalogError || securityError || allErrors || estimating ||
-    estimateError || missingAuthoritativePricing || submitting,
+    !tenantID || !projectID || !catalog.provisioning_enabled || loading ||
+    catalogError || scopeError || allErrors || submitting ||
+    !projects.some((project) => project.id === Number(projectID) && project.tenant_id === Number(tenantID)),
   );
 
   const goToSection = (section: string) => {
@@ -174,7 +180,7 @@ export default function DeployInstancePage() {
   };
 
   const openReview = () => {
-    const issue = validate(false);
+    const issue = validate();
     if (issue) {
       setFieldError(issue.message);
       goToSection(issue.section);
@@ -186,41 +192,38 @@ export default function DeployInstancePage() {
   };
 
   const deploy = async () => {
-    const issue = validate(true);
-    if (issue) {
-      setFieldError(issue.message);
-      goToSection(issue.section);
-      return;
-    }
-    if (!estimate?.authoritative) {
-      setSubmitError("Deployment is paused until an authenticated billing service returns an authoritative quote.");
-      return;
-    }
+    if (deploymentBlocked || !tenantID || !projectID) return;
+    if (!idempotencyKey.current) idempotencyKey.current = crypto.randomUUID();
     setSubmitting(true);
     setSubmitError("");
     try {
-      const idempotencyKey = crypto.randomUUID();
-      const result = await deployInstances(draft, idempotencyKey);
-      window.localStorage.removeItem(draftStorageKey);
-      const firstInstance = result.instances[0];
-      if (!firstInstance?.id) throw new Error("The Compute API accepted no instance IDs.");
-      router.push(`/compute/instances/${encodeURIComponent(firstInstance.id)}`);
+      const instance = await createNovaInstance({
+        tenant_id: Number(tenantID),
+        project_id: Number(projectID),
+        name: draft.name,
+        region: draft.region,
+        image_id: draft.image,
+        flavor_id: draft.plan,
+        network_id: draft.network,
+      }, idempotencyKey.current);
+      idempotencyKey.current = "";
+      router.push(`/compute/instances/${encodeURIComponent(instance.id)}`);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "The deployment could not be submitted.");
+      setSubmitError(error instanceof Error ? error.message : "The provider could not create the instance.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading && !catalog.compute_types.length) {
+  if ((loading && !catalog.compute_types.length) || (!tenants.length && !scopeError)) {
     return <ComputeLoadingState />;
   }
 
-  if (catalogError && !catalog.compute_types.length) {
+  if ((catalogError || scopeError) && !catalog.compute_types.length) {
     return (
       <div className="compute-page">
         <header className="compute-page-heading"><div><p className="compute-eyebrow">COMPUTE / DEPLOY</p><h1>Deploy instance</h1></div><Link className="compute-secondary-button" href="/compute/instances">Back to instances</Link></header>
-        <div className="compute-state-panel" role="alert"><h3>Compute options could not be loaded</h3><p>{catalogError}</p><button className="compute-secondary-button" type="button" onClick={() => void loadCatalog()}>Retry</button></div>
+        <div className="compute-state-panel" role="alert"><h3>Compute options could not be loaded</h3><p>{catalogError || scopeError}</p><button className="compute-secondary-button" type="button" onClick={() => void loadCatalog()}>Retry</button></div>
       </div>
     );
   }
@@ -228,29 +231,34 @@ export default function DeployInstancePage() {
   return (
     <div className="compute-page compute-deploy-page">
       <header className="compute-page-heading">
-        <div><p className="compute-eyebrow">COMPUTE / DEPLOY</p><h1>Deploy an instance</h1><p>Configure a virtual machine. Advanced settings are available below.</p></div>
+        <div><p className="compute-eyebrow">COMPUTE / DEPLOY</p><h1>Deploy an instance</h1><p>Launch one virtual machine from live OpenStack resources.</p></div>
         <Link className="compute-secondary-button" href="/compute/instances">Cancel</Link>
       </header>
       <div className="compute-deploy-notice" role="status">
-        <strong>Deployment preview</strong>
-        <span>This dashboard currently uses demo sign-in. Account authorization, tenant-scoped SSH keys, and live billing are not connected, so live deployment is disabled.</span>
+        <strong>{catalog.provisioning_enabled ? "Live OpenStack catalog" : "Deployment unavailable"}</strong>
+        <span>{catalog.provisioning_enabled ? "Images, flavors, and networks below are read from the selected project's OpenStack account. Pricing is unavailable." : "A valid project mapping and provider compute, image, and network capabilities are required."}</span>
       </div>
+      {scopeError && <p className="compute-inline-error" role="alert">{scopeError}</p>}
+      <div className="compute-form-grid">
+        <label className="compute-field">Workspace<select value={tenantID} onChange={(event) => { idempotencyKey.current = ""; setCatalog(emptyCatalog); setCatalogError(""); setScopeError(""); setLoading(true); setProjectID(""); setTenantID(event.target.value); }}>{tenants.map((tenant) => <option key={tenant.id} value={tenant.id}>{tenant.name}</option>)}</select></label>
+        <label className="compute-field">Project<select value={projectID} onChange={(event) => { idempotencyKey.current = ""; setCatalog(emptyCatalog); setCatalogError(""); setScopeError(""); setLoading(true); setProjectID(event.target.value); }}>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>
+      </div>
+      {catalogError && <p className="compute-inline-error" role="alert">{catalogError}</p>}
       {!draftSaved && <p className="compute-inline-error" role="status">This browser could not save your deployment draft.</p>}
       {fieldError && <p className="compute-inline-error" role="alert">{fieldError}</p>}
       {submitError && <p className="compute-inline-error" role="alert">{submitError}</p>}
-      {estimateError && <p className="compute-inline-error" role="alert">{estimateError}</p>}
 
       <div className="compute-deploy-layout">
         <div className="compute-deploy-sections">
           <ComputeTypeSection catalog={catalog} draft={draft} update={update} />
           <RegionSection catalog={catalog} draft={draft} update={update} />
           <ImageSection images={catalog.images} draft={draft} update={update} />
-          <PlanSection plans={availablePlans} draft={draft} update={update} currency={availablePlans[0]?.currency ?? "ZAR"} />
-          <StorageSection plan={selectedPlan} draft={draft} update={update} />
+          <PlanSection plans={availablePlans} draft={draft} update={update} />
           <NetworkSection catalog={catalog} draft={draft} update={update} />
-          <SecuritySection keys={sshKeys} keyError={securityError} draft={draft} update={update} onRetry={() => void loadCatalog()} />
-          <InitializationSection draft={draft} update={update} />
-          <IdentitySection draft={draft} update={update} />
+          <section className="compute-card compute-deploy-section" id="identity" tabIndex={-1}>
+            <header className="compute-section-heading"><span>07</span><div><h2>Server identity</h2><p>Choose the server name sent to OpenStack.</p></div></header>
+            <div className="compute-section-body"><label className="compute-field">Instance name<input value={draft.name} maxLength={63} pattern="[A-Za-z0-9][A-Za-z0-9._-]{0,62}" required placeholder="worker-01" onChange={(event) => update({ name: event.target.value })} /></label></div>
+          </section>
           {showReview && (
             <ReviewSection
               catalog={catalog}
@@ -273,8 +281,6 @@ export default function DeployInstancePage() {
           catalog={catalog}
           draft={draft}
           plan={selectedPlan}
-          estimate={estimate}
-          estimating={estimating}
           blocked={deploymentBlocked}
           onReview={openReview}
           onDeploy={() => void deploy()}

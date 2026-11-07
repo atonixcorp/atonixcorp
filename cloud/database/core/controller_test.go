@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 )
@@ -241,7 +242,7 @@ func TestProvisioningWaitsForOpenStackResources(t *testing.T) {
 	}
 	provisioned, _ := store.GetInstance(instance.ID)
 	if provisioned.Status != "provisioning" || provisioned.OpenStackServerID != "server-1" ||
-		provisioned.OpenStackVolumeID != "" {
+		provisioned.OpenStackServerStatus != "BUILD" || provisioned.OpenStackVolumeID != "" {
 		t.Fatalf("expected only the Nova server while it is building, got %+v", provisioned)
 	}
 
@@ -250,7 +251,8 @@ func TestProvisioningWaitsForOpenStackResources(t *testing.T) {
 		t.Fatalf("wait for Cinder volume: %v", err)
 	}
 	provisioned, _ = store.GetInstance(instance.ID)
-	if provisioned.Status != "provisioning" || provider.attachCalls != 0 {
+	if provisioned.Status != "provisioning" || provisioned.OpenStackServerStatus != "ACTIVE" ||
+		provisioned.OpenStackVolumeStatus != "creating" || provider.attachCalls != 0 {
 		t.Fatalf("volume should not be attached before Cinder is available: %+v", provisioned)
 	}
 
@@ -261,8 +263,40 @@ func TestProvisioningWaitsForOpenStackResources(t *testing.T) {
 	}
 	provisioned, _ = store.GetInstance(instance.ID)
 	if provisioned.Status != "starting" || provisioned.Endpoint != "" ||
+		provisioned.OpenStackServerIP != "10.0.0.15" ||
+		provisioned.OpenStackVolumeStatus != "available" ||
 		!provisioned.OpenStackVolumeAttached || provider.attachCalls != 1 {
 		t.Fatalf("expected VM-ready starting state with one volume attachment, got %+v", provisioned)
+	}
+}
+
+func TestDatabaseJSONExposesProviderResourceMetadata(t *testing.T) {
+	instance := DBInstance{
+		OpenStackServerID: "nova-server-id", OpenStackServerStatus: "ACTIVE",
+		OpenStackServerIP: "10.0.0.15", OpenStackVolumeID: "cinder-volume-id",
+		OpenStackVolumeStatus: "in-use", OpenStackVolumeAttached: true,
+		OpenStackNetworkID: "neutron-network-id",
+	}
+	encoded, err := json.Marshal(instance)
+	if err != nil {
+		t.Fatalf("marshal database instance: %v", err)
+	}
+	var result map[string]any
+	if err := json.Unmarshal(encoded, &result); err != nil {
+		t.Fatalf("decode database instance JSON: %v", err)
+	}
+	for key, expected := range map[string]any{
+		"openstack_server_id":       "nova-server-id",
+		"openstack_server_status":   "ACTIVE",
+		"openstack_server_ip":       "10.0.0.15",
+		"openstack_volume_id":       "cinder-volume-id",
+		"openstack_volume_status":   "in-use",
+		"openstack_volume_attached": true,
+		"openstack_network_id":      "neutron-network-id",
+	} {
+		if result[key] != expected {
+			t.Errorf("JSON %s = %v, want %v", key, result[key], expected)
+		}
 	}
 }
 

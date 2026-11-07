@@ -43,6 +43,13 @@ __pycache__/
 .DS_Store
 *.pem
 
+# OpenStack credentials and local cloud configuration
+admin-openrc.sh
+clouds.yaml
+secure.yaml
+*.openrc
+*-openrc.sh
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -51,6 +58,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!/.env.example
 
 # vercel
 .vercel

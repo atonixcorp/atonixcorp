@@ -4,7 +4,7 @@ The authenticated storage control plane implements an asynchronous,
 project-scoped block-volume workflow with a local development driver and an
 OpenStack Cinder driver:
 
-- `GET /api/v1/storage/volume-types`
+- `GET /api/v1/storage/volume-types?tenant_id={id}&project_id={id}`
 - `GET /api/v1/storage/overview?tenant_id={id}&project_id={id}`
 - `GET /api/v1/storage/volumes?tenant_id={id}&project_id={id}`
 - `POST /api/v1/storage/volumes` with an `Idempotency-Key` header
@@ -23,26 +23,49 @@ volumes and 1024 GiB.
 
 ## OpenStack Cinder
 
-The Compose stack defaults to `STORAGE_DRIVER=local-file`. To enable Cinder,
-set `STORAGE_DRIVER=cinder` and configure these variables in the root `.env`
-file (never commit credentials):
+Map each organization to its own OpenStack project and application credential
+using the cloud account API, and configure:
 
-- `CINDER_AUTH_URL`: HTTPS Keystone v3 URL, for example `https://keystone.example/v3`
-- `CINDER_USERNAME`, `CINDER_PASSWORD`: dedicated service-account credentials
-- `CINDER_PROJECT_ID`, `CINDER_USER_DOMAIN_ID`: project scope and user domain
-- `CINDER_REGION`, `CINDER_INTERFACE`: catalog region and `public`, `internal`,
-  or `admin` endpoint interface
+- `OPENSTACK_AUTH_URL` (or `CINDER_AUTH_URL`), `OPENSTACK_REGION`
+- `OPENSTACK_INTERFACE` (or `CINDER_INTERFACE`)
+- `OPENSTACK_ALLOW_INSECURE_HTTP=true` only for isolated DevStack development
 - `CINDER_VOLUME_TYPE_IDS`: comma-separated allowlist of Cinder volume type IDs
+- `CINDER_ENCRYPTED_VOLUME_TYPE_IDS` and `CINDER_UNENCRYPTED_VOLUME_TYPE_IDS`:
+  optional encryption classifications for allowed types when the mapped
+  application credential cannot read Cinder's admin-only encryption endpoint
 - `CINDER_AVAILABILITY_ZONES`: optional comma-separated allowed zone names
 
-The driver selects a matching HTTPS `volumev3` catalog endpoint, obtains and
-refreshes Keystone tokens, limits selectable types to the configured allowlist,
-uses provider metadata to recover create retries, and waits for Cinder status
-before completing create/delete operations. Configure a least-privilege
-provider account, network access, and Cinder policy to match the operations
-required by this API. A usable Cinder endpoint and credentials are not present
-in this development environment, so live provisioning must be verified against
-the target OpenStack deployment before production use.
+`OPENSTACK_ACCOUNT_ENCRYPTION_KEY` must be configured to decrypt the stored
+mapping. For a mapped organization, Storage always uses its mapped application
+credential, project, and region, regardless of `STORAGE_DRIVER`. Keystone's
+token project and the catalog endpoint project are checked before any Cinder
+request. No shared-project credential is used as a fallback. Configure
+least-privilege Cinder policy and network access for each mapped account.
+The type allowlist and zone settings apply to all organizations.
+Encryption classifications must refer to IDs in `CINDER_VOLUME_TYPE_IDS` and
+must not conflict. When Cinder returns an encryption status, it is checked
+against any configured classification; a configured classification is used
+only when Cinder denies access to that status endpoint.
+
+An unmapped organization can use a development driver only when explicitly
+configured with `STORAGE_DRIVER=local-file` or `libvirt-qemu`. With
+`STORAGE_DRIVER=cinder` or no development driver, unmapped organizations cannot
+provision. Mapping, decryption, configuration, and provider errors never fall
+back to local or shared Cinder. Existing local volumes continue to use their
+original local driver. Cinder volumes retain their mapped provider project ID
+internally; if the mapping is changed or removed, operations fail closed until
+the original project is restored. Older shared-Cinder records without this
+project binding are not accessed automatically and require an operator-led
+migration; do not bind them to a different project.
+
+Volume list and detail requests inspect Cinder after authorization and return
+`provider_id`, `provider_status`, current size and availability zone, and
+attachment IDs, server IDs and devices when provided. They reconcile persisted
+size, zone and lifecycle state; a missing provider volume is marked `ERROR`.
+Provider failures are reported rather than silently presenting stale Cinder
+details. The UI refresh button triggers a fresh read. Cinder IDs and status
+are separate from the Atonix volume ID and asynchronous operation status.
+Live provisioning must be verified against the target OpenStack deployment.
 
 ## Libvirt/QEMU host storage
 

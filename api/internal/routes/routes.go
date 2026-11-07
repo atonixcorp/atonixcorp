@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"atonixcorp/api/internal/cloud"
 	"atonixcorp/api/internal/containers"
 	"atonixcorp/api/internal/controllers"
 	"atonixcorp/api/internal/database"
@@ -21,6 +22,7 @@ func SetupRoutes(
 	blogController *controllers.BlogController,
 	containerService *containers.Service,
 	storageService *storage.Service,
+	cloudService *cloud.Service,
 ) {
 
 	r.Use(middleware.SecurityHeaders())
@@ -108,6 +110,31 @@ func SetupRoutes(
 		storageRoutes.DELETE("/volumes/:id", storageController.DeleteVolume)
 		storageRoutes.GET("/operations", storageController.ListOperations)
 		storageRoutes.GET("/operations/:id", storageController.GetOperation)
+	}
+
+	cloudInstanceController := controllers.NewCloudInstanceController(cloudService)
+	cloudAccountController := controllers.NewCloudAccountController(cloudService)
+	internalCloud := r.Group("/internal/cloud")
+	internalCloud.Use(
+		middleware.SecurityRequestMetadata(),
+		middleware.IPRateLimit(10, time.Minute),
+	)
+	internalCloud.PUT("/accounts/:tenantID", cloudAccountController.SetOrganizationAccount)
+	cloudRoutes := protected.Group("/cloud")
+	cloudRoutes.Use(middleware.SecurityRequestMetadata())
+	cloudRoutes.GET("/operations", cloudInstanceController.ListOperations)
+	cloudRoutes.GET("/operations/:operationID", cloudInstanceController.GetOperation)
+	cloudRoutes.GET("/catalog", cloudInstanceController.Catalog)
+	cloudRoutes.GET("/security-groups", cloudInstanceController.ListSecurityGroups)
+	cloudRoutes.POST("/security-groups", cloudInstanceController.CreateSecurityGroup)
+	cloudInstances := cloudRoutes.Group("/instances")
+	{
+		cloudInstances.GET("/capabilities", cloudInstanceController.Capabilities)
+		cloudInstances.GET("", cloudInstanceController.List)
+		cloudInstances.POST("", cloudInstanceController.Create)
+		cloudInstances.GET("/:instanceID", cloudInstanceController.Get)
+		cloudInstances.POST("/:instanceID/:action", cloudInstanceController.Operate)
+		cloudInstances.DELETE("/:instanceID", cloudInstanceController.Delete)
 	}
 
 	// -------------------------

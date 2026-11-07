@@ -26,9 +26,7 @@ backends:
     cni_plugin: "ovn-kubernetes"
 
   neutron:
-    enabled: false       # enable when integrating OpenStack
-    endpoint: "https://openstack.example.com:9696"
-    token: "REPLACE_ME"
+    enabled: false       # enable with OPENSTACK_ENABLE_NEUTRON and app credentials
 
   atcloud:
     enabled: false       # your custom cloud backend

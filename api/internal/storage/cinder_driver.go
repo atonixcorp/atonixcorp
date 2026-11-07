@@ -18,15 +18,20 @@ import (
 )
 
 type CinderConfig struct {
-	AuthURL       string
-	Username      string
-	Password      string
-	ProjectID     string
-	UserDomainID  string
-	Region        string
-	Interface     string
-	VolumeTypeIDs []string
-	Zones         []string
+	AuthURL                     string
+	ApplicationCredentialID     string
+	ApplicationCredentialSecret string
+	Username                    string
+	Password                    string
+	ProjectID                   string
+	UserDomainID                string
+	Region                      string
+	Interface                   string
+	VolumeTypeIDs               []string
+	EncryptedVolumeTypeIDs      []string
+	UnencryptedVolumeTypeIDs    []string
+	Zones                       []string
+	AllowInsecureHTTP           bool
 }
 
 type CinderDriver struct {
@@ -36,6 +41,7 @@ type CinderDriver struct {
 	token      string
 	expiresAt  time.Time
 	baseURL    string
+	encryption map[string]bool
 }
 
 type cinderVolumeType struct {
@@ -44,16 +50,33 @@ type cinderVolumeType struct {
 }
 
 type cinderVolume struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Size        int64             `json:"size"`
-	Status      string            `json:"status"`
-	Description string            `json:"description"`
-	Metadata    map[string]string `json:"metadata"`
+	ID               string            `json:"id"`
+	Name             string            `json:"name"`
+	Size             int64             `json:"size"`
+	Status           string            `json:"status"`
+	Description      string            `json:"description"`
+	Metadata         map[string]string `json:"metadata"`
+	AvailabilityZone string            `json:"availability_zone"`
+	Attachments      []struct {
+		ID       string `json:"attachment_id"`
+		ServerID string `json:"server_id"`
+		Device   string `json:"device"`
+	} `json:"attachments"`
 }
 
+func (v cinderVolume) providerVolume() ProviderVolume {
+	attachments := make([]models.StorageAttachment, 0, len(v.Attachments))
+	for _, attachment := range v.Attachments {
+		attachments = append(attachments, models.StorageAttachment{
+			ID: attachment.ID, ServerID: attachment.ServerID, Device: attachment.Device,
+		})
+	}
+	return ProviderVolume{ID: v.ID, Status: normalizeProviderStatus(v.Status), SizeGB: v.Size,
+		AvailabilityZone: v.AvailabilityZone, Attachments: attachments}
+}
 func NewCinderDriver(config CinderConfig) (*CinderDriver, error) {
 	config.AuthURL = strings.TrimRight(strings.TrimSpace(config.AuthURL), "/")
+	config.ApplicationCredentialID = strings.TrimSpace(config.ApplicationCredentialID)
 	config.Username = strings.TrimSpace(config.Username)
 	config.ProjectID = strings.TrimSpace(config.ProjectID)
 	config.UserDomainID = strings.TrimSpace(config.UserDomainID)
@@ -62,6 +85,29 @@ func NewCinderDriver(config CinderConfig) (*CinderDriver, error) {
 	for index := range config.VolumeTypeIDs {
 		config.VolumeTypeIDs[index] = strings.TrimSpace(config.VolumeTypeIDs[index])
 	}
+	encryption := make(map[string]bool, len(config.EncryptedVolumeTypeIDs)+len(config.UnencryptedVolumeTypeIDs))
+	for _, id := range config.EncryptedVolumeTypeIDs {
+		id = strings.TrimSpace(id)
+		if id == "" || !contains(config.VolumeTypeIDs, id) {
+			return nil, errors.New("encrypted Cinder volume types must be in the allowed volume type list")
+		}
+		if _, exists := encryption[id]; exists {
+			return nil, errors.New("Cinder volume type encryption settings must not conflict")
+		}
+		encryption[id] = true
+	}
+	for _, id := range config.UnencryptedVolumeTypeIDs {
+		id = strings.TrimSpace(id)
+		if id == "" || !contains(config.VolumeTypeIDs, id) {
+			return nil, errors.New("unencrypted Cinder volume types must be in the allowed volume type list")
+		}
+		if _, exists := encryption[id]; exists {
+			return nil, errors.New("Cinder volume type encryption settings must not conflict")
+		}
+		encryption[id] = false
+	}
+	config.EncryptedVolumeTypeIDs = nil
+	config.UnencryptedVolumeTypeIDs = nil
 	for index := range config.Zones {
 		config.Zones[index] = strings.TrimSpace(config.Zones[index])
 	}
@@ -72,16 +118,28 @@ func NewCinderDriver(config CinderConfig) (*CinderDriver, error) {
 		config.UserDomainID = "default"
 	}
 	parsed, err := url.Parse(config.AuthURL)
-	if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil ||
+	if err != nil || parsed.Host == "" || parsed.User != nil ||
 		parsed.RawQuery != "" || parsed.Fragment != "" ||
-		config.Username == "" || config.Password == "" || config.ProjectID == "" ||
-		config.Region == "" || len(config.VolumeTypeIDs) == 0 {
-		return nil, errors.New("Cinder requires HTTPS Keystone URL, service credentials, project, region, and allowed volume types")
+		(parsed.Scheme != "https" && parsed.Scheme != "http") ||
+		(parsed.Scheme == "http" && !config.AllowInsecureHTTP) ||
+		config.ProjectID == "" || config.Region == "" || len(config.VolumeTypeIDs) == 0 {
+		return nil, errors.New("Cinder requires a secure Keystone URL, project, region, and allowed volume types")
+	}
+	hasApplicationCredential := config.ApplicationCredentialID != "" ||
+		config.ApplicationCredentialSecret != ""
+	hasPasswordCredential := config.Username != "" || config.Password != ""
+	if hasApplicationCredential &&
+		(config.ApplicationCredentialID == "" || config.ApplicationCredentialSecret == "") {
+		return nil, errors.New("Cinder application credential ID and secret must both be provided")
+	}
+	if !hasApplicationCredential && (!hasPasswordCredential ||
+		config.Username == "" || config.Password == "") {
+		return nil, errors.New("Cinder application credentials or username and password are required")
 	}
 	if config.Interface != "public" && config.Interface != "internal" && config.Interface != "admin" {
 		return nil, errors.New("Cinder interface must be public, internal, or admin")
 	}
-	return &CinderDriver{config: config, httpClient: &http.Client{
+	return &CinderDriver{config: config, encryption: encryption, httpClient: &http.Client{
 		Timeout: 30 * time.Second,
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -108,6 +166,12 @@ func (d *CinderDriver) VolumeTypes(ctx context.Context) ([]VolumeType, error) {
 			continue
 		}
 		encrypted, err := d.volumeTypeEncryption(ctx, item.ID)
+		configuredEncryption, explicitlyConfigured := d.encryption[item.ID]
+		if errors.Is(err, errCinderForbidden) && explicitlyConfigured {
+			encrypted, err = configuredEncryption, nil
+		} else if err == nil && explicitlyConfigured && encrypted != configuredEncryption {
+			return nil, errors.New("configured Cinder volume type encryption does not match the provider")
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +224,7 @@ func (d *CinderDriver) EnsureVolume(ctx context.Context, volume models.StorageVo
 		if existing.Metadata["atonixcorp_volume_id"] != volume.ID {
 			return ProviderVolume{}, errors.New("provider resource name conflicts with another resource")
 		}
-		return ProviderVolume{ID: existing.ID, Status: normalizeProviderStatus(existing.Status)}, nil
+		return existing.providerVolume(), nil
 	}
 	metadata, err := cinderMetadata(volume)
 	if err != nil {
@@ -191,7 +255,7 @@ func (d *CinderDriver) EnsureVolume(ctx context.Context, volume models.StorageVo
 	if response.Volume.ID == "" {
 		return ProviderVolume{}, errors.New("Cinder did not return a volume identifier")
 	}
-	return ProviderVolume{ID: response.Volume.ID, Status: normalizeProviderStatus(response.Volume.Status)}, nil
+	return response.Volume.providerVolume(), nil
 }
 
 func (d *CinderDriver) InspectVolume(ctx context.Context, providerID string) (ProviderVolume, error) {
@@ -207,7 +271,10 @@ func (d *CinderDriver) InspectVolume(ctx context.Context, providerID string) (Pr
 	if err != nil {
 		return ProviderVolume{}, err
 	}
-	return ProviderVolume{ID: response.Volume.ID, Status: normalizeProviderStatus(response.Volume.Status)}, nil
+	if response.Volume.ID != providerID {
+		return ProviderVolume{}, errors.New("Cinder returned an unexpected volume identifier")
+	}
+	return response.Volume.providerVolume(), nil
 }
 
 func (d *CinderDriver) DeleteVolume(ctx context.Context, volume models.StorageVolume) (bool, error) {
@@ -219,6 +286,9 @@ func (d *CinderDriver) DeleteVolume(ctx context.Context, volume models.StorageVo
 		}
 		if existing == nil {
 			return true, nil
+		}
+		if existing.Metadata["atonixcorp_volume_id"] != volume.ID {
+			return false, errors.New("provider resource name conflicts with another resource")
 		}
 		providerID = existing.ID
 	}
@@ -245,7 +315,10 @@ func (d *CinderDriver) DeleteVolume(ctx context.Context, volume models.StorageVo
 	return false, nil
 }
 
-var errCinderNotFound = errors.New("Cinder resource not found")
+var (
+	errCinderNotFound  = errors.New("Cinder resource not found")
+	errCinderForbidden = errors.New("Cinder request forbidden")
+)
 
 func (d *CinderDriver) findVolume(ctx context.Context, name string) (*cinderVolume, error) {
 	query := url.Values{"name": []string{name}, "limit": []string{"2"}}
@@ -325,8 +398,11 @@ func (d *CinderDriver) requestJSON(
 	if response.StatusCode == http.StatusNotFound {
 		return errCinderNotFound
 	}
+	if response.StatusCode == http.StatusForbidden {
+		return fmt.Errorf("%w: Cinder %s %s returned HTTP 403", errCinderForbidden, method, path)
+	}
 	if response.StatusCode != expectedStatus {
-		return fmt.Errorf("Cinder returned unexpected HTTP status %d", response.StatusCode)
+		return fmt.Errorf("Cinder %s %s returned unexpected HTTP status %d", method, path, response.StatusCode)
 	}
 	if result == nil || response.StatusCode == http.StatusNoContent {
 		_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 64*1024))
@@ -344,17 +420,23 @@ func (d *CinderDriver) ensureAuthenticated(ctx context.Context) error {
 	if d.token != "" && time.Until(d.expiresAt) > time.Minute {
 		return nil
 	}
-	payload := map[string]any{
-		"auth": map[string]any{
-			"identity": map[string]any{
-				"methods": []string{"password"},
-				"password": map[string]any{"user": map[string]any{
-					"name": d.config.Username, "password": d.config.Password,
-					"domain": map[string]string{"id": d.config.UserDomainID},
-				}},
-			},
-			"scope": map[string]any{"project": map[string]string{"id": d.config.ProjectID}},
-		},
+	identity := make(map[string]any)
+	auth := map[string]any{"identity": identity}
+	payload := map[string]any{"auth": auth}
+	if d.config.ApplicationCredentialID != "" {
+		identity["methods"] = []string{"application_credential"}
+		identity["application_credential"] = map[string]string{
+			"id": d.config.ApplicationCredentialID, "secret": d.config.ApplicationCredentialSecret,
+		}
+	} else {
+		identity["methods"] = []string{"password"}
+		identity["password"] = map[string]any{"user": map[string]any{
+			"name": d.config.Username, "password": d.config.Password,
+			"domain": map[string]string{"id": d.config.UserDomainID},
+		}}
+		auth["scope"] = map[string]any{
+			"project": map[string]string{"id": d.config.ProjectID},
+		}
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -377,7 +459,10 @@ func (d *CinderDriver) ensureAuthenticated(ctx context.Context) error {
 	var result struct {
 		Token struct {
 			ExpiresAt string `json:"expires_at"`
-			Catalog   []struct {
+			Project   struct {
+				ID string `json:"id"`
+			} `json:"project"`
+			Catalog []struct {
 				Type      string `json:"type"`
 				Endpoints []struct {
 					Region    string `json:"region"`
@@ -399,9 +484,12 @@ func (d *CinderDriver) ensureAuthenticated(ctx context.Context) error {
 	if err != nil || !expiresAt.After(time.Now()) {
 		return errors.New("Keystone returned an invalid token expiry")
 	}
+	if result.Token.Project.ID != d.config.ProjectID {
+		return errors.New("OpenStack application credential is not scoped to the configured project")
+	}
 	var volumeURL string
 	for _, service := range result.Token.Catalog {
-		if service.Type != "volumev3" {
+		if service.Type != "volumev3" && service.Type != "block-storage" {
 			continue
 		}
 		for _, candidate := range service.Endpoints {
@@ -425,9 +513,18 @@ func (d *CinderDriver) ensureAuthenticated(ctx context.Context) error {
 		"{tenant_id}", d.config.ProjectID,
 	).Replace(volumeURL)
 	parsed, err := url.Parse(volumeURL)
-	if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil ||
+	if err != nil || parsed.Host == "" || parsed.User != nil ||
 		parsed.RawQuery != "" || parsed.Fragment != "" {
 		return errors.New("Keystone returned an invalid Cinder endpoint")
+	}
+	if parsed.Scheme != "https" && !(parsed.Scheme == "http" && d.config.AllowInsecureHTTP) {
+		return errors.New("Keystone returned a Cinder endpoint with an unapproved transport")
+	}
+	parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+	for i, part := range parts {
+		if part == "v3" && i+1 < len(parts) && parts[i+1] != d.config.ProjectID {
+			return errors.New("Cinder endpoint project does not match the mapped project")
+		}
 	}
 	d.token, d.expiresAt, d.baseURL = token, expiresAt, strings.TrimRight(volumeURL, "/")
 	return nil

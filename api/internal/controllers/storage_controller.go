@@ -22,10 +22,13 @@ func NewStorageController(service *storage.Service) *StorageController {
 }
 
 func (c *StorageController) VolumeTypes(ctx *gin.Context) {
-	types, err := c.service.VolumeTypes(ctx.Request.Context())
+	userID, tenantID, projectID, ok := c.projectScope(ctx)
+	if !ok {
+		return
+	}
+	types, err := c.service.ProjectVolumeTypes(ctx.Request.Context(), userID, tenantID, projectID)
 	if err != nil {
-		log.Printf("load storage volume types: %v", err)
-		ctx.JSON(http.StatusServiceUnavailable, gin.H{"error": "storage volume types are unavailable"})
+		writeStorageError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, types)
@@ -184,6 +187,7 @@ func writeStorageError(ctx *gin.Context, err error) {
 	case errors.Is(err, storage.ErrInvalid):
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error(), "code": "INVALID_REQUEST"})
 	default:
+		log.Printf("storage request failed: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "storage request failed", "code": "STORAGE_ERROR"})
 	}
 }

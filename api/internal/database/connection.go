@@ -44,6 +44,10 @@ func migrate(db *gorm.DB) {
 		&models.TenantMembership{},
 		&models.Project{},
 		&models.ProjectMembership{},
+		&models.CloudAccount{},
+		&models.CloudInstance{},
+		&models.CloudOperation{},
+		&models.CloudAuditEvent{},
 		&models.ContainerDeployment{},
 		&models.ContainerDeploymentRevision{},
 		&models.ContainerRegistry{},
@@ -82,6 +86,25 @@ func migrate(db *gorm.DB) {
 		FOR EACH ROW EXECUTE FUNCTION prevent_security_audit_mutation();
 	`).Error; err != nil {
 		log.Fatalf("Security audit immutability migration failed: %v", err)
+	}
+	if err := db.Exec(`
+		CREATE OR REPLACE FUNCTION prevent_cloud_audit_mutation() RETURNS trigger AS $$
+		BEGIN
+			RAISE EXCEPTION 'cloud audit records are append-only';
+		END;
+		$$ LANGUAGE plpgsql;
+	`).Error; err != nil {
+		log.Fatalf("Cloud audit immutability function migration failed: %v", err)
+	}
+	if err := db.Exec(`DROP TRIGGER IF EXISTS cloud_audit_append_only ON cloud_audit_events`).Error; err != nil {
+		log.Fatalf("Cloud audit trigger migration failed: %v", err)
+	}
+	if err := db.Exec(`
+		CREATE TRIGGER cloud_audit_append_only
+		BEFORE UPDATE OR DELETE ON cloud_audit_events
+		FOR EACH ROW EXECUTE FUNCTION prevent_cloud_audit_mutation();
+	`).Error; err != nil {
+		log.Fatalf("Cloud audit immutability migration failed: %v", err)
 	}
 
 	if err := createWorkspacesForExistingUsers(db); err != nil {

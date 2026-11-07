@@ -207,7 +207,8 @@ func (c *Controller) CreateInstanceOperation(
 		Plan: req.Plan, WorkloadProfile: req.WorkloadProfile, CPU: plan.CPU,
 		MemoryMB: plan.MemoryMB, StorageGB: plan.StorageGB, Region: req.Region,
 		Status: "provisioning", Port: port, NetworkID: c.networkID,
-		CreatedAt: now, UpdatedAt: now,
+		OpenStackNetworkID: c.networkID,
+		CreatedAt:          now, UpdatedAt: now,
 	}
 	operation := &DatabaseOperation{
 		ID: internal.GenerateID("op"), DatabaseID: instance.ID, TenantID: req.TenantID,
@@ -291,11 +292,14 @@ func (c *Controller) ProvisionInstance(id string) error {
 	if err != nil {
 		return c.retryOrFail(instance, operation, fmt.Errorf("check Nova server status: %w", err))
 	}
+	instance.OpenStackServerStatus = serverStatus
+	instance.OpenStackServerIP = ip
 	if serverStatus == "ERROR" {
 		return c.failProvision(instance, operation, errors.New("Nova server entered ERROR state"))
 	}
 	if serverStatus != "ACTIVE" {
-		return nil
+		instance.UpdatedAt = time.Now().UTC()
+		return c.store.UpdateInstance(instance)
 	}
 	operation.Stage = "PROVISIONING_STORAGE"
 	operation.UpdatedAt = time.Now().UTC()
@@ -323,6 +327,7 @@ func (c *Controller) ProvisionInstance(id string) error {
 	if err != nil {
 		return c.retryOrFail(instance, operation, fmt.Errorf("check Cinder volume status: %w", err))
 	}
+	instance.OpenStackVolumeStatus = volumeStatus
 	switch volumeStatus {
 	case "error":
 		return c.failProvision(instance, operation, errors.New("Cinder volume entered error state"))
@@ -337,7 +342,8 @@ func (c *Controller) ProvisionInstance(id string) error {
 		}
 		instance.OpenStackVolumeAttached = true
 	default:
-		return nil
+		instance.UpdatedAt = time.Now().UTC()
+		return c.store.UpdateInstance(instance)
 	}
 	if !instance.OpenStackVolumeAttached {
 		attached, err := c.os.IsVolumeAttached(instance.OpenStackServerID, instance.OpenStackVolumeID)
@@ -352,7 +358,8 @@ func (c *Controller) ProvisionInstance(id string) error {
 		instance.OpenStackVolumeAttached = true
 	}
 	if ip == "" {
-		return nil
+		instance.UpdatedAt = time.Now().UTC()
+		return c.store.UpdateInstance(instance)
 	}
 	instance.Status = "starting"
 	operation.Status = "blocked"

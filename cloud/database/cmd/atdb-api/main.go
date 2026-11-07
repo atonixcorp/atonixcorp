@@ -86,18 +86,25 @@ func main() {
 	controller.SetPlans(plansCfg.Plans)
 
 	openStackConfig := openstack.AuthConfig{
-		AuthURL:         os.Getenv("OPENSTACK_AUTH_URL"),
-		Username:        os.Getenv("OPENSTACK_USERNAME"),
-		Password:        os.Getenv("OPENSTACK_PASSWORD"),
-		Domain:          envOrDefault("OPENSTACK_USER_DOMAIN", "default"),
-		ProjectID:       os.Getenv("OPENSTACK_PROJECT_ID"),
-		ComputeEndpoint: os.Getenv("OPENSTACK_COMPUTE_ENDPOINT"),
-		VolumeEndpoint:  os.Getenv("OPENSTACK_VOLUME_ENDPOINT"),
-		NetworkEndpoint: os.Getenv("OPENSTACK_NETWORK_ENDPOINT"),
-		DatabaseImages:  engineImages,
-		DatabaseFlavors: configuredFlavors(plansCfg.Plans),
-		DatabaseNetwork: networkID,
-		SecurityGroupID: securityGroupID,
+		AuthURL:                     os.Getenv("OPENSTACK_AUTH_URL"),
+		ApplicationCredentialID:     os.Getenv("OPENSTACK_APPLICATION_CREDENTIAL_ID"),
+		ApplicationCredentialSecret: os.Getenv("OPENSTACK_APPLICATION_CREDENTIAL_SECRET"),
+		Username:                    os.Getenv("OPENSTACK_USERNAME"),
+		Password:                    os.Getenv("OPENSTACK_PASSWORD"),
+		Domain:                      envOrDefault("OPENSTACK_USER_DOMAIN", "default"),
+		ProjectID: firstConfigured(
+			os.Getenv("OPENSTACK_SHARED_PROJECT_ID"), os.Getenv("OPENSTACK_PROJECT_ID"),
+		),
+		Region:            envOrDefault("OPENSTACK_REGION", envCfg.DefaultRegion),
+		Interface:         envOrDefault("OPENSTACK_INTERFACE", "public"),
+		AllowInsecureHTTP: strings.EqualFold(strings.TrimSpace(os.Getenv("OPENSTACK_ALLOW_INSECURE_HTTP")), "true"),
+		ComputeEndpoint:   os.Getenv("OPENSTACK_COMPUTE_ENDPOINT"),
+		VolumeEndpoint:    os.Getenv("OPENSTACK_VOLUME_ENDPOINT"),
+		NetworkEndpoint:   os.Getenv("OPENSTACK_NETWORK_ENDPOINT"),
+		DatabaseImages:    engineImages,
+		DatabaseFlavors:   configuredFlavors(plansCfg.Plans),
+		DatabaseNetwork:   networkID,
+		SecurityGroupID:   securityGroupID,
 	}
 	if hasOpenStackConfiguration(openStackConfig) {
 		client, clientErr := openstack.NewClient(openStackConfig)
@@ -169,12 +176,21 @@ func envOrDefault(name, fallback string) string {
 }
 
 func hasOpenStackConfiguration(cfg openstack.AuthConfig) bool {
+	hasApplicationCredential := cfg.ApplicationCredentialID != "" &&
+		cfg.ApplicationCredentialSecret != ""
+	hasPasswordCredential := cfg.Username != "" && cfg.Password != ""
 	return strings.TrimSpace(cfg.AuthURL) != "" &&
-		strings.TrimSpace(cfg.Username) != "" &&
-		strings.TrimSpace(cfg.Password) != "" &&
 		strings.TrimSpace(cfg.ProjectID) != "" &&
-		strings.TrimSpace(cfg.ComputeEndpoint) != "" &&
-		strings.TrimSpace(cfg.VolumeEndpoint) != ""
+		(hasApplicationCredential || hasPasswordCredential)
+}
+
+func firstConfigured(values ...string) string {
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func configuredFlavors(plans map[string]core.Plan) map[string]string {

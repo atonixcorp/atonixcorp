@@ -42,7 +42,7 @@ func TestCinderDriverCreateInspectDeleteLifecycle(t *testing.T) {
 		if request.URL.Host == "keystone.example" {
 			authCalls++
 			response := respond(http.StatusCreated,
-				`{"token":{"expires_at":"`+time.Now().Add(time.Hour).UTC().Format(time.RFC3339)+`","catalog":[{"type":"volumev3","endpoints":[{"region_id":"region-a","interface":"public","url":"https://cinder.example/v3/%(project_id)s"}]}]}}`,
+				`{"token":{"expires_at":"`+time.Now().Add(time.Hour).UTC().Format(time.RFC3339)+`","project":{"id":"project-123"},"catalog":[{"type":"block-storage","endpoints":[{"region_id":"region-a","interface":"public","url":"https://cinder.example/v3/%(project_id)s"}]}]}}`,
 			)
 			response.Header.Set("X-Subject-Token", "scoped-token")
 			return response, nil
@@ -76,7 +76,7 @@ func TestCinderDriverCreateInspectDeleteLifecycle(t *testing.T) {
 			if deleteCalls > 0 {
 				return respond(http.StatusNotFound, `{}`), nil
 			}
-			return respond(http.StatusOK, `{"volume":{"id":"provider-1","status":"available"}}`), nil
+			return respond(http.StatusOK, `{"volume":{"id":"provider-1","status":"in-use","size":20,"availability_zone":"zone-a","attachments":[{"attachment_id":"attach-1","server_id":"server-1","device":"/dev/vdb"}]}}`), nil
 		case request.Method == http.MethodDelete && strings.HasSuffix(request.URL.Path, "/volumes/provider-1"):
 			deleteCalls++
 			return respond(http.StatusAccepted, ""), nil
@@ -118,7 +118,9 @@ func TestCinderDriverCreateInspectDeleteLifecycle(t *testing.T) {
 		t.Fatalf("retry created another provider volume: %+v, create calls %d", provider, createCalls)
 	}
 	provider, err = driver.InspectVolume(ctx, "provider-1")
-	if err != nil || provider.Status != "available" {
+	if err != nil || provider.Status != "in-use" || provider.SizeGB != 20 ||
+		provider.AvailabilityZone != "zone-a" || len(provider.Attachments) != 1 ||
+		provider.Attachments[0].ID != "attach-1" || provider.Attachments[0].ServerID != "server-1" {
 		t.Fatalf("inspect volume = %+v, %v", provider, err)
 	}
 	customerVolume.ProviderID = "provider-1"
@@ -135,6 +137,90 @@ func TestCinderDriverCreateInspectDeleteLifecycle(t *testing.T) {
 	}
 }
 
+func TestCinderUsesConfiguredEncryptionWhenProviderForbidsLookup(t *testing.T) {
+	driver, err := NewCinderDriver(CinderConfig{
+		AuthURL:                 "https://keystone.example/v3",
+		ApplicationCredentialID: "credential-id", ApplicationCredentialSecret: "credential-secret",
+		ProjectID: "project-id", Region: "RegionOne", VolumeTypeIDs: []string{"fast"},
+		UnencryptedVolumeTypeIDs: []string{"fast"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	driver.httpClient = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		respond := func(status int, body string) *http.Response {
+			return &http.Response{
+				StatusCode: status, Header: make(http.Header),
+				Body: io.NopCloser(strings.NewReader(body)), Request: request,
+			}
+		}
+		if request.URL.Host == "keystone.example" {
+			response := respond(http.StatusCreated,
+				`{"token":{"expires_at":"`+time.Now().Add(time.Hour).UTC().Format(time.RFC3339)+`","project":{"id":"project-id"},"catalog":[{"type":"block-storage","endpoints":[{"region_id":"RegionOne","interface":"public","url":"https://cinder.example/v3"}]}]}}`,
+			)
+			response.Header.Set("X-Subject-Token", "scoped-token")
+			return response, nil
+		}
+		switch request.URL.Path {
+		case "/v3/types":
+			return respond(http.StatusOK, `{"volume_types":[{"id":"fast","name":"Fast"}]}`), nil
+		case "/v3/types/fast/encryption":
+			return respond(http.StatusForbidden, `{}`), nil
+		default:
+			t.Errorf("unexpected Cinder request %s %s", request.Method, request.URL)
+			return respond(http.StatusNotFound, `{}`), nil
+		}
+	})}
+
+	types, err := driver.VolumeTypes(context.Background())
+	if err != nil {
+		t.Fatalf("list volume types: %v", err)
+	}
+	if len(types) != 1 || types[0].ID != "fast" || types[0].Encrypted {
+		t.Fatalf("unexpected volume type classification: %+v", types)
+	}
+}
+
+func TestCinderRejectsWrongTokenProject(t *testing.T) {
+	driver, err := NewCinderDriver(CinderConfig{
+		AuthURL: "https://keystone.example/v3", ApplicationCredentialID: "credential",
+		ApplicationCredentialSecret: "secret", ProjectID: "tenant-project",
+		Region: "region", VolumeTypeIDs: []string{"fast"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	driver.httpClient = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		response := &http.Response{StatusCode: http.StatusCreated, Header: make(http.Header), Request: request,
+			Body: io.NopCloser(strings.NewReader(`{"token":{"expires_at":"` + time.Now().Add(time.Hour).UTC().Format(time.RFC3339) + `","project":{"id":"shared-project"},"catalog":[]}}`))}
+		response.Header.Set("X-Subject-Token", "test-token")
+		return response, nil
+	})}
+	if err := driver.ensureAuthenticated(context.Background()); err == nil {
+		t.Fatal("wrong project token was accepted")
+	}
+}
+
+func TestCinderRejectsCatalogEndpointForAnotherProject(t *testing.T) {
+	driver, err := NewCinderDriver(CinderConfig{
+		AuthURL: "https://keystone.example/v3", ApplicationCredentialID: "credential",
+		ApplicationCredentialSecret: "secret", ProjectID: "tenant-project",
+		Region: "region", VolumeTypeIDs: []string{"fast"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	driver.httpClient = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		response := &http.Response{StatusCode: http.StatusCreated, Header: make(http.Header), Request: request,
+			Body: io.NopCloser(strings.NewReader(`{"token":{"expires_at":"` + time.Now().Add(time.Hour).UTC().Format(time.RFC3339) + `","project":{"id":"tenant-project"},"catalog":[{"type":"volumev3","endpoints":[{"region_id":"region","interface":"public","url":"https://cinder.example/v3/shared-project"}]}]}}`))}
+		response.Header.Set("X-Subject-Token", "test-token")
+		return response, nil
+	})}
+	if err := driver.ensureAuthenticated(context.Background()); err == nil {
+		t.Fatal("foreign project Cinder endpoint was accepted")
+	}
+}
+
 func TestNewCinderDriverRequiresSafeCompleteConfig(t *testing.T) {
 	base := CinderConfig{
 		AuthURL: "https://keystone.example/v3", Username: "service", Password: "secret",
@@ -147,6 +233,11 @@ func TestNewCinderDriverRequiresSafeCompleteConfig(t *testing.T) {
 	if _, err := NewCinderDriver(base); err == nil {
 		t.Fatal("expected plaintext Keystone URL to be rejected")
 	}
+	base.AllowInsecureHTTP = true
+	if _, err := NewCinderDriver(base); err != nil {
+		t.Fatalf("explicitly enabled development HTTP rejected: %v", err)
+	}
+	base.AllowInsecureHTTP = false
 	base.AuthURL = "https://user:pass@keystone.example/v3"
 	if _, err := NewCinderDriver(base); err == nil {
 		t.Fatal("expected credentials in Keystone URL to be rejected")
@@ -155,6 +246,60 @@ func TestNewCinderDriverRequiresSafeCompleteConfig(t *testing.T) {
 	base.VolumeTypeIDs = nil
 	if _, err := NewCinderDriver(base); err == nil {
 		t.Fatal("expected an explicit volume type allowlist")
+	}
+	base.VolumeTypeIDs = []string{"type"}
+	base.UnencryptedVolumeTypeIDs = []string{"other"}
+	if _, err := NewCinderDriver(base); err == nil {
+		t.Fatal("expected encryption classifications to use allowed volume types")
+	}
+}
+
+func TestCinderUsesApplicationCredentialAuth(t *testing.T) {
+	driver, err := NewCinderDriver(CinderConfig{
+		AuthURL:                     "http://keystone.example/v3",
+		ApplicationCredentialID:     "credential-id",
+		ApplicationCredentialSecret: "credential-secret",
+		ProjectID:                   "project-id", Region: "RegionOne",
+		VolumeTypeIDs: []string{"fast"}, AllowInsecureHTTP: true,
+	})
+	if err != nil {
+		t.Fatalf("NewCinderDriver(): %v", err)
+	}
+	var authBody map[string]any
+	driver.httpClient = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		if request.URL.Path != "/v3/auth/tokens" {
+			t.Fatalf("Keystone request path = %q", request.URL.Path)
+		}
+		if err := json.NewDecoder(request.Body).Decode(&authBody); err != nil {
+			t.Fatalf("decode Keystone auth request: %v", err)
+		}
+		response := &http.Response{
+			StatusCode: http.StatusCreated, Header: make(http.Header),
+			Body: io.NopCloser(strings.NewReader(
+				`{"token":{"expires_at":"` + time.Now().Add(time.Hour).UTC().Format(time.RFC3339) +
+					`","project":{"id":"project-id"},"catalog":[{"type":"volumev3","endpoints":[{"region_id":"RegionOne","interface":"public","url":"http://cinder.example/v3/%(project_id)s"}]}]}}`,
+			)), Request: request,
+		}
+		response.Header.Set("X-Subject-Token", "test-token")
+		return response, nil
+	})}
+	if err := driver.ensureAuthenticated(context.Background()); err != nil {
+		t.Fatalf("ensureAuthenticated(): %v", err)
+	}
+	auth, ok := authBody["auth"].(map[string]any)
+	if !ok {
+		t.Fatalf("missing auth payload: %#v", authBody)
+	}
+	identity, ok := auth["identity"].(map[string]any)
+	if !ok || identity["application_credential"] == nil {
+		t.Fatalf("Cinder auth did not use application credential: %#v", authBody)
+	}
+	if _, exists := auth["scope"]; exists {
+		t.Fatalf("application credential auth unexpectedly includes scope: %#v", authBody)
+	}
+	endpoint, err := driver.endpoint()
+	if err != nil || endpoint != "http://cinder.example/v3/project-id" {
+		t.Fatalf("discovered Cinder endpoint = %q, error %v", endpoint, err)
 	}
 }
 
@@ -174,7 +319,7 @@ func TestCinderNotFoundErrorIsProviderNotFound(t *testing.T) {
 		response := &http.Response{
 			StatusCode: http.StatusCreated, Header: make(http.Header),
 			Body: io.NopCloser(strings.NewReader(
-				`{"token":{"expires_at":"` + time.Now().Add(time.Hour).UTC().Format(time.RFC3339) + `","catalog":[{"type":"volumev3","endpoints":[{"region":"region","interface":"public","url":"https://cinder.example/v3"}]}]}}`,
+				`{"token":{"expires_at":"` + time.Now().Add(time.Hour).UTC().Format(time.RFC3339) + `","project":{"id":"project"},"catalog":[{"type":"volumev3","endpoints":[{"region":"region","interface":"public","url":"https://cinder.example/v3"}]}]}}`,
 			)), Request: request,
 		}
 		if request.URL.Host == "keystone.example" {

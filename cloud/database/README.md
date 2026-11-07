@@ -27,13 +27,13 @@ and existing database inventory, but database creation is disabled.
 
 ## OpenStack configuration
 
-Provide the following values through the runtime environment or root `.env`;
-do not put credentials in the YAML configuration files:
+The service accepts the same Keystone application credential configured for
+Nova. Credentials remain in the root `.env`, not YAML. Configure:
 
-- `OPENSTACK_AUTH_URL`, `OPENSTACK_USERNAME`, `OPENSTACK_PASSWORD`,
-  `OPENSTACK_USER_DOMAIN`, and `OPENSTACK_PROJECT_ID`
-- `OPENSTACK_COMPUTE_ENDPOINT` (Nova API root, normally ending in `/v2.1`)
-  and `OPENSTACK_VOLUME_ENDPOINT` (Cinder API root, normally ending in `/v3`)
+- `OPENSTACK_AUTH_URL`, `OPENSTACK_APPLICATION_CREDENTIAL_ID`, and
+  `OPENSTACK_APPLICATION_CREDENTIAL_SECRET`
+- `OPENSTACK_SHARED_PROJECT_ID`, `OPENSTACK_REGION`, and `OPENSTACK_INTERFACE`
+- `OPENSTACK_ALLOW_INSECURE_HTTP=true` only for isolated DevStack development
 - `OPENSTACK_DATABASE_NETWORK_ID` and optionally
   `OPENSTACK_DATABASE_SECURITY_GROUP_ID`
 - `OPENSTACK_DATABASE_FLAVOR_BASIC`, `OPENSTACK_DATABASE_FLAVOR_STANDARD`,
@@ -45,9 +45,21 @@ do not put credentials in the YAML configuration files:
   `OPENSTACK_DATABASE_IMAGE_MARIADB_11_4`, and
   `OPENSTACK_DATABASE_IMAGE_REDIS_7`
 
-Service URLs must use HTTPS except for loopback-only test endpoints. The
-catalog only enables engines and plans for which the corresponding image,
-flavor, network, and OpenStack client configuration are present.
+Check the project's provider-side options with `openstack --os-cloud atonixcorp
+flavor list`, `openstack --os-cloud atonixcorp network list --project
+<project-id>`, and `openstack --os-cloud atonixcorp image list`. Configure a
+prepared, tested database appliance image for each enabled engine/version;
+ordinary cloud images are not database appliances and will not produce a
+ready-to-use managed database. Configure `OPENSTACK_DATABASE_NETWORK_ID` and
+the flavor/image IDs in the root `.env` before exposing database creation.
+
+The service discovers Nova and Cinder endpoints from Keystone's service
+catalog; explicit `OPENSTACK_COMPUTE_ENDPOINT` and
+`OPENSTACK_VOLUME_ENDPOINT` values may override discovery. The catalog only
+enables engines and plans for which the corresponding prepared image, flavor,
+network, and OpenStack client configuration are present. All AtonixCorp
+database projects use the same OpenStack project and therefore share its
+provider-level quota and security boundary.
 
 ## Current capability boundary
 
@@ -64,5 +76,10 @@ deliberately not reported as healthy: appliance bootstrap, engine health
 checks, credential/secret delivery, backups, monitoring, replicas, and
 deletion/rollback workflows are not implemented. Do not use the reported VM
 state as proof that a database is ready for connections. Selecting the
-OpenHPC workload profile records workload intent; authenticated Slurm
-connection bindings and secret injection remain pending.
+OpenHPC workload profile is outside the scope of this OpenStack integration;
+OpenHPC is not provisioned or enabled by these changes.
+
+Database inventory responses expose the provider-returned Nova server ID,
+server status and fixed IP, plus the Cinder volume ID, status, attachment
+state, and configured network ID. These fields describe infrastructure
+resources only; a `starting` database is not a healthy database endpoint.

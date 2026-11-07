@@ -60,7 +60,7 @@ export function RegionSection({
                 <span className="compute-choice-mark" aria-hidden="true">{draft.region === region.id ? "✓" : "○"}</span>
                 <strong>{region.name}</strong>
                 <code>{region.id.toUpperCase()}</code>
-                <small>{region.available ? "Available capacity" : region.capacity_status.replaceAll("_", " ")}</small>
+                <small>{region.available ? "Provider catalog available" : region.capacity_status.replaceAll("_", " ")}</small>
               </button>
             ))}
           </div>
@@ -73,70 +73,42 @@ export function RegionSection({
 export function ImageSection({
   images, draft, update,
 }: { images: ComputeImage[]; draft: DeploymentDraft; update: (patch: Partial<DeploymentDraft>) => void }) {
-  const [source, setSource] = useState("operating_system");
-  const sources = [
-    { id: "operating_system", label: "Operating systems" },
-    { id: "marketplace", label: "Marketplace" },
-    { id: "snapshot", label: "Snapshots" },
-    { id: "custom", label: "Custom images" },
-  ];
-  const options = images.filter((image) => image.source === source && image.available);
   return (
-    <Section id="image" number="03" title="Image" description="Select the operating system installed on your instance.">
-      <div className="compute-source-tabs" role="tablist" aria-label="Image source">
-        {sources.map((item) => (
-          <button type="button" role="tab" aria-selected={source === item.id} key={item.id} onClick={() => setSource(item.id)}>
-            {item.label}
-          </button>
-        ))}
-      </div>
-      {options.length ? (
+    <Section id="image" number="03" title="Image" description="Select an active image from the mapped OpenStack project.">
+      {images.some((image) => image.available) ? (
         <div className="compute-image-grid">
-          {options.map((image) => (
+          {images.filter((image) => image.available).map((image) => (
             <button type="button" key={image.id} className={`compute-image-card${draft.image === image.id ? " selected" : ""}`} aria-pressed={draft.image === image.id} onClick={() => update({ image: image.id })}>
-              <span className="compute-os-mark">{image.family.slice(0, 1)}</span>
-              <span><strong>{image.name}</strong><small>{image.version}</small></span>
+              <span className="compute-os-mark">OS</span>
+              <span><strong>{image.name}</strong><small>{image.status} · minimum {image.min_disk_gb} GB disk / {image.min_memory_mb} MB RAM · {image.id}</small></span>
               <span className="compute-choice-mark" aria-hidden="true">{draft.image === image.id ? "✓" : "○"}</span>
             </button>
           ))}
         </div>
       ) : (
-        <InlineEmpty>No images are currently available from this source. Select an available source or retry the catalog.</InlineEmpty>
+        <InlineEmpty>No active images are available for this project.</InlineEmpty>
       )}
     </Section>
   );
 }
 
 export function PlanSection({
-  plans, draft, update, currency,
-}: { plans: ComputePlan[]; draft: DeploymentDraft; update: (patch: Partial<DeploymentDraft>) => void; currency: string }) {
-  const families = Array.from(new Set(plans.map((plan) => plan.family)));
-  const [family, setFamily] = useState("");
-  const selectedFamily = families.includes(family) ? family : (families[0] ?? "");
-  const visiblePlans = plans.filter((plan) => plan.family === selectedFamily && plan.available);
+  plans, draft, update,
+}: { plans: ComputePlan[]; draft: DeploymentDraft; update: (patch: Partial<DeploymentDraft>) => void }) {
+  const visiblePlans = plans.filter((plan) => plan.available);
   return (
-    <Section id="plan" number="04" title="Instance size" description="Plan specifications and rates come from the Compute API.">
-      {families.length > 1 && (
-        <div className="compute-source-tabs" role="tablist" aria-label="Plan family">
-          {families.map((item) => (
-            <button type="button" role="tab" aria-selected={selectedFamily === item} key={item} onClick={() => setFamily(item)}>
-              {familyName(item)}
-            </button>
-          ))}
-        </div>
-      )}
+    <Section id="plan" number="04" title="Instance size" description="vCPU, memory, and root-disk metadata come from Nova flavors; pricing is unavailable.">
       {visiblePlans.length ? (
         <div className="compute-table-scroll">
           <table className="compute-table compute-plan-table">
-            <thead><tr><th>Plan</th><th>vCPU</th><th>Memory</th><th>NVMe</th><th>Transfer</th><th>Monthly estimate</th></tr></thead>
+            <thead><tr><th>Flavor</th><th>vCPU</th><th>Memory</th><th>Root disk</th><th>Pricing</th></tr></thead>
             <tbody>{visiblePlans.map((plan) => (
               <tr key={plan.id} className={draft.plan === plan.id ? "selected" : ""}>
                 <td><button className="compute-plan-select" type="button" aria-pressed={draft.plan === plan.id} onClick={() => update({ plan: plan.id })}>{plan.name}</button></td>
-                <td>{plan.vcpus}{plan.gpu_count ? ` · ${plan.gpu_count} GPU` : ""}</td>
+                <td>{plan.vcpus}</td>
                 <td>{Math.round(plan.memory_mb / 1024)} GB</td>
-                <td>{plan.boot_disk_gb} GB</td>
-                <td>{plan.transfer_tb} TB</td>
-                <td>{formatMoney(plan.monthly_price, plan.currency || currency)}<small className="compute-plan-hourly">{formatMoney(plan.hourly_price, plan.currency || currency)} / hour</small></td>
+                <td>{plan.boot_disk_gb} GB{plan.ephemeral_disk_gb ? ` + ${plan.ephemeral_disk_gb} GB ephemeral` : ""}{plan.swap_mb ? ` · ${plan.swap_mb} MB swap` : ""}</td>
+                <td>Unavailable</td>
               </tr>
             ))}</tbody>
           </table>
@@ -173,19 +145,14 @@ export function NetworkSection({
 }: { catalog: ComputeCatalog; draft: DeploymentDraft; update: (patch: Partial<DeploymentDraft>) => void }) {
   const networks = catalog.networks.filter((item) => item.region === draft.region && item.available);
   return (
-    <Section id="network" number="06" title="Networking" description="Attach to an existing network and choose public connectivity.">
+    <Section id="network" number="05" title="Networking" description="Attach the instance to a network visible to this OpenStack project.">
       <label className="compute-field">Virtual private cloud
-        <select value={draft.network} onChange={(event) => update({ network: event.target.value })}>
-          <option value="">No VPC selected</option>
-          {networks.map((network) => <option value={network.id} key={network.id}>{network.name} · {network.id}</option>)}
+        <select required value={draft.network} onChange={(event) => update({ network: event.target.value })}>
+          <option value="">Select a network</option>
+          {networks.map((network) => <option value={network.id} key={network.id}>{network.name} · {network.status}{network.external ? " · external" : ""}{network.shared ? " · shared" : ""} · {network.id}</option>)}
         </select>
       </label>
-      <div className="compute-toggle-grid">
-        <Toggle label="Public IPv4" description="Assign a public IPv4 address." checked={draft.publicIPv4} onChange={(checked) => update({ publicIPv4: checked })} />
-        <Toggle label="Public IPv6" description="Enable public IPv6 connectivity." checked={draft.publicIPv6} onChange={(checked) => update({ publicIPv6: checked })} />
-        <Toggle label="Private networking" description="Connect to the selected private network." checked={draft.privateNetworking} onChange={(checked) => update({ privateNetworking: checked })} />
-        <Toggle label="Hostname DNS" description="Publish a DNS record for this hostname." checked={draft.hostnameDNS} onChange={(checked) => update({ hostnameDNS: checked })} />
-      </div>
+      {!networks.length && <InlineEmpty>No active networks are available for this project.</InlineEmpty>}
     </Section>
   );
 }
@@ -279,16 +246,11 @@ export function ReviewSection({
   submitting: boolean;
 }) {
   const entries = [
-    { id: "compute-type", title: "Compute", value: `${catalog.compute_types.find((item) => item.id === draft.computeType)?.name ?? "Not selected"}${plan ? ` · ${plan.vcpus} vCPU · ${Math.round(plan.memory_mb / 1024)} GB RAM` : ""}` },
+    { id: "compute-type", title: "Compute", value: `${catalog.compute_types.find((item) => item.id === draft.computeType)?.name ?? "Not selected"}${plan ? ` · ${plan.name} · ${plan.vcpus} vCPU · ${Math.round(plan.memory_mb / 1024)} GB RAM` : ""}` },
     { id: "region", title: "Location", value: catalog.regions.find((item) => item.id === draft.region)?.name ?? "Not selected" },
     { id: "image", title: "Image", value: catalog.images.find((item) => item.id === draft.image)?.name ?? "Not selected" },
-    { id: "storage", title: "Storage", value: `${plan?.boot_disk_gb ?? "—"} GB boot disk · ${draft.volumes.reduce((sum, item) => sum + item.size_gb, 0)} GB attached` },
-    { id: "network", title: "Network", value: `${draft.network || "No VPC"} · ${draft.publicIPv4 ? "IPv4 " : ""}${draft.publicIPv6 ? "IPv6" : ""}` },
-    { id: "security", title: "Authentication", value: `${draft.sshKeyIds.length} SSH key(s)` },
-    { id: "security", title: "Firewall", value: draft.firewall || "None selected" },
-    { id: "initialization", title: "Initialization", value: draft.userData ? "User data configured" : "None" },
-    { id: "identity", title: "Identity", value: `${draft.hostname || draft.name || "Hostname"} · ${draft.label || "No label"}` },
-    { id: "identity", title: "Quantity", value: String(draft.quantity) },
+    { id: "network", title: "Network", value: catalog.networks.find((item) => item.id === draft.network)?.name ?? "Not selected" },
+    { id: "identity", title: "Instance name", value: draft.name || "Not set" },
   ];
   return (
     <Section id="review" number="10" title="Review & deploy" description="Check the configuration before continuing to account authorization.">
@@ -299,7 +261,7 @@ export function ReviewSection({
         </div>
       ))}</div>
       <div className="compute-review-actions">
-        <p>Live deployment remains disabled until authentication, tenant authorization, and authoritative billing are configured.</p>
+        <p>Pricing is unavailable. The request creates one server in the selected OpenStack project.</p>
         <button type="button" className="compute-primary-button" disabled={deployBlocked} onClick={onDeploy}>
           {submitting ? "Submitting…" : "Deploy instance"}
         </button>
@@ -321,21 +283,8 @@ export function Section({
   );
 }
 
-function Toggle({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: (value: boolean) => void }) {
-  return (
-    <label className="compute-toggle">
-      <span><strong>{label}</strong><small>{description}</small></span>
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
-    </label>
-  );
-}
-
 function InlineEmpty({ children }: { children: ReactNode }) {
   return <div className="compute-inline-empty">{children}</div>;
-}
-
-function familyName(family: string): string {
-  return family.split(/[_-]/).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
 }
 
 export function formatMoney(value: number, currency: string): string {

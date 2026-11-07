@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"atnetwork/agents/node"
@@ -71,12 +73,28 @@ func main() {
 		backends = append(backends, kubernetes.NewCNIBackend())
 	}
 
-	if backendsCfg.Neutron.Enabled {
-		neutronClient := openstack.NewNeutronClient(
-			backendsCfg.Neutron.Endpoint,
-			backendsCfg.Neutron.Token,
-		)
-		backends = append(backends, openstack.NewNeutronBackend(neutronClient))
+	if backendsCfg.Neutron.Enabled ||
+		strings.EqualFold(strings.TrimSpace(os.Getenv("OPENSTACK_ENABLE_NEUTRON")), "true") {
+		encryptionKey, keyErr := openStackAccountEncryptionKey(os.Getenv("OPENSTACK_ACCOUNT_ENCRYPTION_KEY"))
+		if keyErr != nil {
+			log.Printf("Neutron backend disabled: %v", keyErr)
+		} else if len(encryptionKey) != 32 {
+			log.Print("Neutron backend disabled: mapped OpenStack account encryption is not configured")
+		} else {
+			neutronBackend, backendErr := openstack.NewScopedNeutronBackend(store, openstack.NeutronConfig{
+				AuthURL:   os.Getenv("OPENSTACK_AUTH_URL"),
+				Region:    os.Getenv("OPENSTACK_REGION"),
+				Interface: os.Getenv("OPENSTACK_INTERFACE"),
+				AllowInsecureHTTP: strings.EqualFold(
+					strings.TrimSpace(os.Getenv("OPENSTACK_ALLOW_INSECURE_HTTP")), "true",
+				),
+			}, encryptionKey)
+			if backendErr != nil {
+				log.Printf("Neutron backend disabled: %v", backendErr)
+			} else {
+				backends = append(backends, neutronBackend)
+			}
+		}
 	}
 
 	if backendsCfg.Generic.Enabled {
@@ -109,4 +127,15 @@ func main() {
 	if err := api.StartHTTP(controller, policy, store, jwtSecret); err != nil {
 		log.Fatalf("start networking API: %v", err)
 	}
+}
+
+func openStackAccountEncryptionKey(encoded string) ([]byte, error) {
+	if strings.TrimSpace(encoded) == "" {
+		return nil, nil
+	}
+	key, err := base64.StdEncoding.DecodeString(strings.TrimSpace(encoded))
+	if err != nil || len(key) != 32 {
+		return nil, fmt.Errorf("OPENSTACK_ACCOUNT_ENCRYPTION_KEY must be base64-encoded 32-byte key material")
+	}
+	return key, nil
 }

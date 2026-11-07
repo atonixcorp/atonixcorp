@@ -1,9 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { getCatalog, getInstances } from "../lib/api";
-import type { ComputeInstance, ComputePlan } from "../lib/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createNovaInstance,
+  getCatalog,
+  getInstances,
+  getNovaCapabilities,
+  getProjects,
+  getTenants,
+} from "../lib/api";
+import type { ComputeProject, ComputeTenant } from "../lib/api";
+import type { ComputeImage, ComputeInstance, ComputeNetwork, ComputePlan } from "../lib/types";
 
 export default function ComputeInstancesPage() {
   const [instances, setInstances] = useState<ComputeInstance[]>([]);
@@ -11,20 +19,80 @@ export default function ComputeInstancesPage() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("");
   const [plans, setPlans] = useState<ComputePlan[]>([]);
+  const [images, setImages] = useState<ComputeImage[]>([]);
+  const [networks, setNetworks] = useState<ComputeNetwork[]>([]);
+  const [catalogProvisioning, setCatalogProvisioning] = useState(false);
   const [planCatalogError, setPlanCatalogError] = useState("");
   const [planCatalogLoading, setPlanCatalogLoading] = useState(true);
+  const [tenants, setTenants] = useState<ComputeTenant[]>([]);
+  const [projects, setProjects] = useState<ComputeProject[]>([]);
+  const [tenantID, setTenantID] = useState("");
+  const [projectID, setProjectID] = useState("");
+  const [scopeError, setScopeError] = useState("");
+  const [organizationProvisioning, setOrganizationProvisioning] = useState(false);
+  const [novaRegion, setNovaRegion] = useState("");
+  const [capabilityError, setCapabilityError] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
+  const createIdempotencyKey = useRef("");
+  const [createDraft, setCreateDraft] = useState({
+    name: "",
+    imageID: "",
+    flavorID: "",
+    networkID: "",
+    keyName: "",
+  });
 
   const loadInstances = useCallback(async () => {
+    if (!tenantID || !projectID) {
+      setInstances([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
-      setInstances(await getInstances());
+      setInstances(await getInstances(Number(tenantID), Number(projectID)));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load instances.");
     } finally {
       setLoading(false);
     }
+  }, [projectID, tenantID]);
+
+  useEffect(() => {
+    let active = true;
+    void getTenants().then((items) => {
+      if (!active) return;
+      setTenants(items);
+      if (items.length) setTenantID(String(items[0].id));
+      else setLoading(false);
+    }).catch((loadError: unknown) => {
+      if (active) {
+        setScopeError(loadError instanceof Error ? loadError.message : "Could not load workspaces.");
+        setLoading(false);
+      }
+    });
+    return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!tenantID) return;
+    let active = true;
+    void getProjects(Number(tenantID)).then((items) => {
+      if (!active) return;
+      setProjects(items);
+      setProjectID(items.length ? String(items[0].id) : "");
+      if (!items.length) setLoading(false);
+    }).catch((loadError: unknown) => {
+      if (active) {
+        setScopeError(loadError instanceof Error ? loadError.message : "Could not load projects.");
+        setLoading(false);
+      }
+    });
+    return () => { active = false; };
+  }, [tenantID]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => { void loadInstances(); }, 0);
@@ -32,11 +100,56 @@ export default function ComputeInstancesPage() {
   }, [loadInstances]);
 
   useEffect(() => {
+    if (!tenantID) {
+      setOrganizationProvisioning(false);
+      setNovaRegion("");
+      return;
+    }
     let active = true;
-    void getCatalog().then((catalog) => {
-      if (active) setPlans(catalog.plans);
+    setOrganizationProvisioning(false);
+    setCapabilityError("");
+    void getNovaCapabilities(Number(tenantID)).then((capabilities) => {
+      if (!active) return;
+      setOrganizationProvisioning(capabilities.organization_provisioning);
+      setNovaRegion(capabilities.region);
+    }).catch((loadError: unknown) => {
+      if (active) {
+        setCapabilityError(loadError instanceof Error
+          ? loadError.message
+          : "Nova provisioning capability could not be checked.");
+      }
+    });
+    return () => { active = false; };
+  }, [tenantID]);
+
+  useEffect(() => {
+    if (!tenantID || !projectID) {
+      setPlans([]);
+      setImages([]);
+      setNetworks([]);
+      setCatalogProvisioning(false);
+      setPlanCatalogLoading(false);
+      return;
+    }
+    let active = true;
+    setPlanCatalogLoading(true);
+    setPlanCatalogError("");
+    void getCatalog(Number(tenantID), Number(projectID)).then((catalog) => {
+      if (active) {
+        setPlans(catalog.plans);
+        setImages(catalog.images);
+        setNetworks(catalog.networks);
+        setCatalogProvisioning(catalog.provisioning_enabled);
+        setCreateDraft((current) => ({
+          ...current,
+          imageID: catalog.images.find((item) => item.available)?.id ?? "",
+          flavorID: catalog.plans.find((item) => item.available)?.id ?? "",
+          networkID: catalog.networks.find((item) => item.available)?.id ?? "",
+        }));
+      }
     }).catch((catalogError: unknown) => {
       if (active) {
+        setCatalogProvisioning(false);
         setPlanCatalogError(catalogError instanceof Error
           ? catalogError.message
           : "Plan details are unavailable.");
@@ -45,7 +158,7 @@ export default function ComputeInstancesPage() {
       if (active) setPlanCatalogLoading(false);
     });
     return () => { active = false; };
-  }, []);
+  }, [projectID, tenantID]);
 
   const filteredInstances = useMemo(() => {
     const query = filter.trim().toLowerCase();
@@ -56,6 +169,38 @@ export default function ComputeInstancesPage() {
       : instances;
   }, [filter, instances]);
 
+  const submitCreate = async () => {
+    if (!tenantID || !projectID || !catalogProvisioning) {
+      setCreateError("Choose a workspace and project before creating an instance.");
+      return;
+    }
+    setCreating(true);
+    setCreateError("");
+    if (!createIdempotencyKey.current) createIdempotencyKey.current = crypto.randomUUID();
+    try {
+      await createNovaInstance({
+        tenant_id: Number(tenantID),
+        project_id: Number(projectID),
+        name: createDraft.name,
+        region: novaRegion,
+        image_id: createDraft.imageID,
+        flavor_id: createDraft.flavorID,
+        network_id: createDraft.networkID,
+        key_name: createDraft.keyName || undefined,
+      }, createIdempotencyKey.current);
+      createIdempotencyKey.current = "";
+      setCreateDraft({ name: "", imageID: "", flavorID: "", networkID: "", keyName: "" });
+      setCreateOpen(false);
+      await loadInstances();
+    } catch (requestError) {
+      setCreateError(requestError instanceof Error
+        ? requestError.message
+        : "Nova could not create the instance.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div className="compute-page">
       <header className="compute-page-heading">
@@ -64,13 +209,114 @@ export default function ComputeInstancesPage() {
           <h1>Compute instances</h1>
           <p>Manage virtual machines and review their current lifecycle status.</p>
         </div>
-        <Link className="compute-primary-button" href="/compute/deploy">＋ Deploy instance</Link>
+        <button
+          className="compute-primary-button"
+          type="button"
+          onClick={() => { setCreateError(""); setCreateOpen((open) => !open); }}
+          disabled={!organizationProvisioning || !catalogProvisioning}
+          title={organizationProvisioning && catalogProvisioning ? "Create a VM in this organization's mapped OpenStack project" : "A mapped project and live provider catalog are required"}
+        >
+          ＋ Create instance
+        </button>
       </header>
+
+      {capabilityError ? (
+        <p className="compute-inline-error" role="alert">
+          Instance creation is unavailable because Nova capabilities could not be checked: {capabilityError}
+        </p>
+      ) : !organizationProvisioning && (
+        <p className="compute-deploy-notice" role="status">
+          Nova instance creation is disabled because this organization does not have a validated OpenStack project mapping.
+        </p>
+      )}
+
+      {createOpen && (
+        <section className="compute-card" aria-label="Create Nova instance">
+          <header className="compute-table-toolbar">
+            <div>
+              <h2>Create a Nova instance</h2>
+              <p>Region {novaRegion || "not configured"} · organization-scoped OpenStack project</p>
+            </div>
+            <button type="button" className="compute-secondary-button" onClick={() => setCreateOpen(false)}>
+              Cancel
+            </button>
+          </header>
+          <p className="compute-deploy-notice" role="note">
+            This organization is isolated to its mapped OpenStack project. Existing OpenStack servers are not imported.
+          </p>
+          {createError && <p className="compute-inline-error" role="alert">{createError}</p>}
+          <form
+            className="compute-deploy-sections"
+            onSubmit={(event) => { event.preventDefault(); void submitCreate(); }}
+          >
+            <label className="compute-filter">
+              Instance name
+              <input
+                required
+                maxLength={63}
+                pattern="[A-Za-z0-9][A-Za-z0-9._-]{0,62}"
+                value={createDraft.name}
+                onChange={(event) => setCreateDraft((current) => ({ ...current, name: event.target.value }))}
+              />
+            </label>
+            <label className="compute-filter">
+              OpenStack image
+              <select required value={createDraft.imageID} onChange={(event) => setCreateDraft((current) => ({ ...current, imageID: event.target.value }))}>
+                <option value="">Select an active image</option>
+                {images.filter((image) => image.available).map((image) => <option value={image.id} key={image.id}>{image.name} · {image.id}</option>)}
+              </select>
+            </label>
+            <label className="compute-filter">
+              Nova flavor
+              <select required value={createDraft.flavorID} onChange={(event) => setCreateDraft((current) => ({ ...current, flavorID: event.target.value }))}>
+                <option value="">Select a flavor</option>
+                {plans.filter((plan) => plan.available).map((plan) => <option value={plan.id} key={plan.id}>{plan.name} · {plan.vcpus} vCPU / {Math.round(plan.memory_mb / 1024)} GB RAM</option>)}
+              </select>
+            </label>
+            <label className="compute-filter">
+              Neutron network
+              <select required value={createDraft.networkID} onChange={(event) => setCreateDraft((current) => ({ ...current, networkID: event.target.value }))}>
+                <option value="">Select a network</option>
+                {networks.filter((network) => network.available).map((network) => <option value={network.id} key={network.id}>{network.name} · {network.id}</option>)}
+              </select>
+            </label>
+            <label className="compute-filter">
+              SSH keypair name (optional)
+              <input
+                value={createDraft.keyName}
+                onChange={(event) => setCreateDraft((current) => ({ ...current, keyName: event.target.value }))}
+              />
+            </label>
+            {planCatalogError && <p className="compute-inline-error" role="alert">{planCatalogError}</p>}
+            <button
+              className="compute-primary-button"
+              type="submit"
+              disabled={creating || !tenantID || !projectID || !organizationProvisioning || !catalogProvisioning}
+            >
+              {creating ? "Submitting…" : "Create VM"}
+            </button>
+          </form>
+        </section>
+      )}
 
       <section className="compute-card compute-instance-card" aria-label="Compute instances">
         <header className="compute-table-toolbar">
           <div><h2>Instances</h2><p>{loading ? "Loading instances…" : `${instances.length} total`}</p></div>
           <div className="compute-table-actions">
+            <label className="compute-filter">
+              <span className="sr-only">Workspace</span>
+              <select value={tenantID} onChange={(event) => { setScopeError(""); setProjects([]); setProjectID(""); setTenantID(event.target.value); }} aria-label="Workspace">
+                <option value="">Choose workspace</option>
+                {tenants.map((tenant) => <option key={tenant.id} value={tenant.id}>{tenant.name}</option>)}
+              </select>
+            </label>
+            <label className="compute-filter">
+              <span className="sr-only">Project</span>
+              <select value={projectID} onChange={(event) => { setScopeError(""); setProjectID(event.target.value); }} aria-label="Project" disabled={!projects.length}>
+                <option value="">Choose project</option>
+                {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+              </select>
+            </label>
             <label className="compute-filter">
               <span className="sr-only">Filter instances</span>
               <input
@@ -85,6 +331,7 @@ export default function ComputeInstancesPage() {
             </button>
           </div>
         </header>
+        {scopeError && <p className="compute-inline-error" role="alert">{scopeError}</p>}
         {planCatalogError && <p className="compute-inline-error" role="status">{planCatalogError} Plan sizes may be unavailable.</p>}
         {loading ? (
           <div className="compute-table-skeleton" aria-label="Loading instances">
@@ -100,8 +347,15 @@ export default function ComputeInstancesPage() {
           <div className="compute-state-panel">
             <span className="compute-empty-icon" aria-hidden="true">▣</span>
             <h3>No instances yet</h3>
-            <p>Choose a compute plan and operating system to prepare your first instance.</p>
-            <Link className="compute-primary-button" href="/compute/deploy">＋ Deploy your first instance</Link>
+            <p>Choose a workspace and project, then create an instance in the organization's mapped OpenStack project.</p>
+            <button
+              className="compute-primary-button"
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              disabled={!organizationProvisioning}
+            >
+              ＋ Create your first instance
+            </button>
           </div>
         ) : filteredInstances.length === 0 ? (
           <div className="compute-state-panel">

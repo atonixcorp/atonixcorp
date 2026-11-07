@@ -47,11 +47,25 @@ func (c *Controller) CreateNetwork(n Network) error {
 }
 
 func (c *Controller) GetNetworkInProject(id, tenantID, projectID string) (Network, error) {
-	return c.store.GetNetworkInProject(id, tenantID, projectID)
+	network, err := c.store.GetNetworkInProject(id, tenantID, projectID)
+	if err != nil {
+		return Network{}, err
+	}
+	return c.inspectNetwork(network)
 }
 
 func (c *Controller) ListNetworksInProject(tenantID, projectID string) ([]Network, error) {
-	return c.store.ListNetworksInProject(tenantID, projectID)
+	networks, err := c.store.ListNetworksInProject(tenantID, projectID)
+	if err != nil {
+		return nil, err
+	}
+	for index := range networks {
+		networks[index], err = c.inspectNetwork(networks[index])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return networks, nil
 }
 
 func (c *Controller) NetworkProvisioningEnabled() bool {
@@ -105,6 +119,17 @@ func (c *Controller) verifiedNetworkBackend() (verifiedNetworkBackend, bool) {
 		}
 	}
 	return nil, false
+}
+
+func (c *Controller) inspectNetwork(network Network) (Network, error) {
+	for _, backend := range c.backends {
+		if inspector, ok := backend.(interface {
+			InspectNetwork(Network) (Network, error)
+		}); ok {
+			return inspector.InspectNetwork(network)
+		}
+	}
+	return network, nil
 }
 
 //

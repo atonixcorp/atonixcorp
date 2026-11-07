@@ -205,6 +205,21 @@ func (s *PostgresStore) AuthorizeProject(userID, tenantID, projectID string) (bo
 	return authorized, err
 }
 
+func (s *PostgresStore) GetCloudAccountForTenant(tenantID string) (CloudAccount, error) {
+	var account CloudAccount
+	err := s.db.QueryRow(`
+		SELECT open_stack_project_id, credential_id, encrypted_secret, region
+		FROM cloud_accounts
+		WHERE tenant_id = $1
+	`, tenantID).Scan(
+		&account.ProjectID, &account.CredentialID, &account.EncryptedSecret, &account.Region,
+	)
+	if err != nil {
+		return CloudAccount{}, fmt.Errorf("load mapped OpenStack account: %w", err)
+	}
+	return account, nil
+}
+
 //
 // SUBNETS
 //
@@ -226,7 +241,7 @@ func (s *PostgresStore) CreateSubnet(sub Subnet) error {
 	if err := tx.QueryRow(`
 		SELECT id, name, cidr, tenant_id, external
 		FROM networks WHERE id = $1
-	`).Scan(
+	`, sub.NetworkID).Scan(
 		&network.ID, &network.Name, &network.CIDR, &network.TenantID, &network.External,
 	); err != nil {
 		return fmt.Errorf("load parent network: %w", err)
@@ -246,10 +261,14 @@ func (s *PostgresStore) CreateSubnet(sub Subnet) error {
 	if overlaps {
 		return ErrCIDROverlap
 	}
+	var gatewayIP any
+	if sub.GatewayIP != "" {
+		gatewayIP = sub.GatewayIP
+	}
 	_, err = tx.Exec(`
         INSERT INTO subnets (id, network_id, cidr, gateway_ip)
         VALUES ($1, $2, $3, $4)
-    `, sub.ID, sub.NetworkID, sub.CIDR, sub.GatewayIP)
+    `, sub.ID, sub.NetworkID, sub.CIDR, gatewayIP)
 	if err != nil {
 		return fmt.Errorf("insert subnet: %w", err)
 	}
@@ -260,7 +279,7 @@ func (s *PostgresStore) CreateSubnet(sub Subnet) error {
 }
 
 func (s *PostgresStore) ListSubnets() ([]Subnet, error) {
-	rows, err := s.db.Query(`SELECT id, network_id, cidr, gateway_ip FROM subnets`)
+	rows, err := s.db.Query(`SELECT id, network_id, cidr, COALESCE(gateway_ip::text, '') FROM subnets`)
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +299,7 @@ func (s *PostgresStore) ListSubnets() ([]Subnet, error) {
 func (s *PostgresStore) GetSubnet(id string) (Subnet, error) {
 	var subnet Subnet
 	err := s.db.QueryRow(`
-		SELECT id, network_id, cidr, gateway_ip
+		SELECT id, network_id, cidr, COALESCE(gateway_ip::text, '')
 		FROM subnets WHERE id = $1
 	`, id).Scan(&subnet.ID, &subnet.NetworkID, &subnet.CIDR, &subnet.GatewayIP)
 	return subnet, err
@@ -289,7 +308,7 @@ func (s *PostgresStore) GetSubnet(id string) (Subnet, error) {
 func (s *PostgresStore) GetSubnetByNetwork(networkID string) (Subnet, error) {
 	var subnet Subnet
 	err := s.db.QueryRow(`
-		SELECT id, network_id, cidr, gateway_ip
+		SELECT id, network_id, cidr, COALESCE(gateway_ip::text, '')
 		FROM subnets WHERE network_id = $1
 		ORDER BY created_at
 		LIMIT 1

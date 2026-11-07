@@ -257,6 +257,15 @@
 .security-review dd { margin: 0; font-size: var(--font-size-caption); overflow-wrap: anywhere; }
 .security-inline-error { color: var(--color-error); font-size: var(--font-size-caption); }
 .security-wizard-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+.security-provider-panel { display: grid; gap: 14px; padding: 20px; border: 1px solid var(--security-border); border-radius: var(--radius-md); background: var(--security-surface); }
+.security-provider-scope, .security-provider-create { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.security-provider-scope label, .security-provider-create label { display: grid; flex: 1 1 220px; gap: 6px; font-size: var(--font-size-caption); font-weight: 700; }
+.security-provider-scope select, .security-provider-create input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--security-border); border-radius: var(--radius-sm); color: var(--security-ink); background: var(--security-surface); }
+.security-provider-table-wrap { overflow-x: auto; }
+.security-provider-table { width: 100%; border-collapse: collapse; text-align: left; }
+.security-provider-table th, .security-provider-table td { padding: 10px; border-bottom: 1px solid var(--security-border); vertical-align: top; }
+.security-provider-table td small { display: block; margin-top: 4px; color: var(--security-muted); overflow-wrap: anywhere; }
+.security-provider-table code { overflow-wrap: anywhere; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 @media (max-width: 1060px) {

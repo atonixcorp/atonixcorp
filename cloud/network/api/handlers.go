@@ -62,7 +62,13 @@ func (h *Handler) CreateNetwork(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, n)
+	created, err := h.Controller.GetNetworkInProject(n.ID, n.TenantID, n.ProjectID)
+	if err != nil {
+		log.Printf("read created network from provider: %v", err)
+		writeError(w, http.StatusInternalServerError, "NETWORK_READ_FAILED", "Created network could not be read from the provider.")
+		return
+	}
+	writeJSON(w, http.StatusCreated, created)
 }
 
 func (h *Handler) ListNetworks(w http.ResponseWriter, r *http.Request) {
@@ -102,6 +108,8 @@ func (h *Handler) CreateSubnet(w http.ResponseWriter, r *http.Request) {
 		NetworkID: req.NetworkID,
 		CIDR:      req.CIDR,
 		GatewayIP: req.GatewayIP,
+		TenantID:  mux.Vars(r)["tenantID"],
+		ProjectID: mux.Vars(r)["projectID"],
 	}
 
 	if err := h.Policy.ValidateSubnet(s); err != nil {

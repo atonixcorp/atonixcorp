@@ -1,52 +1,41 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
-const computeAPI = process.env.COMPUTE_API_URL;
-const catalogPaths = {
-  compute_types: "/api/v1/compute/types",
-  regions: "/api/v1/compute/regions",
-  images: "/api/v1/compute/images",
-  plans: "/api/v1/compute/plans",
-  networks: "/api/v1/compute/networks",
-} as const;
-
-async function fetchCatalog(path: string): Promise<unknown> {
-  const response = await fetch(`${computeAPI}${path}`, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(5000),
-  });
-  if (!response.ok) {
-    throw new Error(`Compute catalog returned ${response.status}.`);
+export async function GET(request: Request): Promise<NextResponse> {
+  const apiURL = process.env.API_URL;
+  const token = (await cookies()).get("atonixcorp_session")?.value;
+  if (!token) {
+    return NextResponse.json({ error: "Authentication required.", code: "AUTHENTICATION_REQUIRED" }, { status: 401 });
   }
-  return response.json();
-}
-
-export async function GET(): Promise<NextResponse> {
-  if (!computeAPI) {
-    return NextResponse.json(
-      { error: "Compute API is not configured.", code: "DEPENDENCY_UNAVAILABLE" },
-      { status: 503 },
-    );
+  if (!apiURL) {
+    return NextResponse.json({ error: "Compute API is unavailable.", code: "DEPENDENCY_UNAVAILABLE" }, { status: 503 });
   }
-
+  const incoming = new URL(request.url);
+  const tenantID = incoming.searchParams.get("tenant_id") ?? "";
+  const projectID = incoming.searchParams.get("project_id") ?? "";
+  if (!/^[1-9]\d*$/.test(tenantID) || !/^[1-9]\d*$/.test(projectID)) {
+    return NextResponse.json({ error: "A workspace and project are required.", code: "INVALID_SCOPE" }, { status: 400 });
+  }
   try {
-    const [computeTypes, regions, images, plans, networks] = await Promise.all(
-      Object.entries(catalogPaths).map(([, path]) => fetchCatalog(path)),
+    const response = await fetch(
+      `${apiURL}/api/v1/cloud/catalog?tenant_id=${encodeURIComponent(tenantID)}&project_id=${encodeURIComponent(projectID)}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+        signal: AbortSignal.timeout(30000),
+      },
     );
-    return NextResponse.json({
-      compute_types: computeTypes,
-      regions,
-      images,
-      plans,
-      networks,
-    }, {
-      headers: { "Cache-Control": "no-store" },
+    return new NextResponse(await response.arrayBuffer(), {
+      status: response.status,
+      headers: {
+        "Content-Type": response.headers.get("content-type") || "application/json",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
     });
   } catch {
-    return NextResponse.json(
-      { error: "Compute catalog is temporarily unavailable.", code: "DEPENDENCY_UNAVAILABLE" },
-      { status: 503 },
-    );
+    return NextResponse.json({ error: "Compute API is temporarily unavailable.", code: "DEPENDENCY_UNAVAILABLE" }, { status: 503 });
   }
 }

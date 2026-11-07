@@ -1,8 +1,12 @@
 package middleware
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 func TestPrincipalLimiterEnforcesWindowAndExpires(t *testing.T) {
@@ -42,5 +46,45 @@ func TestPrincipalLimiterBoundsSubjectTable(t *testing.T) {
 	}
 	if retry, limited := limiter.take(10001, now); !limited || retry != time.Minute {
 		t.Fatalf("new subject at capacity should be rejected, got %v, %v", retry, limited)
+	}
+}
+
+func TestIPRateLimitDoesNotRequireAuthenticatedPrincipal(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.PUT("/internal", IPRateLimit(1, time.Minute), func(ctx *gin.Context) {
+		ctx.Status(http.StatusNoContent)
+	})
+
+	request := httptest.NewRequest(http.MethodPut, "/internal", nil)
+	request.RemoteAddr = "192.0.2.10:43210"
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("first unauthenticated operator request returned %d, want %d", response.Code, http.StatusNoContent)
+	}
+
+	request = httptest.NewRequest(http.MethodPut, "/internal", nil)
+	request.RemoteAddr = "192.0.2.10:43211"
+	response = httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusTooManyRequests {
+		t.Fatalf("second request from the same IP returned %d, want %d", response.Code, http.StatusTooManyRequests)
+	}
+}
+
+func TestRequestClientIPUsesRemoteAddressNotForwardedHeader(t *testing.T) {
+	tests := []struct {
+		remoteAddr string
+		want       string
+	}{
+		{remoteAddr: "192.0.2.10:443", want: "192.0.2.10"},
+		{remoteAddr: "[2001:db8::1]:443", want: "2001:db8::1"},
+		{remoteAddr: "unparseable", want: "unknown"},
+	}
+	for _, test := range tests {
+		if got := requestClientIP(test.remoteAddr); got != test.want {
+			t.Errorf("requestClientIP(%q) = %q, want %q", test.remoteAddr, got, test.want)
+		}
 	}
 }

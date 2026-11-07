@@ -4,12 +4,16 @@ package core
 // NETWORK
 // -----------------------------
 type Network struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	CIDR      string `json:"cidr"`
-	TenantID  string `json:"tenant_id"`
-	ProjectID string `json:"project_id"`
-	External  bool   `json:"external"`
+	ID                   string `json:"id"`
+	Name                 string `json:"name"`
+	CIDR                 string `json:"cidr"`
+	TenantID             string `json:"tenant_id"`
+	ProjectID            string `json:"project_id"`
+	External             bool   `json:"external"`
+	Status               string `json:"status,omitempty"`
+	ProviderID           string `json:"provider_id,omitempty"`
+	ProviderSubnetID     string `json:"provider_subnet_id,omitempty"`
+	ProviderSubnetStatus string `json:"provider_subnet_status,omitempty"`
 }
 
 // -----------------------------
@@ -20,6 +24,15 @@ type Subnet struct {
 	NetworkID string `json:"network_id"`
 	CIDR      string `json:"cidr"`
 	GatewayIP string `json:"gateway_ip"`
+	TenantID  string `json:"-"`
+	ProjectID string `json:"-"`
+}
+
+type CloudAccount struct {
+	ProjectID       string
+	CredentialID    string
+	EncryptedSecret []byte
+	Region          string
 }
 
 // -----------------------------

@@ -58,11 +58,18 @@ func main() {
 		plans.Plans[id] = plan
 	}
 	osConfig := openstack.AuthConfig{
-		AuthURL:         os.Getenv("OPENSTACK_AUTH_URL"),
-		Username:        os.Getenv("OPENSTACK_USERNAME"),
-		Password:        os.Getenv("OPENSTACK_PASSWORD"),
-		Domain:          envOrDefault("OPENSTACK_USER_DOMAIN", "default"),
-		ProjectID:       os.Getenv("OPENSTACK_PROJECT_ID"),
+		AuthURL:                     os.Getenv("OPENSTACK_AUTH_URL"),
+		ApplicationCredentialID:     os.Getenv("OPENSTACK_APPLICATION_CREDENTIAL_ID"),
+		ApplicationCredentialSecret: os.Getenv("OPENSTACK_APPLICATION_CREDENTIAL_SECRET"),
+		Username:                    os.Getenv("OPENSTACK_USERNAME"),
+		Password:                    os.Getenv("OPENSTACK_PASSWORD"),
+		Domain:                      envOrDefault("OPENSTACK_USER_DOMAIN", "default"),
+		ProjectID:                   firstConfigured(os.Getenv("OPENSTACK_SHARED_PROJECT_ID"), os.Getenv("OPENSTACK_PROJECT_ID")),
+		Region:                      envOrDefault("OPENSTACK_REGION", env.DefaultRegion),
+		Interface:                   envOrDefault("OPENSTACK_INTERFACE", "public"),
+		AllowInsecureHTTP: strings.EqualFold(
+			strings.TrimSpace(os.Getenv("OPENSTACK_ALLOW_INSECURE_HTTP")), "true",
+		),
 		ComputeEndpoint: os.Getenv("OPENSTACK_COMPUTE_ENDPOINT"),
 		VolumeEndpoint:  os.Getenv("OPENSTACK_VOLUME_ENDPOINT"),
 		NetworkEndpoint: os.Getenv("OPENSTACK_NETWORK_ENDPOINT"),
@@ -102,4 +109,13 @@ func envOrDefault(name, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func firstConfigured(values ...string) string {
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			return value
+		}
+	}
+	return ""
 }

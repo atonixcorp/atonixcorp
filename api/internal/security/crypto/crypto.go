@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 )
 
@@ -45,6 +46,9 @@ func DecryptAESGCM(key, ciphertext []byte) ([]byte, error) {
 	}
 
 	nonceSize := gcm.NonceSize()
+	if len(ciphertext) < nonceSize {
+		return nil, errors.New("ciphertext is too short")
+	}
 	nonce, data := ciphertext[:nonceSize], ciphertext[nonceSize:]
 
 	return gcm.Open(nil, nonce, data, nil)

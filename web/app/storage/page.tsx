@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   createVolume,
   deleteVolume,
@@ -38,6 +38,7 @@ export default function StoragePage() {
   const [projects, setProjects] = useState<StorageProject[]>([]);
   const [tenantID, setTenantID] = useState("");
   const [projectID, setProjectID] = useState("");
+  const scopeRef = useRef("");
   const [types, setTypes] = useState<StorageVolumeType[]>([]);
   const [overview, setOverview] = useState<StorageOverview | null>(null);
   const [volumes, setVolumes] = useState<StorageVolume[]>([]);
@@ -62,33 +63,41 @@ export default function StoragePage() {
     [projects, projectID],
   );
 
+  useEffect(() => {
+    scopeRef.current = `${tenantID}:${projectID}`;
+  }, [tenantID, projectID]);
+
   const fetchWorkspace = useCallback(async () => {
     if (!tenantID || !projectID) return;
-    return Promise.all([
+    const items = await getVolumes(Number(tenantID), Number(projectID));
+    const [summary, recentOperations, availableTypes] = await Promise.all([
       getOverview(Number(tenantID), Number(projectID)),
-      getVolumes(Number(tenantID), Number(projectID)),
       getOperations(Number(tenantID), Number(projectID)),
+      getVolumeTypes(Number(tenantID), Number(projectID)),
     ]);
+    return [summary, items, recentOperations, availableTypes] as const;
   }, [tenantID, projectID]);
 
   const refreshWorkspace = useCallback(async () => {
+    const scope = `${tenantID}:${projectID}`;
     const result = await fetchWorkspace();
-    if (!result) return;
-    const [summary, items, recentOperations] = result;
+    if (!result || scopeRef.current !== scope) return;
+    const [summary, items, recentOperations, availableTypes] = result;
     setOverview(summary);
     setVolumes(items);
     setOperations(recentOperations);
-  }, [fetchWorkspace]);
+    setTypes(availableTypes);
+    setStorageClass((current) => availableTypes.some((type) => type.id === current) ? current : availableTypes[0]?.id ?? "");
+  }, [fetchWorkspace, tenantID, projectID]);
 
   useEffect(() => {
     let active = true;
-    Promise.all([getTenants(), getVolumeTypes()])
-      .then(([availableTenants, availableTypes]) => {
+    getTenants()
+      .then((availableTenants) => {
         if (!active) return;
         setTenants(availableTenants);
-        setTypes(availableTypes);
         if (availableTenants[0]) setTenantID(String(availableTenants[0].id));
-        if (availableTypes[0]) setStorageClass(availableTypes[0].id);
+        else setLoading(false);
       })
       .catch((loadError: unknown) => {
         if (active) setError(loadError instanceof Error ? loadError.message : "Storage could not be loaded.");
@@ -124,10 +133,12 @@ export default function StoragePage() {
     fetchWorkspace()
       .then((result) => {
         if (!active || !result) return;
-        const [summary, items, recentOperations] = result;
+        const [summary, items, recentOperations, availableTypes] = result;
         setOverview(summary);
         setVolumes(items);
         setOperations(recentOperations);
+        setTypes(availableTypes);
+        setStorageClass((current) => availableTypes.some((type) => type.id === current) ? current : availableTypes[0]?.id ?? "");
         setError("");
       })
       .catch((loadError: unknown) => {
@@ -248,7 +259,17 @@ export default function StoragePage() {
               <select aria-label="Workspace" value={tenantID} onChange={(event) => {
                 setProjects([]);
                 setProjectID("");
+                setTypes([]);
+                setVolumes([]);
+                setOverview(null);
+                setActiveOperation(null);
+                setShowWizard(false);
                 setLoading(true);
+                setTypes([]);
+                setVolumes([]);
+                setOverview(null);
+                setActiveOperation(null);
+                setShowWizard(false);
                 setTenantID(event.target.value);
               }}>
                 {tenants.map((tenant) => <option value={tenant.id} key={tenant.id}>{tenant.name}</option>)}
@@ -295,23 +316,24 @@ export default function StoragePage() {
             <section className="storage-metrics" aria-label="Storage summary">
               <article><span>Provisioned capacity</span><strong>{overview ? formatBytes(overview.used_gb) : "—"}</strong><small>{overview ? `${formatBytes(overview.quota_gb)} project quota` : "Loading quota"}</small></article>
               <article><span>Volumes</span><strong>{overview?.volumes ?? "—"}</strong><small>{overview ? `${overview.volume_quota} volume limit` : "Project resources"}</small></article>
-              <article><span>Storage driver</span><strong>{overview?.driver ?? "—"}</strong><small>Development backend</small></article>
+              <article><span>Storage driver</span><strong>{overview?.driver ?? "—"}</strong><small>Selected workspace backend</small></article>
             </section>
             <section className="storage-table-panel">
               <div className="storage-panel-heading">
                 <div><p className="storage-eyebrow">{tab === "overview" ? "PROJECT RESOURCES" : "BLOCK STORAGE"}</p><h2>Volumes</h2><p>Volume records and provisioning state for {selectedProject.name}.</p></div>
-                <button type="button" className="storage-secondary-button" onClick={openWizard}>Create volume</button>
+                <div><button type="button" className="storage-secondary-button" onClick={() => void refreshWorkspace().catch((err: unknown) => setError(err instanceof Error ? err.message : "Storage could not be refreshed."))}>Refresh</button>{" "}
+                <button type="button" className="storage-secondary-button" onClick={openWizard} disabled={types.length === 0}>Create volume</button></div>
               </div>
               {volumes.length === 0
-                ? <div className="storage-empty"><span aria-hidden="true">◈</span><h3>No volumes yet</h3><p>Create a development volume to try the asynchronous storage workflow.</p></div>
+                ? <div className="storage-empty"><span aria-hidden="true">◈</span><h3>No volumes yet</h3><p>Create a volume to start the asynchronous storage workflow.</p></div>
                 : <div className="storage-table-scroll"><table className="storage-table">
                     <thead><tr><th>Name</th><th>Status</th><th>Capacity</th><th>Type</th><th>Protection</th><th>Created</th><th><span className="storage-visually-hidden">Actions</span></th></tr></thead>
                     <tbody>{volumes.map((volume) => (
                       <tr key={volume.id}>
-                        <td><strong>{volume.name}</strong><small>{volume.description || volume.id.slice(0, 12)}</small></td>
-                        <td><span className={`storage-status ${volume.state.toLowerCase()}`}>{volume.state}</span></td>
+                        <td><strong>{volume.name}</strong><small>{volume.description || volume.id.slice(0, 12)}</small>{volume.driver === "openstack-cinder" && volume.provider_id && <small>Cinder ID: {volume.provider_id}</small>}</td>
+                        <td><span className={`storage-status ${volume.state.toLowerCase()}`}>{volume.state}</span>{volume.provider_status && <small>Cinder: {volume.provider_status}</small>}</td>
                         <td>{formatBytes(volume.size_gb)}</td>
-                        <td>{volume.storage_class}</td>
+                        <td>{volume.storage_class}<small>Zone: {volume.availability_zone || "—"}</small>{volume.attachments?.map((attachment, index) => <small key={`${attachment.id ?? attachment.server_id ?? "attachment"}-${index}`}>Attached: {attachment.server_id || "unknown server"}{attachment.device ? ` (${attachment.device})` : ""}</small>)}</td>
                         <td>{volume.delete_protection ? "Delete protected" : "Unprotected"}</td>
                         <td>{new Date(volume.created_at).toLocaleDateString()}</td>
                         <td>{!volume.delete_protection && volume.state === "AVAILABLE" && <button className="storage-delete-button" type="button" onClick={() => void handleDelete(volume)}>Delete</button>}</td>

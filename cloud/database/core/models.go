@@ -71,10 +71,13 @@ type DBInstance struct {
 	NetworkID       string `json:"-"`
 
 	// OpenStack resources
-	OpenStackServerID       string `json:"-"`
-	OpenStackVolumeID       string `json:"-"`
-	OpenStackVolumeAttached bool   `json:"-"`
-	OpenStackNetworkID      string `json:"-"`
+	OpenStackServerID       string `json:"openstack_server_id,omitempty"`
+	OpenStackServerStatus   string `json:"openstack_server_status,omitempty"`
+	OpenStackServerIP       string `json:"openstack_server_ip,omitempty"`
+	OpenStackVolumeID       string `json:"openstack_volume_id,omitempty"`
+	OpenStackVolumeStatus   string `json:"openstack_volume_status,omitempty"`
+	OpenStackVolumeAttached bool   `json:"openstack_volume_attached"`
+	OpenStackNetworkID      string `json:"openstack_network_id,omitempty"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

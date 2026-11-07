@@ -30,6 +30,9 @@ export type StorageVolume = {
   delete_protection: boolean;
   state: string;
   driver: string;
+  provider_id?: string;
+  provider_status?: string;
+  attachments?: { id?: string; server_id?: string; device?: string }[];
   error_code?: string;
   created_at: string;
   updated_at: string;
@@ -77,8 +80,8 @@ export function getProjects(tenantID: number): Promise<StorageProject[]> {
   return requestJSON(`/api/storage/tenants/${tenantID}/projects`);
 }
 
-export function getVolumeTypes(): Promise<StorageVolumeType[]> {
-  return requestJSON("/api/storage/volume-types");
+export function getVolumeTypes(tenantID: number, projectID: number): Promise<StorageVolumeType[]> {
+  return requestJSON(`/api/storage/volume-types?${scopeQuery(tenantID, projectID)}`);
 }
 
 function scopeQuery(tenantID: number, projectID: number): string {

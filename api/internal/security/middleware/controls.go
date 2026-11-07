@@ -4,9 +4,11 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"math"
+	"net"
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -81,6 +83,73 @@ func SecurityRateLimit(max int, window time.Duration) gin.HandlerFunc {
 		}
 		ctx.Next()
 	}
+}
+
+func IPRateLimit(max int, window time.Duration) gin.HandlerFunc {
+	limiter := &ipLimiter{
+		buckets: make(map[string]rateBucket),
+		max:     max,
+		window:  window,
+	}
+	return func(ctx *gin.Context) {
+		clientIP := requestClientIP(ctx.Request.RemoteAddr)
+		retryAfter, limited := limiter.take(clientIP, time.Now())
+		if limited {
+			ctx.Header("Retry-After", strconv.Itoa(int(math.Ceil(retryAfter.Seconds()))))
+			ctx.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+				"error":          "Request rate limit exceeded.",
+				"code":           "RATE_LIMITED",
+				"correlation_id": ctx.GetString("security_correlation_id"),
+			})
+			return
+		}
+		ctx.Next()
+	}
+}
+
+func requestClientIP(remoteAddr string) string {
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		host = strings.Trim(remoteAddr, "[]")
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.String()
+	}
+	return "unknown"
+}
+
+type ipLimiter struct {
+	mu      sync.Mutex
+	buckets map[string]rateBucket
+	max     int
+	window  time.Duration
+}
+
+func (l *ipLimiter) take(clientIP string, now time.Time) (time.Duration, bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	bucket, exists := l.buckets[clientIP]
+	if !exists || now.Sub(bucket.started) >= l.window {
+		if !exists && len(l.buckets) >= 10000 {
+			for ip, existing := range l.buckets {
+				if now.Sub(existing.started) >= l.window {
+					delete(l.buckets, ip)
+				}
+			}
+			if len(l.buckets) >= 10000 {
+				return l.window, true
+			}
+		}
+		l.buckets[clientIP] = rateBucket{started: now, count: 1}
+		return 0, false
+	}
+	if bucket.count >= l.max {
+		return l.window - now.Sub(bucket.started), true
+	}
+	bucket.count++
+	l.buckets[clientIP] = bucket
+	return 0, false
 }
 
 func (l *principalLimiter) take(userID uint, now time.Time) (time.Duration, bool) {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { CloudShell } from "@/app/shared/ui/CloudShell";
+import { OpenStackSecurityGroups } from "./OpenStackSecurityGroups";
 import "./security.css";
 
 type PolicyType = "Identity" | "Network" | "Workload" | "Data" | "Threat detection" | "Vulnerability" | "Compliance";
@@ -468,8 +469,8 @@ export default function SecurityPage() {
     <CloudShell>
       <main className="security-workspace">
         <div className="security-demo-banner" role="note">
-          <strong>Interactive demo</strong>
-          <span>Resources, findings, and actions are simulated and saved in this browser only. No real cloud infrastructure is provisioned, scanned, protected, or modified.</span>
+          <strong>Demo workspace</strong>
+          <span>Policies and findings in this browser demo are simulated. The Network security tab separately shows provider-returned OpenStack security groups when configured.</span>
           <button type="button" onClick={() => {
             persist(null);
             setSelectedModule("Overview");
@@ -531,7 +532,9 @@ export default function SecurityPage() {
             {storageError && <div className="security-error" role="alert"><span>{storageError}</span><button onClick={() => persist(null)}>Reset demo storage</button></div>}
             {savedMessage && <p className="security-saved" role="status">{savedMessage}</p>}
 
-            {selectedModule !== "Overview" && selectedModule !== "Policies" && (
+            {selectedModule === "Network security" && <OpenStackSecurityGroups />}
+
+            {selectedModule !== "Overview" && selectedModule !== "Policies" && selectedModule !== "Network security" && (
               <section className="security-unavailable">
                 <p className="security-eyebrow">MODULE NOT CONNECTED</p>
                 <h2>{selectedModule}</h2>

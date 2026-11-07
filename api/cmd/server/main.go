@@ -5,7 +5,9 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
+	"atonixcorp/api/internal/cloud"
 	"atonixcorp/api/internal/config"
 	"atonixcorp/api/internal/containers"
 	"atonixcorp/api/internal/controllers"
@@ -51,17 +53,6 @@ func main() {
 			log.Fatalf("configure local storage driver: %v", err)
 		}
 	case "cinder":
-		storageDriver, err = storage.NewCinderDriver(storage.CinderConfig{
-			AuthURL: os.Getenv("CINDER_AUTH_URL"), Username: os.Getenv("CINDER_USERNAME"),
-			Password: os.Getenv("CINDER_PASSWORD"), ProjectID: os.Getenv("CINDER_PROJECT_ID"),
-			UserDomainID: os.Getenv("CINDER_USER_DOMAIN_ID"), Region: os.Getenv("CINDER_REGION"),
-			Interface:     os.Getenv("CINDER_INTERFACE"),
-			VolumeTypeIDs: splitCSV(os.Getenv("CINDER_VOLUME_TYPE_IDS")),
-			Zones:         splitCSV(os.Getenv("CINDER_AVAILABILITY_ZONES")),
-		})
-		if err != nil {
-			log.Fatalf("configure Cinder storage driver: %v", err)
-		}
 	case "libvirt-qemu":
 		storageDriver, err = storage.NewLibvirtQEMUDriver(storage.LibvirtQEMUConfig{
 			URI: os.Getenv("LIBVIRT_URI"), StoragePath: os.Getenv("LIBVIRT_STORAGE_PATH"),
@@ -74,10 +65,47 @@ func main() {
 		log.Fatalf("unsupported STORAGE_DRIVER %q", os.Getenv("STORAGE_DRIVER"))
 	}
 	storageService := storage.NewService(db, storageDriver)
-	if storageDriver != nil {
-		go storageService.RunWorker(context.Background())
+
+	var openStackProvider cloud.Provider
+	openStackConfig, openStackConfigured, err := cloud.OpenStackConfigFromEnv()
+	if err != nil {
+		log.Fatalf("configure Nova integration: %v", err)
+	}
+	if openStackConfigured {
+		authCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		provider, providerErr := cloud.NewOpenStackProvider(authCtx, openStackConfig)
+		cancel()
+		if providerErr != nil {
+			log.Fatalf("initialize Nova integration: %v", providerErr)
+		}
+		openStackProvider = provider
+		log.Printf(
+			"OpenStack provider factory configured for region %s; compute operations require a mapped organization account",
+			openStackConfig.Region,
+		)
 	} else {
-		log.Print("storage provisioning disabled until a storage driver is configured")
+		log.Print("OpenStack integration disabled until OPENSTACK_AUTH_URL is configured")
+	}
+	accountEncryptionKey, err := cloud.AccountEncryptionKeyFromEnvironment(
+		os.Getenv("OPENSTACK_ACCOUNT_ENCRYPTION_KEY"),
+	)
+	if err != nil {
+		log.Fatalf("configure OpenStack account encryption: %v", err)
+	}
+	cloudService := cloud.NewService(db, openStackProvider, accountEncryptionKey)
+	storageService.SetScopedDrivers(storage.NewScopedDrivers(cloudService, storageDriver, storage.CinderConfig{
+		AuthURL:                  firstNonEmpty(os.Getenv("CINDER_AUTH_URL"), os.Getenv("OPENSTACK_AUTH_URL")),
+		Region:                   firstNonEmpty(os.Getenv("CINDER_REGION"), os.Getenv("OPENSTACK_REGION"), "RegionOne"),
+		Interface:                firstNonEmpty(os.Getenv("CINDER_INTERFACE"), os.Getenv("OPENSTACK_INTERFACE"), "public"),
+		VolumeTypeIDs:            splitCSV(os.Getenv("CINDER_VOLUME_TYPE_IDS")),
+		EncryptedVolumeTypeIDs:   splitCSV(os.Getenv("CINDER_ENCRYPTED_VOLUME_TYPE_IDS")),
+		UnencryptedVolumeTypeIDs: splitCSV(os.Getenv("CINDER_UNENCRYPTED_VOLUME_TYPE_IDS")),
+		Zones:                    splitCSV(os.Getenv("CINDER_AVAILABILITY_ZONES")),
+		AllowInsecureHTTP:        strings.EqualFold(strings.TrimSpace(os.Getenv("OPENSTACK_ALLOW_INSECURE_HTTP")), "true"),
+	}))
+	go storageService.RunWorker(context.Background())
+	if openStackProvider != nil {
+		go cloudService.RunReconciler(context.Background())
 	}
 
 	// Repositories
@@ -96,7 +124,10 @@ func main() {
 	blogController := controllers.NewBlogController(blogService)
 
 	// Routes
-	routes.SetupRoutes(r, authController, contactController, blogController, containerService, storageService)
+	routes.SetupRoutes(
+		r, authController, contactController, blogController, containerService, storageService,
+		cloudService,
+	)
 
 	r.Run(":8080")
 }
@@ -105,6 +136,7 @@ func splitCSV(value string) []string {
 	if strings.TrimSpace(value) == "" {
 		return nil
 	}
+
 	items := strings.Split(value, ",")
 	result := make([]string, 0, len(items))
 	for _, item := range items {
@@ -113,4 +145,13 @@ func splitCSV(value string) []string {
 		}
 	}
 	return result
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			return value
+		}
+	}
+	return ""
 }

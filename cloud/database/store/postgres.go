@@ -72,7 +72,10 @@ func (s *PostgresStore) Migrate() error {
 			port INTEGER NOT NULL DEFAULT 0,
 			network_id TEXT NOT NULL DEFAULT '',
 			openstack_server_id TEXT,
+			openstack_server_status TEXT NOT NULL DEFAULT '',
+			openstack_server_ip TEXT NOT NULL DEFAULT '',
 			openstack_volume_id TEXT,
+			openstack_volume_status TEXT NOT NULL DEFAULT '',
 			openstack_volume_attached BOOLEAN NOT NULL DEFAULT FALSE,
 			openstack_network_id TEXT,
 			created_at TIMESTAMP NOT NULL,
@@ -84,6 +87,9 @@ func (s *PostgresStore) Migrate() error {
 		ALTER TABLE db_instances ADD COLUMN IF NOT EXISTS port INTEGER NOT NULL DEFAULT 0;
 		ALTER TABLE db_instances ADD COLUMN IF NOT EXISTS network_id TEXT NOT NULL DEFAULT '';
 		ALTER TABLE db_instances ADD COLUMN IF NOT EXISTS openstack_volume_attached BOOLEAN NOT NULL DEFAULT FALSE;
+		ALTER TABLE db_instances ADD COLUMN IF NOT EXISTS openstack_server_status TEXT NOT NULL DEFAULT '';
+		ALTER TABLE db_instances ADD COLUMN IF NOT EXISTS openstack_server_ip TEXT NOT NULL DEFAULT '';
+		ALTER TABLE db_instances ADD COLUMN IF NOT EXISTS openstack_volume_status TEXT NOT NULL DEFAULT '';
 		CREATE INDEX IF NOT EXISTS idx_db_instances_tenant_project
 			ON db_instances (tenant_id, project_id, created_at DESC);
 		CREATE INDEX IF NOT EXISTS idx_db_instances_status_created
@@ -238,16 +244,18 @@ func insertInstance(ctx context.Context, tx pgx.Tx, inst *core.DBInstance) error
 		INSERT INTO db_instances (
 			id, tenant_id, project_id, name, engine, engine_version, plan, workload_profile,
 			cpu, memory_mb, storage_gb, region, status, endpoint, port, network_id,
-			openstack_server_id, openstack_volume_id, openstack_volume_attached,
+			openstack_server_id, openstack_server_status, openstack_server_ip,
+			openstack_volume_id, openstack_volume_status, openstack_volume_attached,
 			openstack_network_id, created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-			$13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+			$13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
 		)
-	`, inst.ID, inst.TenantID, inst.ProjectID, inst.Name, inst.Engine,
+		`, inst.ID, inst.TenantID, inst.ProjectID, inst.Name, inst.Engine,
 		inst.EngineVersion, inst.Plan, inst.WorkloadProfile, inst.CPU, inst.MemoryMB,
 		inst.StorageGB, inst.Region, inst.Status, inst.Endpoint, inst.Port, inst.NetworkID,
-		inst.OpenStackServerID, inst.OpenStackVolumeID, inst.OpenStackVolumeAttached,
+		inst.OpenStackServerID, inst.OpenStackServerStatus, inst.OpenStackServerIP,
+		inst.OpenStackVolumeID, inst.OpenStackVolumeStatus, inst.OpenStackVolumeAttached,
 		inst.OpenStackNetworkID, inst.CreatedAt, inst.UpdatedAt)
 	return err
 }
@@ -263,14 +271,15 @@ func (s *PostgresStore) CreateInstance(inst *core.DBInstance) error {
             id, tenant_id, project_id, name, engine, engine_version, plan, workload_profile,
             cpu, memory_mb, storage_gb, region,
             status, endpoint, port, network_id,
-            openstack_server_id, openstack_volume_id, openstack_volume_attached, openstack_network_id,
+            openstack_server_id, openstack_server_status, openstack_server_ip,
+            openstack_volume_id, openstack_volume_status, openstack_volume_attached, openstack_network_id,
             created_at, updated_at
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8,
             $9, $10, $11, $12,
             $13, $14, $15, $16,
-            $17, $18, $19, $20,
-            $21, $22
+            $17, $18, $19, $20, $21, $22, $23,
+            $24, $25
         )
     `,
 		inst.ID,
@@ -290,7 +299,10 @@ func (s *PostgresStore) CreateInstance(inst *core.DBInstance) error {
 		inst.Port,
 		inst.NetworkID,
 		inst.OpenStackServerID,
+		inst.OpenStackServerStatus,
+		inst.OpenStackServerIP,
 		inst.OpenStackVolumeID,
+		inst.OpenStackVolumeStatus,
 		inst.OpenStackVolumeAttached,
 		inst.OpenStackNetworkID,
 		inst.CreatedAt,
@@ -403,10 +415,13 @@ func (s *PostgresStore) UpdateInstance(inst *core.DBInstance) error {
             port = $15,
             network_id = $16,
             openstack_server_id = $17,
-            openstack_volume_id = $18,
-            openstack_volume_attached = $19,
-            openstack_network_id = $20,
-            updated_at = $21
+            openstack_server_status = $18,
+            openstack_server_ip = $19,
+            openstack_volume_id = $20,
+            openstack_volume_status = $21,
+            openstack_volume_attached = $22,
+            openstack_network_id = $23,
+            updated_at = $24
         WHERE id = $1
     `,
 		inst.ID,
@@ -426,7 +441,10 @@ func (s *PostgresStore) UpdateInstance(inst *core.DBInstance) error {
 		inst.Port,
 		inst.NetworkID,
 		inst.OpenStackServerID,
+		inst.OpenStackServerStatus,
+		inst.OpenStackServerIP,
 		inst.OpenStackVolumeID,
+		inst.OpenStackVolumeStatus,
 		inst.OpenStackVolumeAttached,
 		inst.OpenStackNetworkID,
 		inst.UpdatedAt,
@@ -440,7 +458,9 @@ func (s *PostgresStore) ListInstances(tenantID, projectID string) ([]core.DBInst
 		SELECT id, tenant_id, project_id, name, engine, engine_version, plan, workload_profile,
 		       cpu, memory_mb, storage_gb, region, status, COALESCE(endpoint, ''),
 		       port, network_id, COALESCE(openstack_server_id, ''),
-		       COALESCE(openstack_volume_id, ''), openstack_volume_attached,
+		       COALESCE(openstack_server_status, ''), COALESCE(openstack_server_ip, ''),
+		       COALESCE(openstack_volume_id, ''), COALESCE(openstack_volume_status, ''),
+		       openstack_volume_attached,
 		       COALESCE(openstack_network_id, ''),
 		       created_at, updated_at
 		FROM db_instances
@@ -470,7 +490,9 @@ func (s *PostgresStore) ListInstancesByStatus(status string, limit int) ([]core.
 		SELECT id, tenant_id, project_id, name, engine, engine_version, plan, workload_profile,
 		       cpu, memory_mb, storage_gb, region, status, COALESCE(endpoint, ''),
 		       port, network_id, COALESCE(openstack_server_id, ''),
-		       COALESCE(openstack_volume_id, ''), openstack_volume_attached,
+		       COALESCE(openstack_server_status, ''), COALESCE(openstack_server_ip, ''),
+		       COALESCE(openstack_volume_id, ''), COALESCE(openstack_volume_status, ''),
+		       openstack_volume_attached,
 		       COALESCE(openstack_network_id, ''),
 		       created_at, updated_at
 		FROM db_instances
@@ -497,7 +519,10 @@ func (s *PostgresStore) GetInstance(id string) (*core.DBInstance, error) {
             id, tenant_id, project_id, name, engine, engine_version, plan, workload_profile,
             cpu, memory_mb, storage_gb, region,
             status, COALESCE(endpoint, ''), port, network_id,
-            openstack_server_id, openstack_volume_id, openstack_volume_attached, openstack_network_id,
+            COALESCE(openstack_server_id, ''), COALESCE(openstack_server_status, ''),
+            COALESCE(openstack_server_ip, ''), COALESCE(openstack_volume_id, ''),
+            COALESCE(openstack_volume_status, ''), openstack_volume_attached,
+            COALESCE(openstack_network_id, ''),
             created_at, updated_at
         FROM db_instances
         WHERE id = $1
@@ -522,7 +547,10 @@ func (s *PostgresStore) GetInstance(id string) (*core.DBInstance, error) {
 		&inst.Port,
 		&inst.NetworkID,
 		&inst.OpenStackServerID,
+		&inst.OpenStackServerStatus,
+		&inst.OpenStackServerIP,
 		&inst.OpenStackVolumeID,
+		&inst.OpenStackVolumeStatus,
 		&inst.OpenStackVolumeAttached,
 		&inst.OpenStackNetworkID,
 		&inst.CreatedAt,
@@ -545,7 +573,8 @@ func scanInstance(row rowScanner, instance *core.DBInstance) error {
 		&instance.Engine, &instance.EngineVersion, &instance.Plan, &instance.WorkloadProfile,
 		&instance.CPU, &instance.MemoryMB, &instance.StorageGB, &instance.Region,
 		&instance.Status, &instance.Endpoint, &instance.Port, &instance.NetworkID,
-		&instance.OpenStackServerID, &instance.OpenStackVolumeID, &instance.OpenStackVolumeAttached,
+		&instance.OpenStackServerID, &instance.OpenStackServerStatus, &instance.OpenStackServerIP,
+		&instance.OpenStackVolumeID, &instance.OpenStackVolumeStatus, &instance.OpenStackVolumeAttached,
 		&instance.OpenStackNetworkID,
 		&instance.CreatedAt, &instance.UpdatedAt,
 	)

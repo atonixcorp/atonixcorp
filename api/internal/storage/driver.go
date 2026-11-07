@@ -24,8 +24,11 @@ type VolumeType struct {
 }
 
 type ProviderVolume struct {
-	ID     string
-	Status string
+	ID               string
+	Status           string
+	SizeGB           int64
+	AvailabilityZone string
+	Attachments      []models.StorageAttachment
 }
 
 type BlockDriver interface {

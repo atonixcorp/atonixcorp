@@ -40,6 +40,13 @@ type DatabaseInstance = {
   status: string;
   endpoint?: string;
   port: number;
+  openstack_server_id?: string;
+  openstack_server_status?: string;
+  openstack_server_ip?: string;
+  openstack_volume_id?: string;
+  openstack_volume_status?: string;
+  openstack_volume_attached: boolean;
+  openstack_network_id?: string;
   created_at: string;
 };
 type DatabaseOperation = {
@@ -338,7 +345,15 @@ export default function DatabasesPage() {
                   <tbody>
                     {instances.map((instance) => (
                       <tr key={instance.id}>
-                        <td><strong>{instance.name}</strong><small>{instance.region || "Region pending"}</small></td>
+                        <td>
+                          <strong>{instance.name}</strong>
+                          <small>{instance.region || "Region pending"}</small>
+                          {instance.openstack_server_id && <small>Nova ID: {instance.openstack_server_id}</small>}
+                          {instance.openstack_volume_id && <small>Cinder volume ID: {instance.openstack_volume_id}</small>}
+                          {instance.openstack_network_id && <small>Network ID: {instance.openstack_network_id}</small>}
+                          {instance.openstack_server_status && <small>Nova: {instance.openstack_server_status}{instance.openstack_server_ip ? ` · ${instance.openstack_server_ip}` : ""}</small>}
+                          {instance.openstack_volume_status && <small>Cinder: {instance.openstack_volume_status} · {instance.openstack_volume_attached ? "attached" : "not attached"}</small>}
+                        </td>
                         <td>{instance.engine} {instance.engine_version}</td>
                         <td>{instance.plan}<small>{instance.cpu} vCPU · {instance.memory_mb / 1024} GiB · {instance.storage_gb} GB</small></td>
                         <td>{instance.workload_profile}</td>

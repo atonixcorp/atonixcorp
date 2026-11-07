@@ -31,6 +31,7 @@ var volumeNamePattern = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])
 type Service struct {
 	db     *gorm.DB
 	driver BlockDriver
+	scoped *ScopedDrivers
 }
 
 type CreateVolumeRequest struct {
@@ -64,6 +65,39 @@ func NewService(db *gorm.DB, driver BlockDriver) *Service {
 	return &Service{db: db, driver: driver}
 }
 
+func (s *Service) SetScopedDrivers(drivers *ScopedDrivers) { s.scoped = drivers }
+
+func (s *Service) driverForTenant(ctx context.Context, tenantID uint) (BlockDriver, string, error) {
+	if s.scoped != nil {
+		return s.scoped.forTenant(ctx, tenantID)
+	}
+	if s.driver == nil {
+		return nil, "", ErrDriverUnavailable
+	}
+	return s.driver, "", nil
+}
+
+func (s *Service) driverForVolume(ctx context.Context, volume models.StorageVolume) (BlockDriver, error) {
+	if s.scoped != nil {
+		return s.scoped.forVolume(ctx, volume)
+	}
+	if s.driver == nil || s.driver.Name() != volume.Driver {
+		return nil, ErrDriverUnavailable
+	}
+	return s.driver, nil
+}
+
+func (s *Service) ProjectVolumeTypes(ctx context.Context, userID, tenantID, projectID uint) ([]VolumeType, error) {
+	if err := s.authorizeProject(ctx, userID, tenantID, projectID, false); err != nil {
+		return nil, err
+	}
+	driver, _, err := s.driverForTenant(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	return driver.VolumeTypes(ctx)
+}
+
 func (s *Service) VolumeTypes(ctx context.Context) ([]VolumeType, error) {
 	if s.driver == nil {
 		return []VolumeType{}, nil
@@ -77,9 +111,6 @@ func (s *Service) CreateVolume(
 	idempotencyKey string,
 	request CreateVolumeRequest,
 ) (VolumeResponse, error) {
-	if s.driver == nil {
-		return VolumeResponse{}, ErrDriverUnavailable
-	}
 	if userID == 0 || request.TenantID == 0 || request.ProjectID == 0 {
 		return VolumeResponse{}, ErrForbidden
 	}
@@ -89,10 +120,14 @@ func (s *Service) CreateVolume(
 	if err := s.authorizeProject(ctx, userID, request.TenantID, request.ProjectID, true); err != nil {
 		return VolumeResponse{}, err
 	}
+	driver, providerProjectID, err := s.driverForTenant(ctx, request.TenantID)
+	if err != nil {
+		return VolumeResponse{}, err
+	}
 	if err := normalizeVolumeRequest(&request); err != nil {
 		return VolumeResponse{}, err
 	}
-	if err := s.driver.ValidateVolume(
+	if err := driver.ValidateVolume(
 		ctx, request.Region, request.AvailabilityZone, request.StorageClass, request.Encrypted,
 	); err != nil {
 		return VolumeResponse{}, fmt.Errorf("%w: %v", ErrInvalid, err)
@@ -181,7 +216,7 @@ func (s *Service) CreateVolume(
 			AvailabilityZone: request.AvailabilityZone, StorageClass: request.StorageClass,
 			SizeGB: request.SizeGB, Encrypted: request.Encrypted,
 			DeleteProtection: deleteProtection, TagsJSON: tagsJSON, Tags: request.Tags,
-			State: "CREATING", Driver: s.driver.Name(), IdempotencyKey: idempotencyKey,
+			State: "CREATING", Driver: driver.Name(), ProviderProjectID: providerProjectID, IdempotencyKey: idempotencyKey,
 			RequestHash: hash,
 		}
 		operation := models.StorageOperation{
@@ -240,12 +275,70 @@ func (s *Service) ListVolumes(ctx context.Context, userID, tenantID, projectID u
 	if err != nil {
 		return nil, err
 	}
+	drivers := make(map[string]BlockDriver)
 	for index := range volumes {
+		if err := s.reconcileVolumeWithDrivers(ctx, &volumes[index], drivers); err != nil {
+			return nil, err
+		}
 		if err := decodeVolumeTags(&volumes[index]); err != nil {
 			return nil, err
 		}
 	}
 	return volumes, nil
+}
+
+func (s *Service) reconcileVolume(ctx context.Context, volume *models.StorageVolume) error {
+	return s.reconcileVolumeWithDrivers(ctx, volume, nil)
+}
+
+func (s *Service) reconcileVolumeWithDrivers(ctx context.Context, volume *models.StorageVolume, drivers map[string]BlockDriver) error {
+	if volume.Driver != "openstack-cinder" || volume.ProviderID == "" || volume.State == "DELETED" {
+		return nil
+	}
+	originalState := volume.State
+	driver := drivers[volume.ProviderProjectID]
+	if driver == nil {
+		var err error
+		driver, err = s.driverForVolume(ctx, *volume)
+		if err != nil {
+			return err
+		}
+		if drivers != nil {
+			drivers[volume.ProviderProjectID] = driver
+		}
+	}
+	provider, err := driver.InspectVolume(ctx, volume.ProviderID)
+	if errors.Is(err, ErrProviderNotFound) {
+		provider.Status = "not_found"
+	} else if err != nil {
+		return ErrDriverUnavailable
+	}
+	volume.ProviderStatus = provider.Status
+	volume.Attachments = provider.Attachments
+	updates := map[string]any{}
+	if provider.SizeGB > 0 {
+		volume.SizeGB = provider.SizeGB
+		updates["size_gb"] = provider.SizeGB
+	}
+	if provider.AvailabilityZone != "" {
+		volume.AvailabilityZone = provider.AvailabilityZone
+		updates["availability_zone"] = provider.AvailabilityZone
+	}
+	if volume.State != "CREATING" && volume.State != "DELETING" {
+		state := strings.ToUpper(provider.Status)
+		if state == "NOT_FOUND" {
+			state = "ERROR"
+		}
+		if state != "" {
+			volume.State = state
+			updates["state"] = state
+		}
+	}
+	if len(updates) == 0 {
+		return nil
+	}
+	return s.db.WithContext(ctx).Model(&models.StorageVolume{}).
+		Where("id = ? AND state = ?", volume.ID, originalState).Updates(updates).Error
 }
 
 func (s *Service) GetVolume(ctx context.Context, userID uint, id string) (models.StorageVolume, error) {
@@ -257,6 +350,9 @@ func (s *Service) GetVolume(ctx context.Context, userID uint, id string) (models
 	}
 	if err := s.authorizeProject(ctx, userID, volume.TenantID, volume.ProjectID, false); err != nil {
 		return models.StorageVolume{}, ErrNotFound
+	}
+	if err := s.reconcileVolume(ctx, &volume); err != nil {
+		return models.StorageVolume{}, err
 	}
 	if err := decodeVolumeTags(&volume); err != nil {
 		return models.StorageVolume{}, err
@@ -384,8 +480,8 @@ func (s *Service) GetOverview(ctx context.Context, userID, tenantID, projectID u
 		return Overview{}, err
 	}
 	driverName := "unavailable"
-	if s.driver != nil {
-		driverName = s.driver.Name()
+	if driver, _, err := s.driverForTenant(ctx, tenantID); err == nil {
+		driverName = driver.Name()
 	}
 	return Overview{
 		Driver: driverName, Volumes: summary.Volumes, UsedGB: summary.UsedGB,
@@ -442,9 +538,6 @@ func (s *Service) recoverStaleOperations(ctx context.Context) error {
 }
 
 func (s *Service) processNext(ctx context.Context) error {
-	if s.driver == nil {
-		return ErrDriverUnavailable
-	}
 	var operation models.StorageOperation
 	result := s.db.WithContext(ctx).Where("status = ?", "PENDING").
 		Order("created_at ASC").Limit(1).Find(&operation)
@@ -466,12 +559,16 @@ func (s *Service) processNext(ctx context.Context) error {
 	}
 
 	var driverErr error
+	driver, driverErr := s.driverForVolume(ctx, volume)
+	if driverErr != nil {
+		return s.failOperation(ctx, operation, volume)
+	}
 	complete := false
 	switch operation.Action {
 	case "create":
 		var providerVolume ProviderVolume
 		if volume.ProviderID == "" {
-			providerVolume, driverErr = s.driver.EnsureVolume(ctx, volume)
+			providerVolume, driverErr = driver.EnsureVolume(ctx, volume)
 			if driverErr == nil {
 				volume.ProviderID = providerVolume.ID
 				if err := s.db.WithContext(ctx).Model(&volume).Update("provider_id", providerVolume.ID).Error; err != nil {
@@ -480,7 +577,7 @@ func (s *Service) processNext(ctx context.Context) error {
 			}
 		}
 		if driverErr == nil {
-			providerVolume, driverErr = s.driver.InspectVolume(ctx, volume.ProviderID)
+			providerVolume, driverErr = driver.InspectVolume(ctx, volume.ProviderID)
 		}
 		if driverErr == nil {
 			switch providerVolume.Status {
@@ -493,7 +590,7 @@ func (s *Service) processNext(ctx context.Context) error {
 			}
 		}
 	case "delete":
-		complete, driverErr = s.driver.DeleteVolume(ctx, volume)
+		complete, driverErr = driver.DeleteVolume(ctx, volume)
 	default:
 		driverErr = errors.New("unsupported storage operation")
 	}
@@ -528,7 +625,7 @@ func (s *Service) failOperation(
 			"status": status, "error_code": "DRIVER_FAILURE", "attempts": current.Attempts,
 		}
 		if retry {
-			updates = map[string]any{"status": "PENDING", "error_code": ""}
+			updates = map[string]any{"status": "PENDING", "error_code": "", "attempts": current.Attempts}
 		} else {
 			now := time.Now().UTC()
 			updates["completed_at"] = now
