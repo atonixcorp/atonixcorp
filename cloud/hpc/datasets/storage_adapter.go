@@ -2,11 +2,17 @@ package datasets
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
+
+type StorageAdapter interface {
+	Upload(ctx context.Context, path string, r io.Reader, size int64, contentType string) error
+	Download(ctx context.Context, path string) (io.ReadCloser, error)
+}
 
 type S3Adapter struct {
 	client     *minio.Client
@@ -37,6 +43,28 @@ func (s *S3Adapter) Upload(ctx context.Context, path string, r io.Reader, size i
 
 func (s *S3Adapter) Download(ctx context.Context, path string) (io.ReadCloser, error) {
 	return s.client.GetObject(ctx, s.bucketName, path, minio.GetObjectOptions{})
+}
+
+func (s *S3Adapter) EnsureBucket(ctx context.Context) error {
+	exists, err := s.client.BucketExists(ctx, s.bucketName)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+	return s.client.MakeBucket(ctx, s.bucketName, minio.MakeBucketOptions{})
+}
+
+func (s *S3Adapter) CheckBucket(ctx context.Context) error {
+	exists, err := s.client.BucketExists(ctx, s.bucketName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("dataset bucket %q does not exist", s.bucketName)
+	}
+	return nil
 }
 
 func (s *S3Adapter) Delete(ctx context.Context, path string) error {

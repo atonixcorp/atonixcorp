@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 )
 
 type ComputeInstance struct {
@@ -48,4 +49,15 @@ func (c *Client) ListCompute(ctx context.Context) ([]ComputeInstance, error) {
 		return nil, fmt.Errorf("decode compute list: %w", err)
 	}
 	return list, nil
+}
+
+func (c *Client) DeleteCompute(ctx context.Context, id string) error {
+	body, status, err := c.do(ctx, "DELETE", "/compute/delete/"+url.PathEscape(id), nil)
+	if err != nil {
+		return err
+	}
+	if status >= 400 {
+		return parseAPIError(status, body)
+	}
+	return nil
 }

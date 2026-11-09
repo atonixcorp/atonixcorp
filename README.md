@@ -1,8 +1,9 @@
 # AtonixCorp development environment
 
 The root Compose stack is the existing entry point for the cloud web app and
-its core APIs. It does not yet orchestrate every project in this repository.
-The configuration below has not been validated with Docker on this host.
+its core APIs. It does not orchestrate every project in this repository. The
+root stack and selected standalone images were built and checked on this host
+on 2026-11-09; see the standalone project status below for incomplete areas.
 
 ## Prerequisites
 
@@ -70,19 +71,35 @@ current health.
 
 | Service | URL | Port | Dependencies | Last checked | Start command |
 | --- | --- | --- | --- | --- | --- |
-| Web | http://localhost:3000 | 3000 | API, database API, compute, networking; agent proxy uses agent | DOWN | Root Compose |
-| Main API, auth, storage | http://localhost:8080 | 8080 | PostgreSQL; SMTP and infrastructure integrations as configured | DOWN | Root Compose |
-| PostgreSQL | `127.0.0.1:5433` | 5433 host / 5432 internal | Persistent volume | DOWN | Root Compose |
-| Database API | `http://database:8085` | 8085 internal | PostgreSQL, main API; OpenStack for provisioning | Not running | Root Compose |
-| Networking API | `http://networking:8080` | 8080 internal | PostgreSQL, main API; Neutron optional | Not running | Root Compose |
-| Compute catalog API | `http://compute:8580` | 8580 internal | Persistent volume; node integration incomplete | Not running | Root Compose |
-| Agent API | http://localhost:8000/healthz | 8000 | Local JSON state | HEALTHY standalone; Compose unverified | Root Compose or `cd atonixcorp-agent && python3 -m api.server` |
+| Web | http://localhost:3000 | 3000 | API, database API, compute, networking; agent proxy uses agent | HEALTHY | Root Compose |
+| Main API, auth, storage | http://localhost:8080 | 8080 | PostgreSQL; SMTP and infrastructure integrations as configured | HEALTHY | Root Compose |
+| PostgreSQL | `127.0.0.1:5433` | 5433 host / 5432 internal | Persistent volume | HEALTHY | Root Compose |
+| Database API | `http://database:8085` | 8085 internal | PostgreSQL, main API; OpenStack for provisioning | HEALTHY | Root Compose |
+| Networking API | `http://networking:8080` | 8080 internal | PostgreSQL, main API; Neutron optional | HEALTHY | Root Compose |
+| Compute catalog API | `http://compute:8580` | 8580 internal | Persistent volume; node integration incomplete | HEALTHY | Root Compose |
+| Agent API | http://localhost:8000/healthz | 8000 | Local JSON state | HEALTHY in Compose | Root Compose or `cd atonixcorp-agent && python3 -m api.server` |
 | OpenStack Keystone | Deployment-specific; `http://192.168.178.131/identity/v3` on this host | 80 here | External DevStack | HTTP reachable only; auth unverified | External infrastructure |
 
 The web app proxies database, networking, storage, compute, and agent requests
 through same-origin `/api/...` routes. Auth is part of the main API, not a
 separate authentication service. The storage worker runs in the main API;
 container workers only start with a working Kubernetes provisioner.
+
+## Standalone project status
+
+These projects are not orchestrated by root Compose. Standalone containers
+that are running bind their host ports to loopback.
+
+| Project | Build | Runtime check | Status |
+| --- | --- | --- | --- |
+| Analytics | PASS | PASS | Running on `127.0.0.1:8090`; event ingestion persists to PostgreSQL and the usage endpoint reports stored events. Collector/ingestor binaries are built but not running as separate workers. |
+| DevOps | PASS | PARTIAL | Running; all ten HTTP `/healthz` endpoints returned 200. gRPC APIs and external dependencies were not integration-tested. |
+| Container runtime | PASS | PARTIAL | Running on `127.0.0.1:8082`; `GET /api/v1/nodes` responds. There is no health route or authentication, so do not expose it beyond loopback. |
+| HPC database API | PASS | PARTIAL | Running on `127.0.0.1:8091`; dataset registration/listing responds. State is in-memory and endpoints do not authenticate callers. |
+| HPC service | FAIL | BLOCKED | The image does not build: the job/metadata repositories and Slurm discovery constructor are not implemented, and startup wiring has incomplete placeholders. |
+| Emailserver | PASS | BLOCKED | Image builds, but no container is running. PostgreSQL and MinIO are not provisioned here; SMTP TLS files must be mounted under `/run/secrets/emailserver`. A private key was removed from the working tree; rotate it and purge it from Git history if it was ever used. |
+| DevTools portal | BLOCKED | BLOCKED | The API/backend build contexts have no Dockerfiles, and the frontend package manifest and HTML entrypoint are empty. Its Compose file also claims host port 80, which is already occupied. |
+| CLI | PASS | N/A | Image builds; this is an on-demand CLI, not a daemon. |
 
 ## Health and verification
 
@@ -103,10 +120,40 @@ docker compose exec -T compute wget -qO- http://127.0.0.1:8580/health
 docker compose exec -T networking wget -qO- http://127.0.0.1:8080/health
 ```
 
-Also open the web URL, sign up or sign in, and exercise an authorized
-database/network/storage flow. A successful agent proxy response checks the
-web-to-agent path, not model readiness. An empty registry is valid. These checks
-have not yet been run against the Compose stack here.
+The configured health checks, internal API checks, web authentication flow,
+agent proxy, and scoped storage smoke test passed on this host. The full API Go
+test suite also passed. A successful agent proxy response checks the
+web-to-agent path, not model readiness. An empty registry is valid.
+
+The CI workflow builds and starts the root Compose stack with short-lived,
+random development credentials, checks each container healthcheck and internal
+API, then exercises the web signup/login/session/logout flow and agent proxy.
+To run the same HTTP/authentication smoke test against a locally started stack:
+
+```sh
+python3 scripts/compose-smoke-test.py
+```
+
+The smoke test creates a uniquely named ordinary test user. CI also bootstraps
+and tests a Super Admin using disposable credentials. The persistent root
+database has not been bootstrapped with a Super Admin. To create its first
+account, start the services and run this command from an interactive terminal:
+
+```sh
+docker compose exec api /app/atonix-admin
+```
+
+The command prompts for name, email, and a twice-entered password without
+echoing it. It only creates the first Super Admin, stores a bcrypt hash, and
+rejects later bootstrap attempts. Super Admin status is stored in PostgreSQL
+and checked on every authenticated API request, so role changes take effect
+immediately. A Super Admin can access valid resources across tenants and
+projects; ordinary users remain membership-scoped. The platform user listing
+and role-management endpoints are `GET /api/v1/admin/users` and
+`PATCH /api/v1/admin/users/{userID}/platform-role`. Role changes are audited,
+and the final Super Admin cannot demote themselves.
+Logout clears the browser cookie. Bearer JWTs are stateless and remain valid
+until their 24-hour expiry; server-side per-token revocation is not implemented.
 
 ## OpenStack and other integrations
 
@@ -124,10 +171,14 @@ promoted model and real telemetry. The compute catalog is seed data and its
 node provisioning is incomplete; see [compute status](cloud/compute/README.md).
 Managed-database appliance bootstrap and several Neutron operations are not
 implemented. Analytics, DevOps, email daemons, container runtime, and other
-repository projects are not included in the root stack or validated here.
-The separate `cloud/devtools` Compose manifest references API and backend
-build contexts without Dockerfiles and also conflicts with host ports 80 and
-8080; it is not ready to join the root stack. OpenHPC is outside this setup.
+standalone projects are not included in root Compose; their observed status and
+limitations are listed above. SMTP delivery, OpenStack/Neutron, Kubernetes, and
+Slurm integrations remain unconfigured or unverified.
+If the separate DevOps gateway's local authentication is enabled, configure
+its local-admin username, email, and password out of band; it no longer has
+default local-admin credentials.
+The separate `cloud/devtools` stack and the HPC service are incomplete and
+must not be treated as production-ready. OpenHPC is outside this setup.
 
 ## Troubleshooting
 

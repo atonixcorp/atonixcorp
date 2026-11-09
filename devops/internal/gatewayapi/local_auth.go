@@ -175,16 +175,19 @@ func syncLocalAuthAccountReview(ctx context.Context, requestID, decision string)
 	return nil
 }
 
-func ensureDefaultLocalAdminAccount(ctx context.Context) error {
+func ensureConfiguredLocalAdminAccount(ctx context.Context) error {
 	if !localAuthEnabled() {
 		return nil
 	}
 
-	username := strings.TrimSpace(platformconfig.String("ORCASTACK_AUTH_LOCAL_ADMIN_USERNAME", "admin"))
-	password := strings.TrimSpace(platformconfig.String("ORCASTACK_AUTH_LOCAL_ADMIN_PASSWORD", "admin12345"))
-	email := strings.TrimSpace(platformconfig.String("ORCASTACK_AUTH_LOCAL_ADMIN_EMAIL", "admin@orcastack.local"))
-	if username == "" || password == "" {
-		return nil
+	username := strings.TrimSpace(platformconfig.String("ORCASTACK_AUTH_LOCAL_ADMIN_USERNAME", ""))
+	password := strings.TrimSpace(platformconfig.String("ORCASTACK_AUTH_LOCAL_ADMIN_PASSWORD", ""))
+	email := strings.TrimSpace(platformconfig.String("ORCASTACK_AUTH_LOCAL_ADMIN_EMAIL", ""))
+	if username == "" || password == "" || email == "" {
+		return errors.New("local admin username, email, and password must be configured when local auth is enabled")
+	}
+	if len(password) < 12 || len(password) > 72 {
+		return errors.New("local admin password must be between 12 and 72 bytes")
 	}
 
 	if _, err := loadLocalAuthAccount(ctx, username); err == nil {
@@ -200,7 +203,7 @@ func ensureDefaultLocalAdminAccount(ctx context.Context) error {
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return fmt.Errorf("hash default local admin password: %w", err)
+		return fmt.Errorf("hash configured local admin password: %w", err)
 	}
 
 	adminID := uuid.NewString()
@@ -210,7 +213,7 @@ func ensureDefaultLocalAdminAccount(ctx context.Context) error {
 		on conflict (username) do nothing
 	`, adminID, username, email, "Local Administrator", string(passwordHash), "local:user:"+username)
 	if err != nil {
-		return fmt.Errorf("insert default local admin account: %w", err)
+		return fmt.Errorf("insert configured local admin account: %w", err)
 	}
 
 	return nil

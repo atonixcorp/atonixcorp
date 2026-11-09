@@ -1,7 +1,7 @@
 smtp:
   listen_addr: ":587"
-  tls_cert: "configs/tls/server.crt"
-  tls_key: "configs/tls/server.key"
+  tls_cert: "/run/secrets/emailserver/server.crt"
+  tls_key: "/run/secrets/emailserver/server.key"
 
 imap:
   listen_addr: ":143"

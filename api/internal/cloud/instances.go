@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"atonixcorp/api/internal/authorization"
 	"atonixcorp/api/internal/models"
 
 	"gorm.io/gorm"
@@ -916,11 +917,29 @@ func (s *Service) saveInstance(ctx context.Context, instance *models.CloudInstan
 func (s *Service) authorizeProject(
 	ctx context.Context, userID, tenantID, projectID uint, write bool,
 ) error {
+	var project models.Project
+	err := s.db.WithContext(ctx).
+		Where("id = ? AND tenant_id = ?", projectID, tenantID).
+		First(&project).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrForbidden
+	}
+	if err != nil {
+		return err
+	}
+	isAdmin, err := authorization.IsPlatformSuperAdmin(ctx, s.db, userID)
+	if err != nil {
+		return err
+	}
+	if isAdmin {
+		return nil
+	}
+
 	var membership struct {
 		TenantRole  string
 		ProjectRole string
 	}
-	err := s.db.WithContext(ctx).Table("projects").
+	err = s.db.WithContext(ctx).Table("projects").
 		Select("tenant_memberships.role AS tenant_role, project_memberships.role AS project_role").
 		Joins("JOIN tenant_memberships ON tenant_memberships.tenant_id = projects.tenant_id AND tenant_memberships.user_id = ?", userID).
 		Joins("JOIN project_memberships ON project_memberships.project_id = projects.id AND project_memberships.user_id = ?", userID).

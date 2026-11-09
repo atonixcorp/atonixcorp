@@ -1,15 +1,18 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
+	"atonixcorp/api/internal/models"
 	"atonixcorp/api/internal/security/auth"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
+func AuthMiddleware(jwtSecret string, db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") {
@@ -25,9 +28,31 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user_id", claims.UserID)
-		c.Set("role", claims.Role)
+		var user models.User
+		err = db.WithContext(c.Request.Context()).
+			Select("id", "platform_role").First(&user, claims.UserID).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			writeAuthenticationFailure(c, "invalid token")
+			return
+		}
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"error": "authentication service unavailable"})
+			return
+		}
 
+		c.Set("user_id", claims.UserID)
+		c.Set("platform_role", user.PlatformRole)
+
+		c.Next()
+	}
+}
+
+func RequirePlatformSuperAdmin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetString("platform_role") != models.PlatformRoleSuperAdmin {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "platform super admin permission is required"})
+			return
+		}
 		c.Next()
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 )
 
 type Container struct {
@@ -32,7 +33,7 @@ func (c *Client) CreateContainer(ctx context.Context, name string) (*Container, 
 }
 
 func (c *Client) DeleteContainer(ctx context.Context, name string) error {
-	body, status, err := c.do(ctx, "DELETE", "/swift/container/delete/"+name, nil)
+	body, status, err := c.do(ctx, "DELETE", "/swift/container/delete/"+url.PathEscape(name), nil)
 	if err != nil {
 		return err
 	}
@@ -40,6 +41,21 @@ func (c *Client) DeleteContainer(ctx context.Context, name string) error {
 		return parseAPIError(status, body)
 	}
 	return nil
+}
+
+func (c *Client) ListContainers(ctx context.Context) ([]Container, error) {
+	body, status, err := c.do(ctx, "GET", "/swift/container/list", nil)
+	if err != nil {
+		return nil, err
+	}
+	if status >= 400 {
+		return nil, parseAPIError(status, body)
+	}
+	var containers []Container
+	if err := json.Unmarshal(body, &containers); err != nil {
+		return nil, fmt.Errorf("decode containers: %w", err)
+	}
+	return containers, nil
 }
 
 func (c *Client) UploadObject(ctx context.Context, container, name string, data []byte) (*Object, error) {
@@ -63,7 +79,7 @@ func (c *Client) UploadObject(ctx context.Context, container, name string, data 
 }
 
 func (c *Client) DeleteObject(ctx context.Context, container, name string) error {
-	body, status, err := c.do(ctx, "DELETE", "/swift/object/delete/"+container+"/"+name, nil)
+	body, status, err := c.do(ctx, "DELETE", "/swift/object/delete/"+url.PathEscape(container)+"/"+url.PathEscape(name), nil)
 	if err != nil {
 		return err
 	}

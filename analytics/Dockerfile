@@ -13,7 +13,7 @@ RUN go mod download
 COPY . .
 
 # Build API
-RUN go build -o bin/analytics-api ./cmd/api
+RUN CGO_ENABLED=0 go build -o bin/analytics-api ./cmd/api
 
 # Build collectors
 RUN go build -o bin/collector-system ./cmd/collector

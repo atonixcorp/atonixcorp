@@ -60,7 +60,7 @@ func (repo *boundaryRepository) GetJob(context.Context, string) (*Job, error) { 
 
 type boundaryEvents struct{}
 
-func (boundaryEvents) Publish(Event) error { return nil }
+func (boundaryEvents) Publish(context.Context, Event) error { return nil }
 
 func TestDomainRequestResolvesPrivateSchedulerConfiguration(t *testing.T) {
 	backend := &boundaryScheduler{}
@@ -123,5 +123,16 @@ func TestCreateJobRequestUsesDomainExecutionProfile(t *testing.T) {
 	request.ExecutionProfile = ""
 	if ValidateCreateJob(request) != ErrInvalidJobSpec {
 		t.Fatal("missing execution profile accepted")
+	}
+}
+
+func TestTenantScopedJobReadsRejectOtherTenants(t *testing.T) {
+	repo := &boundaryRepository{job: &Job{ID: "job-id", TenantID: "tenant-a"}}
+	service := NewService(repo, nil, nil)
+	if _, err := service.GetForTenant(context.Background(), "job-id", "tenant-b"); !errors.Is(err, ErrTenantAccessDenied) {
+		t.Fatalf("cross-tenant job read should fail closed, got %v", err)
+	}
+	if _, err := NewLogService(repo).ListForTenant(context.Background(), "job-id", "tenant-b"); !errors.Is(err, ErrTenantAccessDenied) {
+		t.Fatalf("cross-tenant log read should fail closed, got %v", err)
 	}
 }

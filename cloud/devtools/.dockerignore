@@ -1,0 +1,6 @@
+.git
+.env*
+**/.git
+**/.env*
+portal/frontend/node_modules
+portal/frontend/dist

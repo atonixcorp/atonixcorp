@@ -1,31 +1,55 @@
-version: "3.9"
-
 services:
-
   devtools-api:
-    build: ./api
-    container_name: devtools-api
-    ports:
-      - "8080:8080"
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    restart: unless-stopped
     environment:
-      ATCLOUD_ENDPOINT: "http://devtools-api:8080"
-      ATCLOUD_TOKEN: "devtools-token"
+      ATCLOUD_API_TOKEN: "${DEVTOOLS_API_TOKEN:?set DEVTOOLS_API_TOKEN in cloud/devtools/.env}"
+    ports:
+      - "127.0.0.1:8181:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   portal-backend:
-    build: ./portal/backend
-    container_name: portal-backend
-    ports:
-      - "8081:8081"
+    build:
+      context: .
+      dockerfile: portal/backend/Dockerfile
+    restart: unless-stopped
     environment:
+      DEVTOOLS_BACKEND_ADDR: ":8081"
       ATCLOUD_ENDPOINT: "http://devtools-api:8080"
-      ATCLOUD_TOKEN: "devtools-token"
+      ATCLOUD_TOKEN: "${DEVTOOLS_API_TOKEN:?set DEVTOOLS_API_TOKEN in cloud/devtools/.env}"
+      ATCLOUD_PORTAL_TOKEN: "${DEVTOOLS_PORTAL_TOKEN:?set DEVTOOLS_PORTAL_TOKEN in cloud/devtools/.env}"
+    ports:
+      - "127.0.0.1:8182:8081"
     depends_on:
-      - devtools-api
+      devtools-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8081/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   portal-frontend:
-    build: ./portal/frontend
-    container_name: portal-frontend
+    build:
+      context: ./portal/frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
-      - "80:80"
+      - "127.0.0.1:3101:80"
     depends_on:
-      - portal-backend
+      portal-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s

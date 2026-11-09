@@ -193,6 +193,10 @@ func (s *PostgresStore) AuthorizeProject(userID, tenantID, projectID string) (bo
 	err := s.db.QueryRow(`
 		SELECT EXISTS (
 			SELECT 1
+			FROM users u
+			WHERE u.id = $3 AND u.platform_role = 'super_admin'
+		) OR EXISTS (
+			SELECT 1
 			FROM projects p
 			JOIN project_memberships pm ON pm.project_id = p.id
 			JOIN tenant_memberships tm ON tm.tenant_id = p.tenant_id

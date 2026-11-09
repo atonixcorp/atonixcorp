@@ -1,10 +1,9 @@
 package k8s
 
 import (
-	"fmt"
-
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -94,12 +93,6 @@ func BuildJob(template JobTemplate) *batchv1.Job {
 }
 
 // resourceMustParse is a small helper; you can move it to a utils package if you prefer.
-func resourceMustParse(v string) corev1.ResourceList {
-	qty, err := corev1.ParseQuantity(v)
-	if err != nil {
-		panic(fmt.Sprintf("invalid resource quantity %s: %v", v, err))
-	}
-	return corev1.ResourceList{
-		corev1.ResourceName(v): qty,
-	}
+func resourceMustParse(v string) resource.Quantity {
+	return resource.MustParse(v)
 }

@@ -24,6 +24,7 @@ func NewAuthService(repo repositories.UserRepository) AuthService {
 }
 
 func (s *authService) Signup(user *models.User) error {
+	user.PlatformRole = models.PlatformRoleUser
 	existing, err := s.repo.FindByEmail(user.Email)
 	if err == nil && existing != nil {
 		return errors.New("email already registered")

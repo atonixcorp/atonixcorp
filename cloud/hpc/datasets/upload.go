@@ -2,9 +2,12 @@ package datasets
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type UploadService struct {
@@ -29,15 +32,24 @@ type UploadRequest struct {
 }
 
 func (s *UploadService) Upload(ctx context.Context, req UploadRequest) (*Dataset, error) {
-	id := generateDatasetID()
-	path := fmt.Sprintf("%s/%s", req.TenantID, id)
+	if s == nil || s.storage == nil || s.meta == nil {
+		return nil, errors.New("dataset upload service is not configured")
+	}
+	if req.TenantID == "" || req.Name == "" || req.Reader == nil || req.SizeBytes < 0 {
+		return nil, errors.New("tenant ID, dataset name, content, and non-negative size are required")
+	}
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return nil, fmt.Errorf("generate dataset ID: %w", err)
+	}
+	path := fmt.Sprintf("%s/%s", req.TenantID, id.String())
 
 	if err := s.storage.Upload(ctx, path, req.Reader, req.SizeBytes, req.ContentType); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("upload dataset object: %w", err)
 	}
 
 	d := &Dataset{
-		ID:          id,
+		ID:          id.String(),
 		TenantID:    req.TenantID,
 		Name:        req.Name,
 		SizeBytes:   req.SizeBytes,
@@ -48,12 +60,15 @@ func (s *UploadService) Upload(ctx context.Context, req UploadRequest) (*Dataset
 	}
 
 	if err := s.meta.Save(ctx, d); err != nil {
-		return nil, err
+		if storage, ok := s.storage.(interface {
+			Delete(context.Context, string) error
+		}); ok {
+			if cleanupErr := storage.Delete(ctx, path); cleanupErr != nil {
+				return nil, fmt.Errorf("save dataset metadata: %w (also failed to remove uploaded object: %v)", err, cleanupErr)
+			}
+		}
+		return nil, fmt.Errorf("save dataset metadata: %w", err)
 	}
 
 	return d, nil
-}
-
-func generateDatasetID() string {
-	return fmt.Sprintf("ds-%d", time.Now().UnixNano())
 }

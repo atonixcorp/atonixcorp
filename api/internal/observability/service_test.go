@@ -20,7 +20,7 @@ func newTestService(t *testing.T) (*Service, *gorm.DB) {
 		t.Fatalf("open observability test database: %v", err)
 	}
 	if err := db.AutoMigrate(
-		&models.Tenant{}, &models.TenantMembership{}, &models.Project{}, &models.ProjectMembership{},
+		&models.User{}, &models.Tenant{}, &models.TenantMembership{}, &models.Project{}, &models.ProjectMembership{},
 		&models.StorageVolume{}, &models.ContainerDeployment{}, &models.ObservabilityResource{},
 		&models.StorageAuditEvent{}, &models.ContainerDeploymentEvent{}, &models.SecurityAuditEvent{},
 	); err != nil {
@@ -116,6 +116,31 @@ func TestResourcesAreProjectScopedAndRemovedResourcesAreHidden(t *testing.T) {
 	}
 	if len(resources) != 0 {
 		t.Fatalf("resource absent from authoritative source should be marked removed and hidden, got %+v", resources)
+	}
+}
+
+func TestPlatformSuperAdminCanReadCrossTenantObservabilityScope(t *testing.T) {
+	service, db := newTestService(t)
+	if err := db.Create(&models.User{
+		ID: 99, FullName: "Platform Admin", Email: "platform@example.invalid",
+		PlatformRole: models.PlatformRoleSuperAdmin,
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(&models.Tenant{ID: 2, Name: "Other tenant", Slug: "other-tenant"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(&models.Project{ID: 2, TenantID: 2, Name: "Other project", Slug: "other-project"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := service.authorize(context.Background(), Scope{UserID: 99, TenantID: 2, ProjectID: 2}); err != nil {
+		t.Fatalf("super admin cross-tenant authorization: %v", err)
+	}
+	if err := service.authorize(context.Background(), Scope{UserID: 7, TenantID: 2, ProjectID: 2}); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("ordinary user cross-tenant authorization error = %v, want ErrForbidden", err)
+	}
+	if err := service.authorize(context.Background(), Scope{UserID: 99, TenantID: 1, ProjectID: 2}); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("mismatched tenant/project authorization error = %v, want ErrForbidden", err)
 	}
 }
 

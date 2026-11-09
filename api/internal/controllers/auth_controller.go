@@ -32,9 +32,10 @@ func (c *AuthController) Signup(ctx *gin.Context) {
 		return
 	}
 	user := models.User{
-		FullName: strings.TrimSpace(payload.FullName),
-		Email:    strings.ToLower(strings.TrimSpace(payload.Email)),
-		Password: payload.Password,
+		FullName:     strings.TrimSpace(payload.FullName),
+		Email:        strings.ToLower(strings.TrimSpace(payload.Email)),
+		Password:     payload.Password,
+		PlatformRole: models.PlatformRoleUser,
 	}
 	email, emailErr := mail.ParseAddress(user.Email)
 	if user.FullName == "" || len(user.FullName) > 255 {
@@ -79,7 +80,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	token, err := auth.GenerateToken(os.Getenv("JWT_SECRET"), user.ID, "user")
+	token, err := auth.GenerateToken(os.Getenv("JWT_SECRET"), user.ID, user.PlatformRole)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "could not create session"})
 		return
@@ -89,9 +90,10 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		"message": "Login successful",
 		"token":   token,
 		"user": gin.H{
-			"id":       user.ID,
-			"fullName": user.FullName,
-			"email":    user.Email,
+			"id":           user.ID,
+			"fullName":     user.FullName,
+			"email":        user.Email,
+			"platformRole": user.PlatformRole,
 		},
 	})
 }
@@ -114,9 +116,10 @@ func (c *AuthController) Session(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{
 		"user": gin.H{
-			"id":       user.ID,
-			"fullName": user.FullName,
-			"email":    user.Email,
+			"id":           user.ID,
+			"fullName":     user.FullName,
+			"email":        user.Email,
+			"platformRole": user.PlatformRole,
 		},
 	})
 }

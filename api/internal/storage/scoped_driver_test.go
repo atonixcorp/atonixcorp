@@ -123,7 +123,7 @@ func TestMappedAccountCreateWorkerUsesEncryptedCredentials(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.AutoMigrate(&models.CloudAccount{}, &models.TenantMembership{}, &models.Project{}, &models.ProjectMembership{},
+	if err := db.AutoMigrate(&models.User{}, &models.CloudAccount{}, &models.TenantMembership{}, &models.Project{}, &models.ProjectMembership{},
 		&models.StorageVolume{}, &models.StorageQuota{}, &models.StorageOperation{}, &models.StorageAuditEvent{}); err != nil {
 		t.Fatal(err)
 	}
@@ -270,7 +270,7 @@ func TestScopedVolumeReadReconcilesAndAuthorizes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.AutoMigrate(&models.TenantMembership{}, &models.Project{}, &models.ProjectMembership{}, &models.StorageVolume{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.TenantMembership{}, &models.Project{}, &models.ProjectMembership{}, &models.StorageVolume{}); err != nil {
 		t.Fatal(err)
 	}
 	for _, item := range []any{

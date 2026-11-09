@@ -44,6 +44,10 @@ func (s *PostgresStore) CanAccessProject(userID uint, tenantID, projectID string
 	err := s.pool.QueryRow(context.Background(), `
 		SELECT EXISTS (
 			SELECT 1
+			FROM users u
+			WHERE u.id = $3 AND u.platform_role = 'super_admin'
+		) OR EXISTS (
+			SELECT 1
 			FROM projects p
 			JOIN project_memberships pm ON pm.project_id = p.id
 			WHERE p.id::text = $1 AND p.tenant_id::text = $2 AND pm.user_id = $3

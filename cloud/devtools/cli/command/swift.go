@@ -48,6 +48,21 @@ func DeleteContainer(args []string) {
 	fmt.Println("Container deleted:", args[0])
 }
 
+func ListContainers() {
+	client := sdk.NewClient(sdk.ClientOptions{
+		Endpoint: os.Getenv("ATCLOUD_ENDPOINT"),
+		Token:    os.Getenv("ATCLOUD_TOKEN"),
+	})
+	containers, err := client.ListContainers(context.Background())
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	for _, container := range containers {
+		fmt.Println(container.Name)
+	}
+}
+
 func UploadObject(args []string) {
 	if len(args) < 3 {
 		fmt.Println("Usage: atcloud upload object <container> <name> <data>")

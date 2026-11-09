@@ -1,8 +1,10 @@
 package api
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -67,12 +69,74 @@ func Info(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func Health(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"status": "ok",
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func NewRouter(apiToken string) http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", Health)
+	mux.HandleFunc("GET /ready", Health)
+	mux.HandleFunc("GET /info", Info)
+
+	protected := func(handler http.HandlerFunc) http.Handler {
+		return requireToken(apiToken, handler)
+	}
+	for _, pattern := range []string{
+		"GET /projects/list",
+		"GET /compute/list",
+		"POST /compute/create",
+		"DELETE /compute/delete/{id}",
+		"GET /network/list",
+		"POST /network/create",
+		"DELETE /network/delete/{id}",
+		"GET /storage/list",
+		"POST /storage/create",
+		"DELETE /storage/delete/{id}",
+		"GET /telemetry",
+		"GET /identity/info",
+		"GET /images/list",
+		"GET /orchestration/events",
+		"GET /orchestration/metrics",
+		"POST /swift/container/create",
+		"DELETE /swift/container/delete/{name}",
+		"GET /swift/container/list",
+		"POST /swift/object/upload",
+		"DELETE /swift/object/delete/{container}/{name}",
+	} {
+		mux.Handle(pattern, protected(providerUnavailable))
+	}
+	return mux
+}
+
+func requireToken(expected string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		header := r.Header.Get("Authorization")
+		const prefix = "Bearer "
+		if expected == "" || !strings.HasPrefix(header, prefix) ||
+			subtle.ConstantTimeCompare([]byte(strings.TrimPrefix(header, prefix)), []byte(expected)) != 1 {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{
+				"code":  "unauthorized",
+				"error": "authentication required",
+			})
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
+}
+
+func providerUnavailable(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+		"code":  "provider_unconfigured",
+		"error": "this resource operation requires a configured cloud provider",
+	})
+}
+
+func writeJSON(w http.ResponseWriter, status int, value any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(value)
 }

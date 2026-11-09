@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"atonixcorp/cloud/hpc/api/middleware"
 	"atonixcorp/cloud/hpc/jobs"
 
 	"github.com/go-chi/chi/v5"
@@ -25,7 +26,12 @@ func (h *JobLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := h.Logs.List(r.Context(), id)
+	auth, ok := middleware.AuthFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	logs, err := h.Logs.ListForTenant(r.Context(), id, auth.TenantID)
 	if err != nil {
 		log.Printf("list HPC job logs id=%s: %v", id, err)
 		writeJobError(w, http.StatusNotFound, "JOB_LOGS_UNAVAILABLE", "Job logs could not be retrieved.")

@@ -1,12 +1,14 @@
 package controllers
 
 import (
-	"atonixcorp/api/internal/models"
 	"errors"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"atonixcorp/api/internal/authorization"
+	"atonixcorp/api/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -30,11 +32,17 @@ func (c *TenantController) List(ctx *gin.Context) {
 	}
 
 	var tenants []models.Tenant
-	err := c.db.Model(&models.Tenant{}).
-		Joins("JOIN tenant_memberships ON tenant_memberships.tenant_id = tenants.id").
-		Where("tenant_memberships.user_id = ?", userID).
-		Order("tenants.id").
-		Find(&tenants).Error
+	isAdmin, err := authorization.IsPlatformSuperAdmin(ctx.Request.Context(), c.db, userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "could not authorize platform access"})
+		return
+	}
+	query := c.db.Model(&models.Tenant{})
+	if !isAdmin {
+		query = query.Joins("JOIN tenant_memberships ON tenant_memberships.tenant_id = tenants.id").
+			Where("tenant_memberships.user_id = ?", userID)
+	}
+	err = query.Order("tenants.id").Find(&tenants).Error
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "could not load tenants"})
 		return
@@ -95,11 +103,17 @@ func (c *TenantController) ListProjects(ctx *gin.Context) {
 	}
 
 	var projects []models.Project
-	err := c.db.Model(&models.Project{}).
-		Joins("JOIN project_memberships ON project_memberships.project_id = projects.id").
-		Where("projects.tenant_id = ? AND project_memberships.user_id = ?", tenantID, userID).
-		Order("projects.id").
-		Find(&projects).Error
+	isAdmin, err := authorization.IsPlatformSuperAdmin(ctx.Request.Context(), c.db, userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "could not authorize platform access"})
+		return
+	}
+	query := c.db.Model(&models.Project{}).Where("projects.tenant_id = ?", tenantID)
+	if !isAdmin {
+		query = query.Joins("JOIN project_memberships ON project_memberships.project_id = projects.id").
+			Where("project_memberships.user_id = ?", userID)
+	}
+	err = query.Order("projects.id").Find(&projects).Error
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "could not load projects"})
 		return
@@ -126,13 +140,18 @@ func (c *TenantController) CreateProject(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "project name and a valid slug are required"})
 		return
 	}
-	if !c.hasTenantRole(tenantID, userID, "owner", "admin") {
+	isAdmin, err := authorization.IsPlatformSuperAdmin(ctx.Request.Context(), c.db, userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "could not authorize platform access"})
+		return
+	}
+	if !isAdmin && !c.hasTenantRole(tenantID, userID, "owner", "admin") {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "tenant owner or admin role is required"})
 		return
 	}
 
 	project := models.Project{TenantID: tenantID, Name: request.Name, Slug: request.Slug}
-	err := c.db.Transaction(func(tx *gorm.DB) error {
+	err = c.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&project).Error; err != nil {
 			return err
 		}
@@ -157,6 +176,22 @@ func (c *TenantController) authorizeTenant(ctx *gin.Context) (uint, uint, bool) 
 	if err != nil || tenantID == 0 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid tenant id"})
 		return 0, 0, false
+	}
+	isAdmin, err := authorization.IsPlatformSuperAdmin(ctx.Request.Context(), c.db, userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "could not authorize platform access"})
+		return 0, 0, false
+	}
+	if isAdmin {
+		var tenant models.Tenant
+		if err := c.db.First(&tenant, uint(tenantID)).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "tenant not found"})
+			return 0, 0, false
+		} else if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "could not authorize tenant access"})
+			return 0, 0, false
+		}
+		return userID, uint(tenantID), true
 	}
 	var membership models.TenantMembership
 	err = c.db.Where("tenant_id = ? AND user_id = ?", tenantID, userID).First(&membership).Error

@@ -2,6 +2,8 @@ package nodes
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 )
 
@@ -32,9 +34,12 @@ func NewHealthService(inv *InventoryService, prober HealthProbeClient) *HealthSe
 }
 
 func (s *HealthService) EvaluateNodeHealth(ctx context.Context, node Node) (float64, error) {
+	if s == nil || s.inventory == nil || s.inventory.repo == nil || s.prober == nil {
+		return 0, errors.New("node health service is not configured")
+	}
 	res, err := s.prober.ProbeNode(ctx, node)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("probe node %q: %w", node.ID, err)
 	}
 
 	score := 1.0
@@ -60,10 +65,14 @@ func (s *HealthService) EvaluateNodeHealth(ctx context.Context, node Node) (floa
 	}
 
 	node.HealthScore = score
-	node.LastSeenAt = res.Timestamp
+	if !res.Timestamp.IsZero() {
+		node.LastSeenAt = res.Timestamp
+	}
 	node.UpdatedAt = time.Now().UTC()
 
-	_ = s.inventory.repo.SaveNode(ctx, node)
+	if err := s.inventory.repo.SaveNode(ctx, node); err != nil {
+		return 0, fmt.Errorf("save health state for node %q: %w", node.ID, err)
+	}
 
 	return score, nil
 }
@@ -74,8 +83,11 @@ func (s *HealthService) RefreshAllNodeHealth(ctx context.Context) error {
 		return err
 	}
 
+	var failures []error
 	for _, n := range nodes {
-		_, _ = s.EvaluateNodeHealth(ctx, n)
+		if _, err := s.EvaluateNodeHealth(ctx, n); err != nil {
+			failures = append(failures, err)
+		}
 	}
-	return nil
+	return errors.Join(failures...)
 }

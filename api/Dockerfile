@@ -4,6 +4,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /atonix-admin ./cmd/atonix-admin
 
 FROM alpine:3.21
 LABEL org.opencontainers.image.source="https://github.com/atonixcorp/atonixcorp"
@@ -14,5 +15,6 @@ RUN mkdir -p /var/lib/atonixcorp-storage && chown app:app /var/lib/atonixcorp-st
 USER app
 WORKDIR /app
 COPY --from=builder /server /app/server
+COPY --from=builder /atonix-admin /app/atonix-admin
 EXPOSE 8080
 CMD ["/app/server"]

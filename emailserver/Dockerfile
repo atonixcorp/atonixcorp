@@ -33,9 +33,8 @@ RUN apk add --no-cache ca-certificates
 # Copy binaries
 COPY --from=builder /app/bin /app/bin
 
-# Copy configs + DKIM keys + webmail assets
+# Copy service configuration
 COPY configs /app/configs
-COPY webmail /app/webmail
 
 # Default daemon (override per service)
 CMD ["/app/bin/smtpd"]

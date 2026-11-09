@@ -608,7 +608,7 @@ func newCloudTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("open test database: %v", err)
 	}
 	if err := db.AutoMigrate(
-		&models.Tenant{}, &models.TenantMembership{}, &models.Project{},
+		&models.User{}, &models.Tenant{}, &models.TenantMembership{}, &models.Project{},
 		&models.ProjectMembership{}, &models.CloudAccount{}, &models.CloudInstance{},
 		&models.ProviderCatalogResource{}, &models.CloudOperation{}, &models.CloudAuditEvent{},
 	); err != nil {
@@ -648,6 +648,32 @@ func newCloudTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("seed provider catalog mappings: %v", err)
 	}
 	return db
+}
+
+func TestPlatformSuperAdminCanAuthorizeAcrossTenantAndProject(t *testing.T) {
+	db := newCloudTestDB(t)
+	if err := db.Create(&models.User{
+		ID: 99, FullName: "Platform Admin", Email: "platform@example.invalid",
+		PlatformRole: models.PlatformRoleSuperAdmin,
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(&models.Tenant{ID: 2, Name: "Other tenant", Slug: "other-tenant"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(&models.Project{ID: 2, TenantID: 2, Name: "Other project", Slug: "other-project"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	service := NewService(db, nil)
+	if err := service.authorizeProject(context.Background(), 99, 2, 2, true); err != nil {
+		t.Fatalf("super admin cross-tenant write authorization: %v", err)
+	}
+	if err := service.authorizeProject(context.Background(), 99, 1, 2, true); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("mismatched tenant/project scope error = %v, want ErrForbidden", err)
+	}
+	if err := service.authorizeProject(context.Background(), 1, 2, 2, false); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("ordinary user cross-tenant access error = %v, want ErrForbidden", err)
+	}
 }
 
 type unscopedProvider struct {

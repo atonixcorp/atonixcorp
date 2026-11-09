@@ -42,6 +42,7 @@ __pycache__/
 # misc
 .DS_Store
 *.pem
+/emailserver/configs/tls/server.key
 
 # OpenStack credentials and local cloud configuration
 admin-openrc.sh

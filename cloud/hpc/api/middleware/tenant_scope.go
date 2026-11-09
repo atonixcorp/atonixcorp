@@ -15,16 +15,15 @@ func NewTenantScopeMiddleware() *TenantScopeMiddleware {
 func (m *TenantScopeMiddleware) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		auth := r.Context().Value("auth")
-		if auth == nil {
+		auth, ok := AuthFromContext(r.Context())
+		if !ok {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		tenantFromToken := auth.(*AuthContext).TenantID
 		tenantFromPath := chi.URLParam(r, "tenant")
 
-		if tenantFromPath != "" && tenantFromPath != tenantFromToken {
+		if tenantFromPath != "" && tenantFromPath != auth.TenantID {
 			http.Error(w, "tenant access denied", http.StatusForbidden)
 			return
 		}

@@ -3,99 +3,80 @@ package router
 import (
 	"fmt"
 
-	"atonixcorp/cloud/devtools/cli/commands"
+	"atonixcorp/cloud/devtools/cli/command"
 )
 
 func Dispatch(args []string) {
+	if len(args) < 2 {
+		command.Help()
+		return
+	}
+	if args[1] == "identity" {
+		command.IdentityInfo()
+		return
+	}
 	if len(args) < 3 {
-		commands.Help()
+		command.Help()
 		return
 	}
 
 	action := args[1]
 	resource := args[2]
-
 	switch action {
-
-	// ------------------------------------------------------------
-	// CREATE
-	// ------------------------------------------------------------
 	case "create":
 		switch resource {
 		case "compute":
-			commands.CreateCompute(args[3:])
+			command.CreateCompute(args[3:])
 		case "network":
-			commands.CreateNetwork(args[3:])
+			command.CreateNetwork(args[3:])
 		case "storage":
-			commands.CreateStorage(args[3:])
+			command.CreateStorage(args[3:])
 		case "container":
-			commands.CreateContainer(args[3:])
+			command.CreateContainer(args[3:])
 		default:
 			fmt.Println("Unknown resource:", resource)
 		}
-
-	// ------------------------------------------------------------
-	// DELETE
-	// ------------------------------------------------------------
 	case "delete":
 		switch resource {
 		case "compute":
-			commands.DeleteCompute(args[3:])
+			command.DeleteCompute(args[3:])
 		case "network":
-			commands.DeleteNetwork(args[3:])
+			command.DeleteNetwork(args[3:])
 		case "storage":
-			commands.DeleteStorage(args[3:])
+			command.DeleteStorage(args[3:])
 		case "container":
-			commands.DeleteContainer(args[3:])
+			command.DeleteContainer(args[3:])
 		case "object":
-			commands.DeleteObject(args[3:])
+			command.DeleteObject(args[3:])
 		default:
 			fmt.Println("Unknown resource:", resource)
 		}
-
-	// ------------------------------------------------------------
-	// LIST
-	// ------------------------------------------------------------
 	case "list":
 		switch resource {
 		case "compute":
-			commands.ListCompute()
+			command.ListCompute()
 		case "network":
-			commands.ListNetwork()
+			command.ListNetwork()
 		case "storage":
-			commands.ListStorage()
+			command.ListStorage()
 		case "projects":
-			commands.ListProjects()
+			command.ListProjects()
 		case "containers":
-			commands.ListContainers()
+			command.ListContainers()
 		case "metrics":
-			commands.ListMetrics()
+			command.ListMetrics()
 		case "events":
-			commands.ListEvents()
+			command.ListEvents()
 		default:
 			fmt.Println("Unknown resource:", resource)
 		}
-
-	// ------------------------------------------------------------
-	// UPLOAD
-	// ------------------------------------------------------------
 	case "upload":
 		if resource == "object" {
-			commands.UploadObject(args[3:])
+			command.UploadObject(args[3:])
 		} else {
 			fmt.Println("Unknown upload target:", resource)
 		}
-
-	// ------------------------------------------------------------
-	// IDENTITY
-	// ------------------------------------------------------------
-	case "identity":
-		commands.IdentityInfo()
-
-	// ------------------------------------------------------------
-	// HELP (fallback)
-	// ------------------------------------------------------------
 	default:
-		commands.Help()
+		command.Help()
 	}
 }

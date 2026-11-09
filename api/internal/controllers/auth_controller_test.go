@@ -39,9 +39,10 @@ func TestSignupBindsPasswordWithoutExposingIt(t *testing.T) {
 	router.POST("/signup", NewAuthController(service).Signup)
 	password := "TestingPassword123456"
 	body, err := json.Marshal(map[string]string{
-		"fullName": "Samuel Orca",
-		"email":    "orcaprojectstack@gmail.com",
-		"password": password,
+		"fullName":     "Samuel Orca",
+		"email":        "orcaprojectstack@gmail.com",
+		"password":     password,
+		"platformRole": models.PlatformRoleSuperAdmin,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -55,6 +56,9 @@ func TestSignupBindsPasswordWithoutExposingIt(t *testing.T) {
 	}
 	if service.user == nil || service.user.Password != password {
 		t.Fatalf("signup service did not receive password from request")
+	}
+	if service.user.PlatformRole != models.PlatformRoleUser {
+		t.Fatalf("signup role = %q, want ordinary user", service.user.PlatformRole)
 	}
 	if bytes.Contains(response.Body.Bytes(), []byte(password)) {
 		t.Fatal("signup response exposed the password")

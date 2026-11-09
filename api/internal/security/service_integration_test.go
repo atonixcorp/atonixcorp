@@ -17,6 +17,7 @@ func newScopedSecurityService(t *testing.T) (*Service, *gorm.DB) {
 		t.Fatalf("open security test database: %v", err)
 	}
 	if err := db.AutoMigrate(
+		&models.User{},
 		&models.Tenant{},
 		&models.TenantMembership{},
 		&models.Project{},
@@ -111,6 +112,37 @@ func TestCreateDraftDeniesCrossTenantAndProjectSubstitution(t *testing.T) {
 	}
 	if count != int64(len(tests)) {
 		t.Fatalf("expected all denied attempts audited, got %d", count)
+	}
+}
+
+func TestPlatformSuperAdminCanManageCrossTenantSecurityScope(t *testing.T) {
+	service, db := newScopedSecurityService(t)
+	if err := db.Create(&models.User{
+		ID: 99, FullName: "Platform Admin", Email: "platform@example.invalid",
+		PlatformRole: models.PlatformRoleSuperAdmin,
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(&models.Tenant{ID: 2, Name: "Other tenant", Slug: "other-tenant"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(&models.Project{ID: 2, TenantID: 2, Name: "Other project", Slug: "other-project"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	policy, err := service.CreateDraft(
+		context.Background(),
+		Scope{UserID: 99, TenantID: 2, ProjectID: 2},
+		testRequestContext(), "admin-cross-tenant-create", validDraftRequest(),
+	)
+	if err != nil {
+		t.Fatalf("super admin cross-tenant policy create: %v", err)
+	}
+	var stored models.SecurityPolicy
+	if err := db.First(&stored, policy.ID).Error; err != nil {
+		t.Fatalf("load super admin policy: %v", err)
+	}
+	if stored.OwnerID != 99 || stored.TenantID != 2 || stored.ProjectID != 2 {
+		t.Fatalf("policy was not recorded in the requested tenant/project: %+v", stored)
 	}
 }
 

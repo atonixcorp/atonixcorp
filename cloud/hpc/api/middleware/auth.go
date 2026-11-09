@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -13,6 +14,8 @@ type AuthContext struct {
 	TenantID string
 	Roles    []string
 }
+
+type authContextKey struct{}
 
 type AuthMiddleware struct {
 	SigningKey []byte
@@ -34,8 +37,11 @@ func (m *AuthMiddleware) Middleware(next http.Handler) http.Handler {
 		tokenString := strings.TrimPrefix(auth, "Bearer ")
 
 		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+			if t.Method != jwt.SigningMethodHS256 {
+				return nil, errors.New("unexpected signing method")
+			}
 			return m.SigningKey, nil
-		})
+		}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
 		if err != nil || !token.Valid {
 			http.Error(w, "invalid token", http.StatusUnauthorized)
 			return
@@ -46,25 +52,41 @@ func (m *AuthMiddleware) Middleware(next http.Handler) http.Handler {
 			http.Error(w, "invalid claims", http.StatusUnauthorized)
 			return
 		}
+		userID, userOK := claims["user_id"].(string)
+		tenantID, tenantOK := claims["tenant_id"].(string)
+		roles, rolesOK := toStringSlice(claims["roles"])
+		if !userOK || userID == "" || !tenantOK || tenantID == "" || !rolesOK {
+			http.Error(w, "invalid claims", http.StatusUnauthorized)
+			return
+		}
 
-		ctx := context.WithValue(r.Context(), "auth", &AuthContext{
-			UserID:   claims["user_id"].(string),
-			TenantID: claims["tenant_id"].(string),
-			Roles:    toStringSlice(claims["roles"]),
+		ctx := context.WithValue(r.Context(), authContextKey{}, &AuthContext{
+			UserID:   userID,
+			TenantID: tenantID,
+			Roles:    roles,
 		})
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func toStringSlice(v any) []string {
+func AuthFromContext(ctx context.Context) (*AuthContext, bool) {
+	auth, ok := ctx.Value(authContextKey{}).(*AuthContext)
+	return auth, ok && auth != nil
+}
+
+func toStringSlice(v any) ([]string, bool) {
 	arr, ok := v.([]any)
 	if !ok {
-		return nil
+		return nil, false
 	}
 	out := make([]string, len(arr))
 	for i, x := range arr {
-		out[i] = x.(string)
+		role, ok := x.(string)
+		if !ok || role == "" {
+			return nil, false
+		}
+		out[i] = role
 	}
-	return out
+	return out, true
 }

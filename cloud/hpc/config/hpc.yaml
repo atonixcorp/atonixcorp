@@ -3,31 +3,38 @@ service:
   port: 8080
 
 auth:
-  jwt_signing_key: "super-secret-key"
+  jwt_signing_key: ""
 
 scheduler:
-  default_backend: "slurm"   # slurm | k8s
+  default_backend: "none"
   slurm:
-    enabled: true
+    enabled: false
+    sbatch_path: "/usr/bin/sbatch"
+    squeue_path: "/usr/bin/squeue"
+    sacct_path: "/usr/bin/sacct"
+    scancel_path: "/usr/bin/scancel"
+    scontrol_path: "/usr/bin/scontrol"
+    command_timeout: "10s"
   k8s:
-    enabled: true
+    enabled: false
     namespace: "hpc-jobs"
 
 storage:
   s3:
     endpoint: "minio:9000"
     bucket: "datasets"
-    access_key: "atonix"
-    secret_key: "atonix-secret"
+    access_key: ""
+    secret_key: ""
     secure: false
 
 database:
   postgres:
     host: "postgres"
     port: 5432
-    user: "atonix"
-    password: "atonix-pass"
+    user: ""
+    password: ""
     dbname: "hpc"
+    sslmode: "disable"
 
 metrics:
   port: 9090
@@ -35,3 +42,4 @@ metrics:
 cluster:
   discovery_interval: "30s"
   health_interval: "20s"
+  health_port: 22

@@ -50,12 +50,17 @@ func SetupRoutes(
 	// AUTHENTICATED API ROUTES
 	// -------------------------
 	protected := api.Group("")
-	protected.Use(middleware.AuthMiddleware(os.Getenv("JWT_SECRET")))
+	protected.Use(middleware.AuthMiddleware(os.Getenv("JWT_SECRET"), database.DB))
+	platformAdmin := protected.Group("/admin")
+	platformAdmin.Use(middleware.RequirePlatformSuperAdmin())
+	platformAdminController := controllers.NewPlatformAdminController(database.DB)
+	platformAdmin.GET("/users", platformAdminController.ListUsers)
+	platformAdmin.PATCH("/users/:userID/platform-role", platformAdminController.UpdateUserRole)
 
 	contactMessages := protected.Group("/contact")
 	{
 		contactMessages.POST("/submit", contactController.Submit)
-		contactMessages.GET("/messages", contactController.GetAll)
+		contactMessages.GET("/messages", middleware.RequirePlatformSuperAdmin(), contactController.GetAll)
 	}
 
 	protected.GET("/auth/me", authController.Session)
@@ -86,7 +91,7 @@ func SetupRoutes(
 	securityRoutes := api.Group("/security")
 	securityRoutes.Use(
 		middleware.SecurityRequestMetadata(),
-		middleware.AuthMiddleware(os.Getenv("JWT_SECRET")),
+		middleware.AuthMiddleware(os.Getenv("JWT_SECRET"), database.DB),
 		middleware.SecurityRateLimit(120, time.Minute),
 	)
 	securityTenants := securityRoutes.Group("/tenants/:tenantID/projects/:projectID")
@@ -117,6 +122,8 @@ func SetupRoutes(
 	internalCloud := r.Group("/internal/cloud")
 	internalCloud.Use(
 		middleware.SecurityRequestMetadata(),
+		middleware.AuthMiddleware(os.Getenv("JWT_SECRET"), database.DB),
+		middleware.RequirePlatformSuperAdmin(),
 		middleware.IPRateLimit(10, time.Minute),
 	)
 	internalCloud.PUT("/accounts/:tenantID", cloudAccountController.SetOrganizationAccount)
@@ -142,9 +149,9 @@ func SetupRoutes(
 	// -------------------------
 	blog := protected.Group("/blog")
 	{
-		blog.POST("/", blogController.Create)
-		blog.PUT("/", blogController.Update)
-		blog.DELETE("/:id", blogController.Delete)
+		blog.POST("/", middleware.RequirePlatformSuperAdmin(), blogController.Create)
+		blog.PUT("/", middleware.RequirePlatformSuperAdmin(), blogController.Update)
+		blog.DELETE("/:id", middleware.RequirePlatformSuperAdmin(), blogController.Delete)
 		blog.GET("/:id", blogController.GetByID)
 		blog.GET("/", blogController.GetAll)
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"atonixcorp/cloud/hpc/database/model"
 	"atonixcorp/cloud/hpc/database/service"
@@ -26,6 +27,11 @@ func init() {
 }
 
 func main() {
+	if len(os.Args) < 2 || os.Args[1] != "serve" {
+		runCLI()
+		return
+	}
+
 	http.HandleFunc("/datasets/register", registerDataset)
 	http.HandleFunc("/datasets/list", listDatasets)
 	http.HandleFunc("/mount/slurm", mountSlurm)

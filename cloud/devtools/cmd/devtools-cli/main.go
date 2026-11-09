@@ -1,8 +1,9 @@
 package main
 
 import (
-	"atonixcorp/cloud/devtools/cli/router"
 	"os"
+
+	router "atonixcorp/cloud/devtools/cli"
 )
 
 func main() {

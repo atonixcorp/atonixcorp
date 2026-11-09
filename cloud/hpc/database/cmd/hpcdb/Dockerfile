@@ -10,12 +10,11 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the entire HPC database module
+# Build context is the cloud/hpc module root.
 COPY . .
 
 # Build the hpcdb binary
-RUN cd hpc/database/cmd/hpcdb && \
-    go build -o /hpcdb
+RUN go build -o /hpcdb ./database/cmd/hpcdb
 
 # -----------------------------
 # Stage 2: Minimal runtime image

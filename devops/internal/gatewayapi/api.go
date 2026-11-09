@@ -342,7 +342,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := ensureDefaultLocalAdminAccount(r.Context()); err != nil {
+	if err := ensureConfiguredLocalAdminAccount(r.Context()); err != nil {
 		writeError(w, http.StatusServiceUnavailable, err)
 		return
 	}

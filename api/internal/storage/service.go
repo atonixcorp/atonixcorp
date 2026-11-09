@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"atonixcorp/api/internal/authorization"
 	"atonixcorp/api/internal/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -687,16 +688,23 @@ func (s *Service) completeOperation(
 func (s *Service) authorizeProject(
 	ctx context.Context, userID, tenantID, projectID uint, write bool,
 ) error {
-	var tenantMembership models.TenantMembership
-	if err := s.db.WithContext(ctx).
-		Where("tenant_id = ? AND user_id = ?", tenantID, userID).
-		First(&tenantMembership).Error; err != nil {
-		return ErrForbidden
-	}
 	var project models.Project
 	if err := s.db.WithContext(ctx).
 		Where("id = ? AND tenant_id = ?", projectID, tenantID).
 		First(&project).Error; err != nil {
+		return ErrForbidden
+	}
+	isAdmin, err := authorization.IsPlatformSuperAdmin(ctx, s.db, userID)
+	if err != nil {
+		return err
+	}
+	if isAdmin {
+		return nil
+	}
+	var tenantMembership models.TenantMembership
+	if err := s.db.WithContext(ctx).
+		Where("tenant_id = ? AND user_id = ?", tenantID, userID).
+		First(&tenantMembership).Error; err != nil {
 		return ErrForbidden
 	}
 	var membership models.ProjectMembership

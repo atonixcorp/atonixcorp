@@ -1,4 +1,4 @@
-package hpcdb
+package main
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"atonixcorp/cloud/hpc/database/service"
 )
 
-func main() {
+func runCLI() {
 	fmt.Println("AtonixCorp HPC Database Engine Starting...")
 
 	// Initialize the full database service

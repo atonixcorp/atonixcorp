@@ -16,6 +16,10 @@ func NewSlurmAdapter() *SlurmAdapter {
 	}
 }
 
+func NewSlurmAdapterWithClient(client *SlurmClient) *SlurmAdapter {
+	return &SlurmAdapter{client: client}
+}
+
 func (a *SlurmAdapter) Submit(ctx context.Context, spec scheduler.JobSpec) (string, error) {
 	opts := SubmitOptions{
 		Partition:  spec.Partition,

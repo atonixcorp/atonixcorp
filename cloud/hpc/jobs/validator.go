@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrInvalidJobSpec              = errors.New("invalid job specification")
 	ErrExecutionProfileUnavailable = errors.New("execution profile is not configured")
+	ErrTenantAccessDenied          = errors.New("job belongs to another tenant")
 )
 
 type CreateJobRequest struct {

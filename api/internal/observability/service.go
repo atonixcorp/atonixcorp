@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"atonixcorp/api/internal/authorization"
 	"atonixcorp/api/internal/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -486,11 +487,25 @@ func (s *Service) canReadAudit(ctx context.Context, scope Scope) (bool, error) {
 	if scope.UserID == 0 || scope.TenantID == 0 || scope.ProjectID == 0 {
 		return false, ErrForbidden
 	}
+	var project models.Project
+	err := s.db.WithContext(ctx).
+		Where("id = ? AND tenant_id = ?", scope.ProjectID, scope.TenantID).
+		First(&project).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	isAdmin, err := authorization.IsPlatformSuperAdmin(ctx, s.db, scope.UserID)
+	if err != nil || isAdmin {
+		return isAdmin, err
+	}
 	var membership struct {
 		TenantRole  string
 		ProjectRole string
 	}
-	err := s.db.WithContext(ctx).Table("projects").
+	err = s.db.WithContext(ctx).Table("projects").
 		Select("tenant_memberships.role AS tenant_role, project_memberships.role AS project_role").
 		Joins("JOIN tenant_memberships ON tenant_memberships.tenant_id = projects.tenant_id AND tenant_memberships.user_id = ?", scope.UserID).
 		Joins("JOIN project_memberships ON project_memberships.project_id = projects.id AND project_memberships.user_id = ?", scope.UserID).
@@ -538,8 +553,25 @@ func (s *Service) authorize(ctx context.Context, scope Scope) error {
 	if scope.UserID == 0 || scope.TenantID == 0 || scope.ProjectID == 0 {
 		return ErrForbidden
 	}
+	var project models.Project
+	err := s.db.WithContext(ctx).
+		Where("id = ? AND tenant_id = ?", scope.ProjectID, scope.TenantID).
+		First(&project).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrForbidden
+	}
+	if err != nil {
+		return err
+	}
+	isAdmin, err := authorization.IsPlatformSuperAdmin(ctx, s.db, scope.UserID)
+	if err != nil {
+		return err
+	}
+	if isAdmin {
+		return nil
+	}
 	var count int64
-	err := s.db.WithContext(ctx).Table("projects").
+	err = s.db.WithContext(ctx).Table("projects").
 		Joins("JOIN tenant_memberships ON tenant_memberships.tenant_id = projects.tenant_id AND tenant_memberships.user_id = ?", scope.UserID).
 		Joins("JOIN project_memberships ON project_memberships.project_id = projects.id AND project_memberships.user_id = ?", scope.UserID).
 		Where("projects.id = ? AND projects.tenant_id = ?", scope.ProjectID, scope.TenantID).

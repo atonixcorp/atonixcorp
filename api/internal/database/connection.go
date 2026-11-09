@@ -13,6 +13,13 @@ import (
 var DB *gorm.DB
 
 func Connect() *gorm.DB {
+	db := Open()
+	migrate(db)
+	DB = db
+	return db
+}
+
+func Open() *gorm.DB {
 	host := os.Getenv("DB_HOST")
 	user := os.Getenv("DB_USER")
 	password := os.Getenv("DB_PASSWORD")
@@ -30,16 +37,13 @@ func Connect() *gorm.DB {
 	}
 
 	log.Println(" Connected to PostgreSQL")
-
-	migrate(db)
-
-	DB = db
 	return db
 }
 
 func migrate(db *gorm.DB) {
 	err := db.AutoMigrate(
 		&models.User{},
+		&models.PlatformAdminAuditEvent{},
 		&models.Tenant{},
 		&models.TenantMembership{},
 		&models.Project{},
@@ -106,6 +110,25 @@ func migrate(db *gorm.DB) {
 		FOR EACH ROW EXECUTE FUNCTION prevent_cloud_audit_mutation();
 	`).Error; err != nil {
 		log.Fatalf("Cloud audit immutability migration failed: %v", err)
+	}
+	if err := db.Exec(`
+		CREATE OR REPLACE FUNCTION prevent_platform_admin_audit_mutation() RETURNS trigger AS $$
+		BEGIN
+			RAISE EXCEPTION 'platform admin audit records are append-only';
+		END;
+		$$ LANGUAGE plpgsql;
+	`).Error; err != nil {
+		log.Fatalf("Platform admin audit immutability function migration failed: %v", err)
+	}
+	if err := db.Exec(`DROP TRIGGER IF EXISTS platform_admin_audit_append_only ON platform_admin_audit_events`).Error; err != nil {
+		log.Fatalf("Platform admin audit trigger migration failed: %v", err)
+	}
+	if err := db.Exec(`
+		CREATE TRIGGER platform_admin_audit_append_only
+		BEFORE UPDATE OR DELETE ON platform_admin_audit_events
+		FOR EACH ROW EXECUTE FUNCTION prevent_platform_admin_audit_mutation();
+	`).Error; err != nil {
+		log.Fatalf("Platform admin audit immutability trigger migration failed: %v", err)
 	}
 
 	if err := createWorkspacesForExistingUsers(db); err != nil {

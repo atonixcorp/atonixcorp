@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: atonixcorp
       POSTGRES_USER: atonixcorp
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-atonixcorp-local-password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file}
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
@@ -26,7 +26,7 @@ services:
     environment:
       DB_HOST: db
       DB_USER: atonixcorp
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-atonixcorp-local-password}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file}
       DB_NAME: atonixcorp
       DB_PORT: "5432"
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the root .env file}
@@ -90,7 +90,7 @@ services:
     environment:
       DB_HOST: db
       DB_USER: atonixcorp
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-atonixcorp-local-password}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file}
       DB_NAME: atonixcorp
       DB_PORT: "5432"
       DB_SSLMODE: disable
@@ -163,7 +163,7 @@ services:
     environment:
       ATNETWORK_CONFIG_DIR: /etc/atnetwork/config
       ATNETWORK_MIGRATIONS_DIR: /app/migrations
-      ATNETWORK_DATABASE_DSN: host=db user=atonixcorp password=${POSTGRES_PASSWORD:-atonixcorp-local-password} dbname=atonixcorp port=5432 sslmode=disable
+      ATNETWORK_DATABASE_DSN: host=db user=atonixcorp password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file} dbname=atonixcorp port=5432 sslmode=disable
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the root .env file}
       OPENSTACK_AUTH_URL: ${OPENSTACK_AUTH_URL:-}
       OPENSTACK_APPLICATION_CREDENTIAL_ID: ${OPENSTACK_APPLICATION_CREDENTIAL_ID:-}
@@ -229,6 +229,18 @@ services:
       HOSTNAME: 0.0.0.0
     ports:
       - "127.0.0.1:3000:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       api:
         condition: service_healthy

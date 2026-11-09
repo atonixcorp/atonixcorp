@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"atonixcorp/cloud/hpc/api/middleware"
 	"atonixcorp/cloud/hpc/jobs"
 )
 
@@ -31,6 +32,13 @@ func (h *JobSubmitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
 		return
 	}
+	auth, ok := middleware.AuthFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	req.UserID = auth.UserID
+	req.TenantID = auth.TenantID
 
 	job, err := h.Service.CreateAndSubmit(r.Context(), req)
 	if err != nil {

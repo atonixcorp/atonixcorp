@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"atonixcorp/api/internal/authorization"
 	"atonixcorp/api/internal/models"
 	platformcrypto "atonixcorp/api/internal/security/crypto"
 	"gorm.io/gorm"
@@ -79,7 +80,7 @@ func (s *Service) CreateRegistry(ctx context.Context, userID uint, request Regis
 	if userID == 0 || request.TenantID == 0 || request.ProjectID == 0 {
 		return RegistryResponse{}, ErrForbidden
 	}
-	if err := s.authorizeProject(userID, request.TenantID, request.ProjectID, true); err != nil {
+	if err := s.authorizeProject(ctx, userID, request.TenantID, request.ProjectID, true); err != nil {
 		return RegistryResponse{}, err
 	}
 	if err := normalizeRegistryRequest(&request); err != nil {
@@ -131,7 +132,7 @@ func normalizeRegistryRequest(request *RegistryRequest) error {
 }
 
 func (s *Service) ListRegistries(ctx context.Context, userID, tenantID, projectID uint) ([]RegistryResponse, error) {
-	if err := s.authorizeProject(userID, tenantID, projectID, false); err != nil {
+	if err := s.authorizeProject(ctx, userID, tenantID, projectID, false); err != nil {
 		return nil, err
 	}
 	var registries []models.ContainerRegistry
@@ -170,7 +171,7 @@ func (s *Service) Create(
 	if len(idempotencyKey) < 8 || len(idempotencyKey) > 128 {
 		return DeploymentResponse{}, fmt.Errorf("%w: an idempotency key between 8 and 128 characters is required", ErrInvalidRequest)
 	}
-	if err := s.authorizeProject(userID, tenantID, projectID, true); err != nil {
+	if err := s.authorizeProject(ctx, userID, tenantID, projectID, true); err != nil {
 		return DeploymentResponse{}, err
 	}
 	if err := ValidateSpec(&spec); err != nil {
@@ -276,7 +277,7 @@ func (s *Service) Create(
 }
 
 func (s *Service) List(ctx context.Context, userID, tenantID, projectID uint) ([]DeploymentResponse, error) {
-	if err := s.authorizeProject(userID, tenantID, projectID, false); err != nil {
+	if err := s.authorizeProject(ctx, userID, tenantID, projectID, false); err != nil {
 		return nil, err
 	}
 	var records []models.ContainerDeployment
@@ -969,17 +970,24 @@ func createRevision(
 	}).Error
 }
 
-func (s *Service) authorizeProject(userID, tenantID, projectID uint, write bool) error {
-	var tenantMembership models.TenantMembership
-	if err := s.db.Where("tenant_id = ? AND user_id = ?", tenantID, userID).First(&tenantMembership).Error; err != nil {
+func (s *Service) authorizeProject(ctx context.Context, userID, tenantID, projectID uint, write bool) error {
+	var project models.Project
+	if err := s.db.WithContext(ctx).Where("id = ? AND tenant_id = ?", projectID, tenantID).First(&project).Error; err != nil {
 		return ErrForbidden
 	}
-	var project models.Project
-	if err := s.db.Where("id = ? AND tenant_id = ?", projectID, tenantID).First(&project).Error; err != nil {
+	isAdmin, err := authorization.IsPlatformSuperAdmin(ctx, s.db, userID)
+	if err != nil {
+		return err
+	}
+	if isAdmin {
+		return nil
+	}
+	var tenantMembership models.TenantMembership
+	if err := s.db.WithContext(ctx).Where("tenant_id = ? AND user_id = ?", tenantID, userID).First(&tenantMembership).Error; err != nil {
 		return ErrForbidden
 	}
 	var membership models.ProjectMembership
-	if err := s.db.Where("project_id = ? AND user_id = ?", projectID, userID).First(&membership).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("project_id = ? AND user_id = ?", projectID, userID).First(&membership).Error; err != nil {
 		return ErrForbidden
 	}
 	if write && membership.Role != "owner" && membership.Role != "admin" && membership.Role != "deployer" {
@@ -997,7 +1005,7 @@ func (s *Service) findAuthorized(ctx context.Context, userID uint, id string, wr
 	if err != nil {
 		return models.ContainerDeployment{}, err
 	}
-	if err := s.authorizeProject(userID, record.TenantID, record.ProjectID, write); err != nil {
+	if err := s.authorizeProject(ctx, userID, record.TenantID, record.ProjectID, write); err != nil {
 		return models.ContainerDeployment{}, ErrNotFound
 	}
 	return record, nil
