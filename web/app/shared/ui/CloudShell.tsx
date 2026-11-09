@@ -27,7 +27,7 @@ export function CloudShell({ children }: { children: ReactNode }) {
   return (
     <div className={styles.shell}>
       <a className="skip-link" href="#cloud-product-content">Skip to main content</a>
-      <header className={styles.header}>
+      <aside className={styles.sidebar}>
         <Link className={styles.brand} href="/dashboard" aria-label="AtonixCorp Cloud home">
           <Image src="/atonixcorp-icon.png" alt="" width={36} height={36} priority />
           <span>
@@ -66,9 +66,11 @@ export function CloudShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <CloudThemeToggle />
-        <Link className={styles.supportLink} href="/support">Support</Link>
-      </header>
+        <div className={styles.sidebarActions}>
+          <CloudThemeToggle />
+          <Link className={styles.supportLink} href="/support">Support</Link>
+        </div>
+      </aside>
       <div id="cloud-product-content" className={styles.content} tabIndex={-1}>
         {children}
       </div>

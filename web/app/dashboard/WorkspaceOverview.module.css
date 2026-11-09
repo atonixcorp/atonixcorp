@@ -6,15 +6,36 @@
 
 .heading {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding-bottom: 28px;
-  border-bottom: 1px solid var(--color-border);
+  gap: 28px;
+  min-height: 172px;
+  padding: 24px 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(115deg, color-mix(in srgb, var(--color-primary) 7%, var(--color-surface)), var(--color-surface) 54%);
+}
+
+.headingCopy {
+  min-width: 0;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 20px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+}
+
+.breadcrumb span[aria-current="page"] {
+  color: var(--color-primary);
 }
 
 .eyebrow {
-  margin-bottom: 8px;
+  margin-bottom: 5px;
   color: var(--color-primary);
   font-size: var(--font-size-caption);
   font-weight: 750;
@@ -22,25 +43,59 @@
 
 .heading h1 {
   color: var(--color-text-primary);
-  font-size: clamp(1.7rem, 3vw, 2.2rem);
-  font-weight: 650;
-  line-height: 1.2;
+  font-size: clamp(1.85rem, 3vw, 2.35rem);
+  font-weight: 720;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
 }
 
-.intro,
-.sectionHeading p {
+.intro {
   margin-top: 8px;
   color: var(--color-text-secondary);
   font-size: var(--font-size-body);
 }
 
+.headingActions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.sessionBadge {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sessionBadge > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sessionConnected { color: var(--color-success); }
+.sessionChecking { color: var(--color-information); }
+.sessionUnavailable { color: var(--color-warning); }
+
 .refresh {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 38px;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0 12px;
+  padding: 0 13px;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
@@ -48,10 +103,64 @@
   cursor: pointer;
   font-size: var(--font-size-label);
   font-weight: 650;
+  white-space: nowrap;
 }
 
 .refresh:hover { border-color: var(--color-primary); }
 .refresh svg { width: 16px; height: 16px; }
+
+.accountChip {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  margin-left: 4px;
+  padding: 5px 10px 5px 6px;
+  border-left: 1px solid var(--color-border);
+}
+
+.accountAvatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--color-primary);
+  font-size: var(--font-size-label);
+  font-weight: 750;
+}
+
+.accountDetails {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.accountDetails strong,
+.accountDetails small {
+  overflow: hidden;
+  max-width: 180px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountDetails strong {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-caption);
+}
+
+.accountDetails small {
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+}
+
+.sectionHeading p {
+  margin-top: 8px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+}
 
 .context {
   display: grid;
@@ -192,13 +301,20 @@
 .pageError { margin-top: 18px; color: var(--color-warning); font-size: var(--font-size-body); }
 
 @media (max-width: 900px) {
+  .heading { align-items: flex-start; flex-direction: column; }
+  .headingActions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+  .accountChip { margin-left: auto; }
   .workspaceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dataList { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 600px) {
   .page { width: min(100% - 32px, 1440px); padding-top: 24px; }
-  .heading { align-items: flex-start; flex-direction: column; }
+  .heading { min-height: 0; gap: 20px; padding: 20px; }
+  .headingActions { display: grid; grid-template-columns: auto 1fr; }
+  .accountChip { grid-column: 1 / -1; margin: 4px 0 0; padding: 10px 0 0; border-top: 1px solid var(--color-border); border-left: 0; }
+  .accountDetails strong,
+  .accountDetails small { max-width: min(70vw, 260px); }
   .context { grid-template-columns: 1fr; gap: 12px; }
   .context > p { grid-column: auto; }
   .workspaceSetup { grid-template-columns: 1fr; }

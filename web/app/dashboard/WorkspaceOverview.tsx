@@ -39,6 +39,8 @@ export default function WorkspaceOverview() {
   const router = useRouter();
   const [session, setSession] = useState<SessionState>("checking");
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [platformRole, setPlatformRole] = useState("");
   const [agent, setAgent] = useState<AgentState>("checking");
   const [agentModels, setAgentModels] = useState<AgentModel[] | null>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -63,11 +65,13 @@ export default function WorkspaceOverview() {
           return;
         }
         const payload = await response.json().catch(() => null) as {
-          user?: { email?: string };
+          user?: { email?: string; fullName?: string; platformRole?: string };
         } | null;
         if (!response.ok || !payload?.user?.email) throw new Error("Unavailable");
         if (active) {
           setEmail(payload.user.email);
+          setFullName(payload.user.fullName || "");
+          setPlatformRole(payload.user.platformRole || "");
           setSession("connected");
         }
       } catch {
@@ -159,22 +163,43 @@ export default function WorkspaceOverview() {
     }
   }
 
+  const accountInitial = (fullName || email || "A").charAt(0).toUpperCase();
+  const roleLabel = platformRole === "super_admin" ? "Platform Super Admin" : "Cloud account";
+
   return (
     <CloudShell>
       <main className={styles.page}>
         <header className={styles.heading}>
-          <div>
+          <div className={styles.headingCopy}>
+            <nav className={styles.breadcrumb} aria-label="Breadcrumb">
+              <span>AtonixCorp Cloud</span>
+              <span aria-hidden="true">/</span>
+              <span aria-current="page">Overview</span>
+            </nav>
             <p className={styles.eyebrow}>WORKSPACE OVERVIEW</p>
             <h1>Cloud overview</h1>
-            <p className={styles.intro}>A live view of configured platform connections and available resource workspaces.</p>
+            <p className={styles.intro}>Your platform connections, workspace, and cloud services at a glance.</p>
           </div>
-          <button className={styles.refresh} type="button" onClick={refresh}>
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 7v5h-5M4 17v-5h5" />
-              <path d="M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2" />
-            </svg>
-            Refresh status
-          </button>
+          <div className={styles.headingActions}>
+            <div className={`${styles.sessionBadge} ${session === "connected" ? styles.sessionConnected : session === "checking" ? styles.sessionChecking : styles.sessionUnavailable}`}>
+              <span aria-hidden="true" />
+              {session === "connected" ? "Session active" : session === "checking" ? "Checking account" : "Account unavailable"}
+            </div>
+            <button className={styles.refresh} type="button" onClick={refresh}>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 7v5h-5M4 17v-5h5" />
+                <path d="M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2" />
+              </svg>
+              Refresh
+            </button>
+            <div className={styles.accountChip} aria-label="Signed-in account">
+              <span className={styles.accountAvatar} aria-hidden="true">{accountInitial}</span>
+              <span className={styles.accountDetails}>
+                <strong>{fullName || (session === "checking" ? "Loading account" : email || "Account")}</strong>
+                <small>{session === "connected" ? roleLabel : "Signed-in account"}</small>
+              </span>
+            </div>
+          </div>
         </header>
 
         <section className={styles.context} aria-label="Current account context">
