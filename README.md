@@ -62,6 +62,37 @@ the Compose agent. To run the agent alone without Docker, see
 [agent instructions](atonixcorp-agent/README.md); its default loopback mode
 has no authentication unless `AGENT_API_TOKEN` is set.
 
+### Complete container rebuild and validation
+
+The repository has three runtime Compose stacks and the following service
+inventory:
+
+- Root platform: `db`, `api`, `database`, `networking`, `compute`, `agent`,
+  and `web`.
+- DevTools: `devtools-api`, `portal-backend`, and `portal-frontend`.
+- HPC: `postgres`, `object-storage-config` (one-shot configuration),
+  `object-storage`, and `hpc`.
+- On-demand images: analytics, CLI, container runtime, DevOps, emailserver,
+  DevTools CLI, and HPC database.
+
+Rebuild the root stack without cached layers and wait for every configured
+health check:
+
+```sh
+docker compose build --no-cache
+docker compose up -d --force-recreate --wait --wait-timeout 180
+docker compose ps
+python3 scripts/compose-smoke-test.py
+python3 scripts/compose-admin-smoke-test.py
+```
+
+The DevTools and HPC stacks require their documented environment variables.
+Use a private environment file, then run `docker compose build --no-cache`,
+`docker compose up -d --build --wait`, and each stack's HTTP readiness checks.
+The standalone Dockerfiles are buildable with their module-root contexts; they
+are not daemons and must not be reported as running services without a
+project-specific runtime configuration.
+
 ## Service registry
 
 All Compose start commands are `docker compose up -d --build` from the root.

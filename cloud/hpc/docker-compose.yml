@@ -87,7 +87,7 @@ services:
       object-storage:
         condition: service_started
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/ready"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/ready"]
       interval: 10s
       timeout: 5s
       retries: 5
