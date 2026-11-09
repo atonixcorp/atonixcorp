@@ -17,7 +17,7 @@ var ErrProviderNotFound = errors.New("storage provider resource not found")
 type VolumeType struct {
 	ID                string   `json:"id"`
 	Name              string   `json:"name"`
-	Driver            string   `json:"driver"`
+	Driver            string   `json:"-"`
 	Region            string   `json:"region"`
 	AvailabilityZones []string `json:"availability_zones"`
 	Encrypted         bool     `json:"encrypted"`

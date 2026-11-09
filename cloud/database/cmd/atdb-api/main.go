@@ -69,7 +69,7 @@ func main() {
 	}
 	defer metadataStore.Close()
 
-	var osService core.OpenStackClient
+	var osService core.DatabaseProvisioner
 	engineImages := make(map[string]string, len(databaseEngineImages))
 	for _, setting := range databaseEngineImages {
 		if value := strings.TrimSpace(os.Getenv(setting.envVar)); value != "" {
@@ -79,10 +79,6 @@ func main() {
 	networkID := strings.TrimSpace(os.Getenv("OPENSTACK_DATABASE_NETWORK_ID"))
 	securityGroupID := strings.TrimSpace(os.Getenv("OPENSTACK_DATABASE_SECURITY_GROUP_ID"))
 	controller := core.NewController(metadataStore, nil)
-	for id, plan := range plansCfg.Plans {
-		plan.FlavorID = strings.TrimSpace(os.Getenv("OPENSTACK_DATABASE_FLAVOR_" + strings.ToUpper(id)))
-		plansCfg.Plans[id] = plan
-	}
 	controller.SetPlans(plansCfg.Plans)
 
 	openStackConfig := openstack.AuthConfig{
@@ -111,14 +107,15 @@ func main() {
 		if clientErr != nil {
 			log.Printf("OpenStack provisioning disabled: %v", clientErr)
 		} else {
-			osService = openstack.NewServiceClient(client)
+			osService = openstack.NewDatabaseProvisioner(openstack.NewServiceClient(client), openstack.ProvisionerConfig{
+				EngineImages: engineImages, PlanFlavors: configuredFlavors(plansCfg.Plans), NetworkID: networkID, SecurityGroupID: securityGroupID, Region: openStackConfig.Region,
+			})
 			controller = core.NewController(metadataStore, osService)
 		}
 	} else {
 		log.Print("OpenStack provisioning is not configured; database API will run read-only")
 	}
 	controller.SetPlans(plansCfg.Plans)
-	controller.SetProvisioningConfig(engineImages, networkID, securityGroupID)
 	controller.SetDefaultRegion(envOrDefault("DATABASE_DEFAULT_REGION", envCfg.DefaultRegion))
 
 	jwtSecret := strings.TrimSpace(os.Getenv("JWT_SECRET"))
@@ -195,9 +192,9 @@ func firstConfigured(values ...string) string {
 
 func configuredFlavors(plans map[string]core.Plan) map[string]string {
 	flavors := make(map[string]string, len(plans))
-	for name, plan := range plans {
-		if plan.FlavorID != "" {
-			flavors[name] = plan.FlavorID
+	for name := range plans {
+		if flavorID := strings.TrimSpace(os.Getenv("OPENSTACK_DATABASE_FLAVOR_" + strings.ToUpper(name))); flavorID != "" {
+			flavors[name] = flavorID
 		}
 	}
 	return flavors

@@ -64,6 +64,9 @@ func (s *APIServer) CreateInstance(w http.ResponseWriter, r *http.Request) {
 
 	result, err := s.provisioning.CreateDatabase(req, idempotencyKey)
 	if err != nil {
+		log.Printf(
+			"create database tenant=%s project=%s: %v", req.TenantID, req.ProjectID, err,
+		)
 		status := http.StatusInternalServerError
 		if errors.Is(err, core.ErrProviderUnavailable) {
 			status = http.StatusServiceUnavailable
@@ -72,10 +75,14 @@ func (s *APIServer) CreateInstance(w http.ResponseWriter, r *http.Request) {
 		} else if errors.Is(err, core.ErrInvalidRequest) {
 			status = http.StatusBadRequest
 		} else if errors.Is(err, core.ErrIdempotencyConflict) {
-			writeError(w, http.StatusConflict, "IDEMPOTENCY_KEY_REUSED", core.ErrIdempotencyConflict.Error())
+			writeError(w, http.StatusConflict, "IDEMPOTENCY_KEY_REUSED", "This idempotency key was already used for a different request.")
 			return
 		}
-		writeError(w, status, "DATABASE_CREATE_FAILED", err.Error())
+		message := "The database request is invalid."
+		if status == http.StatusInternalServerError {
+			message = "The database could not be created. Contact your platform administrator with the operation ID."
+		}
+		writeError(w, status, "DATABASE_CREATE_FAILED", message)
 		return
 	}
 	writeJSON(w, http.StatusAccepted, result)

@@ -20,7 +20,7 @@ type ContainerDeployment struct {
 	Attempts          int        `gorm:"not null;default:0" json:"-"`
 	Endpoint          string     `gorm:"size:512" json:"endpoint,omitempty"`
 	ErrorCode         string     `gorm:"size:64" json:"error_code,omitempty"`
-	ErrorDetails      string     `gorm:"type:text" json:"error_details,omitempty"`
+	ErrorDetails      string     `gorm:"type:text" json:"-"`
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
 	DeletedAt         *time.Time `gorm:"index" json:"deleted_at,omitempty"`
@@ -38,6 +38,6 @@ type ContainerDeploymentEvent struct {
 	CorrelationID     string    `gorm:"size:64;index;not null" json:"correlation_id"`
 	ProvisioningJobID string    `gorm:"size:32;not null" json:"provisioning_job_id"`
 	ErrorCode         string    `gorm:"size:64" json:"error_code,omitempty"`
-	ErrorDetails      string    `gorm:"type:text" json:"error_details,omitempty"`
+	ErrorDetails      string    `gorm:"type:text" json:"-"`
 	CreatedAt         time.Time `json:"created_at"`
 }

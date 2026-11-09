@@ -8,7 +8,7 @@ import (
 	"atonixcorp/cloud/database/core"
 	"atonixcorp/cloud/database/internal"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -90,6 +90,17 @@ func (s *PostgresStore) Migrate() error {
 		ALTER TABLE db_instances ADD COLUMN IF NOT EXISTS openstack_server_status TEXT NOT NULL DEFAULT '';
 		ALTER TABLE db_instances ADD COLUMN IF NOT EXISTS openstack_server_ip TEXT NOT NULL DEFAULT '';
 		ALTER TABLE db_instances ADD COLUMN IF NOT EXISTS openstack_volume_status TEXT NOT NULL DEFAULT '';
+		ALTER TABLE db_instances ADD COLUMN IF NOT EXISTS provider_name TEXT NOT NULL DEFAULT '';
+		ALTER TABLE db_instances ADD COLUMN IF NOT EXISTS provider_metadata JSONB NOT NULL DEFAULT '{}'::jsonb;
+		UPDATE db_instances SET provider_name = 'openstack', provider_metadata = jsonb_build_object(
+			'server_id', COALESCE(openstack_server_id, ''),
+			'server_status', openstack_server_status,
+			'server_ip', openstack_server_ip,
+			'volume_id', COALESCE(openstack_volume_id, ''),
+			'volume_status', openstack_volume_status,
+			'volume_attached', openstack_volume_attached,
+			'network_id', COALESCE(NULLIF(openstack_network_id, ''), network_id)
+		) WHERE provider_name = '' AND provider_metadata = '{}'::jsonb;
 		CREATE INDEX IF NOT EXISTS idx_db_instances_tenant_project
 			ON db_instances (tenant_id, project_id, created_at DESC);
 		CREATE INDEX IF NOT EXISTS idx_db_instances_status_created
@@ -235,80 +246,36 @@ func (s *PostgresStore) CreateInstanceOperation(
 	return false, nil
 }
 
-func insertInstance(ctx context.Context, tx pgx.Tx, inst *core.DBInstance) error {
+type instanceWriter interface {
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+}
+
+func insertInstance(ctx context.Context, tx instanceWriter, inst *core.DBInstance) error {
 	if inst.CreatedAt.IsZero() {
 		inst.CreatedAt = time.Now().UTC()
 	}
 	inst.UpdatedAt = inst.CreatedAt
+	if len(inst.ProviderMetadata) == 0 {
+		inst.ProviderMetadata = []byte("{}")
+	}
 	_, err := tx.Exec(ctx, `
 		INSERT INTO db_instances (
 			id, tenant_id, project_id, name, engine, engine_version, plan, workload_profile,
-			cpu, memory_mb, storage_gb, region, status, endpoint, port, network_id,
-			openstack_server_id, openstack_server_status, openstack_server_ip,
-			openstack_volume_id, openstack_volume_status, openstack_volume_attached,
-			openstack_network_id, created_at, updated_at
+			cpu, memory_mb, storage_gb, region, status, endpoint, port,
+			provider_name, provider_metadata, created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-			$13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
+			$13, $14, $15, $16, $17, $18, $19
 		)
 		`, inst.ID, inst.TenantID, inst.ProjectID, inst.Name, inst.Engine,
 		inst.EngineVersion, inst.Plan, inst.WorkloadProfile, inst.CPU, inst.MemoryMB,
-		inst.StorageGB, inst.Region, inst.Status, inst.Endpoint, inst.Port, inst.NetworkID,
-		inst.OpenStackServerID, inst.OpenStackServerStatus, inst.OpenStackServerIP,
-		inst.OpenStackVolumeID, inst.OpenStackVolumeStatus, inst.OpenStackVolumeAttached,
-		inst.OpenStackNetworkID, inst.CreatedAt, inst.UpdatedAt)
+		inst.StorageGB, inst.Region, inst.Status, inst.Endpoint, inst.Port,
+		inst.Provider, inst.ProviderMetadata, inst.CreatedAt, inst.UpdatedAt)
 	return err
 }
 
 func (s *PostgresStore) CreateInstance(inst *core.DBInstance) error {
-	if inst.CreatedAt.IsZero() {
-		inst.CreatedAt = time.Now().UTC()
-	}
-	inst.UpdatedAt = inst.CreatedAt
-
-	_, err := s.pool.Exec(context.Background(), `
-        INSERT INTO db_instances (
-            id, tenant_id, project_id, name, engine, engine_version, plan, workload_profile,
-            cpu, memory_mb, storage_gb, region,
-            status, endpoint, port, network_id,
-            openstack_server_id, openstack_server_status, openstack_server_ip,
-            openstack_volume_id, openstack_volume_status, openstack_volume_attached, openstack_network_id,
-            created_at, updated_at
-        ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8,
-            $9, $10, $11, $12,
-            $13, $14, $15, $16,
-            $17, $18, $19, $20, $21, $22, $23,
-            $24, $25
-        )
-    `,
-		inst.ID,
-		inst.TenantID,
-		inst.ProjectID,
-		inst.Name,
-		inst.Engine,
-		inst.EngineVersion,
-		inst.Plan,
-		inst.WorkloadProfile,
-		inst.CPU,
-		inst.MemoryMB,
-		inst.StorageGB,
-		inst.Region,
-		inst.Status,
-		inst.Endpoint,
-		inst.Port,
-		inst.NetworkID,
-		inst.OpenStackServerID,
-		inst.OpenStackServerStatus,
-		inst.OpenStackServerIP,
-		inst.OpenStackVolumeID,
-		inst.OpenStackVolumeStatus,
-		inst.OpenStackVolumeAttached,
-		inst.OpenStackNetworkID,
-		inst.CreatedAt,
-		inst.UpdatedAt,
-	)
-
+	err := insertInstance(context.Background(), s.pool, inst)
 	return internal.Wrap("insert db_instance", err)
 }
 
@@ -413,15 +380,9 @@ func (s *PostgresStore) UpdateInstance(inst *core.DBInstance) error {
             status = $13,
             endpoint = $14,
             port = $15,
-            network_id = $16,
-            openstack_server_id = $17,
-            openstack_server_status = $18,
-            openstack_server_ip = $19,
-            openstack_volume_id = $20,
-            openstack_volume_status = $21,
-            openstack_volume_attached = $22,
-            openstack_network_id = $23,
-            updated_at = $24
+			provider_name = $16,
+			provider_metadata = $17,
+			updated_at = $18
         WHERE id = $1
     `,
 		inst.ID,
@@ -439,14 +400,8 @@ func (s *PostgresStore) UpdateInstance(inst *core.DBInstance) error {
 		inst.Status,
 		inst.Endpoint,
 		inst.Port,
-		inst.NetworkID,
-		inst.OpenStackServerID,
-		inst.OpenStackServerStatus,
-		inst.OpenStackServerIP,
-		inst.OpenStackVolumeID,
-		inst.OpenStackVolumeStatus,
-		inst.OpenStackVolumeAttached,
-		inst.OpenStackNetworkID,
+		inst.Provider,
+		inst.ProviderMetadata,
 		inst.UpdatedAt,
 	)
 
@@ -457,11 +412,7 @@ func (s *PostgresStore) ListInstances(tenantID, projectID string) ([]core.DBInst
 	rows, err := s.pool.Query(context.Background(), `
 		SELECT id, tenant_id, project_id, name, engine, engine_version, plan, workload_profile,
 		       cpu, memory_mb, storage_gb, region, status, COALESCE(endpoint, ''),
-		       port, network_id, COALESCE(openstack_server_id, ''),
-		       COALESCE(openstack_server_status, ''), COALESCE(openstack_server_ip, ''),
-		       COALESCE(openstack_volume_id, ''), COALESCE(openstack_volume_status, ''),
-		       openstack_volume_attached,
-		       COALESCE(openstack_network_id, ''),
+		       port, provider_name, provider_metadata,
 		       created_at, updated_at
 		FROM db_instances
 		WHERE tenant_id = $1 AND project_id = $2
@@ -489,11 +440,7 @@ func (s *PostgresStore) ListInstancesByStatus(status string, limit int) ([]core.
 	rows, err := s.pool.Query(context.Background(), `
 		SELECT id, tenant_id, project_id, name, engine, engine_version, plan, workload_profile,
 		       cpu, memory_mb, storage_gb, region, status, COALESCE(endpoint, ''),
-		       port, network_id, COALESCE(openstack_server_id, ''),
-		       COALESCE(openstack_server_status, ''), COALESCE(openstack_server_ip, ''),
-		       COALESCE(openstack_volume_id, ''), COALESCE(openstack_volume_status, ''),
-		       openstack_volume_attached,
-		       COALESCE(openstack_network_id, ''),
+		       port, provider_name, provider_metadata,
 		       created_at, updated_at
 		FROM db_instances
 		WHERE status = $1 ORDER BY created_at ASC LIMIT $2
@@ -518,11 +465,7 @@ func (s *PostgresStore) GetInstance(id string) (*core.DBInstance, error) {
         SELECT
             id, tenant_id, project_id, name, engine, engine_version, plan, workload_profile,
             cpu, memory_mb, storage_gb, region,
-            status, COALESCE(endpoint, ''), port, network_id,
-            COALESCE(openstack_server_id, ''), COALESCE(openstack_server_status, ''),
-            COALESCE(openstack_server_ip, ''), COALESCE(openstack_volume_id, ''),
-            COALESCE(openstack_volume_status, ''), openstack_volume_attached,
-            COALESCE(openstack_network_id, ''),
+			status, COALESCE(endpoint, ''), port, provider_name, provider_metadata,
             created_at, updated_at
         FROM db_instances
         WHERE id = $1
@@ -545,14 +488,8 @@ func (s *PostgresStore) GetInstance(id string) (*core.DBInstance, error) {
 		&inst.Status,
 		&inst.Endpoint,
 		&inst.Port,
-		&inst.NetworkID,
-		&inst.OpenStackServerID,
-		&inst.OpenStackServerStatus,
-		&inst.OpenStackServerIP,
-		&inst.OpenStackVolumeID,
-		&inst.OpenStackVolumeStatus,
-		&inst.OpenStackVolumeAttached,
-		&inst.OpenStackNetworkID,
+		&inst.Provider,
+		&inst.ProviderMetadata,
 		&inst.CreatedAt,
 		&inst.UpdatedAt,
 	)
@@ -572,10 +509,7 @@ func scanInstance(row rowScanner, instance *core.DBInstance) error {
 		&instance.ID, &instance.TenantID, &instance.ProjectID, &instance.Name,
 		&instance.Engine, &instance.EngineVersion, &instance.Plan, &instance.WorkloadProfile,
 		&instance.CPU, &instance.MemoryMB, &instance.StorageGB, &instance.Region,
-		&instance.Status, &instance.Endpoint, &instance.Port, &instance.NetworkID,
-		&instance.OpenStackServerID, &instance.OpenStackServerStatus, &instance.OpenStackServerIP,
-		&instance.OpenStackVolumeID, &instance.OpenStackVolumeStatus, &instance.OpenStackVolumeAttached,
-		&instance.OpenStackNetworkID,
+		&instance.Status, &instance.Endpoint, &instance.Port, &instance.Provider, &instance.ProviderMetadata,
 		&instance.CreatedAt, &instance.UpdatedAt,
 	)
 }

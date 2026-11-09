@@ -29,33 +29,19 @@ type Store interface {
 	UpdateOperation(*DatabaseOperation) error
 }
 
-type OpenStackClient interface {
-	FindServerByName(name string) (id string, found bool, err error)
-	CreateServer(name, imageID, flavorID, networkID, securityGroupID string) (string, error)
-	FindVolumeByName(name string) (id string, found bool, err error)
-	CreateVolume(name string, sizeGB int) (string, error)
-	GetServerState(serverID string) (status, ip string, err error)
-	IsVolumeAttached(serverID, volumeID string) (bool, error)
-	GetVolumeState(volumeID string) (string, error)
-	AttachVolume(serverID, volumeID string) error
-}
-
 type Controller struct {
 	store         Store
-	os            OpenStackClient
+	provider      DatabaseProvisioner
 	policy        *Policy
 	plans         map[string]Plan
-	engineImages  map[string]string
 	engineCatalog []EngineCatalogEntry
-	networkID     string
-	securityGroup string
 	defaultRegion string
 }
 
-func NewController(store Store, os OpenStackClient) *Controller {
+func NewController(store Store, provider DatabaseProvisioner) *Controller {
 	return &Controller{
-		store: store, os: os, policy: NewPolicy(), plans: map[string]Plan{},
-		engineImages: map[string]string{}, engineCatalog: []EngineCatalogEntry{
+		store: store, provider: provider, policy: NewPolicy(), plans: map[string]Plan{},
+		engineCatalog: []EngineCatalogEntry{
 			{ID: EnginePostgres, Name: "PostgreSQL", Category: "relational", Description: "Open-source relational database", Port: 5432, Versions: []string{"16", "17"}},
 			{ID: EngineMySQL, Name: "MySQL", Category: "relational", Description: "Relational database", Port: 3306, Versions: []string{"8.4"}},
 			{ID: EngineMariaDB, Name: "MariaDB", Category: "relational", Description: "Community relational database", Port: 3306, Versions: []string{"11.4"}},
@@ -101,7 +87,7 @@ func (c *Controller) PlanCatalog() map[string]PlanCatalogEntry {
 		catalog[key] = PlanCatalogEntry{
 			ID: key, CPU: plan.CPU, MemoryMB: plan.MemoryMB, StorageGB: plan.StorageGB,
 			Engines: engines, HighAvail: plan.HA,
-			Enabled: c.os != nil && c.networkID != "" && plan.FlavorID != "" && len(engines) > 0,
+			Enabled: c.planEnabled(key),
 		}
 	}
 	return catalog
@@ -112,14 +98,15 @@ func (c *Controller) EngineCatalog() []EngineCatalogEntry {
 	for i, entry := range c.engineCatalog {
 		entry.Versions = append([]string(nil), entry.Versions...)
 		entry.Enabled = false
-		if c.os == nil || c.networkID == "" {
+		if c.provider == nil {
 			catalog[i] = entry
 			continue
 		}
 		for _, version := range entry.Versions {
-			if c.engineImages[engineImageKey(entry.ID, version)] != "" {
-				entry.Enabled = true
-				break
+			for planID, plan := range c.plans {
+				if contains(plan.Engines, entry.ID) && c.provider.Supports(entry.ID, version, planID, c.defaultRegion) {
+					entry.Enabled = true
+				}
 			}
 		}
 		catalog[i] = entry
@@ -127,16 +114,22 @@ func (c *Controller) EngineCatalog() []EngineCatalogEntry {
 	return catalog
 }
 
-func engineImageKey(engine, version string) string {
-	return engine + ":" + version
-}
-
-func (c *Controller) SetProvisioningConfig(
-	engineImages map[string]string, networkID, securityGroupID string,
-) {
-	c.engineImages = engineImages
-	c.networkID = strings.TrimSpace(networkID)
-	c.securityGroup = strings.TrimSpace(securityGroupID)
+func (c *Controller) planEnabled(planID string) bool {
+	if c.provider == nil {
+		return false
+	}
+	plan := c.plans[planID]
+	for _, engine := range c.engineCatalog {
+		if !contains(plan.Engines, engine.ID) {
+			continue
+		}
+		for _, version := range engine.Versions {
+			if c.provider.Supports(engine.ID, version, planID, c.defaultRegion) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (c *Controller) SetDefaultRegion(region string) {
@@ -154,7 +147,7 @@ func (c *Controller) CreateInstance(req CreateInstanceRequest) (*DBInstance, err
 func (c *Controller) CreateInstanceOperation(
 	req CreateInstanceRequest, idempotencyKey string,
 ) (*CreateDatabaseResult, error) {
-	if c.os == nil || c.networkID == "" {
+	if c.provider == nil {
 		return nil, ErrProviderUnavailable
 	}
 	if err := c.policy.ValidateCreate(req); err != nil {
@@ -164,16 +157,12 @@ func (c *Controller) CreateInstanceOperation(
 	if !ok {
 		return nil, errors.Join(ErrInvalidRequest, fmt.Errorf("unsupported database plan %q", req.Plan))
 	}
-	if !contains(plan.Engines, req.Engine) || plan.FlavorID == "" {
+	if strings.TrimSpace(req.Region) == "" {
+		req.Region = c.defaultRegion
+	}
+	if !contains(plan.Engines, req.Engine) || !c.provider.Supports(req.Engine, req.EngineVersion, req.Plan, req.Region) {
 		return nil, errors.Join(ErrInvalidRequest, fmt.Errorf(
 			"database engine or service plan is not enabled for plan %q", req.Plan,
-		))
-	}
-	imageID := strings.TrimSpace(c.engineImages[engineImageKey(req.Engine, req.EngineVersion)])
-	if imageID == "" {
-		return nil, errors.Join(ErrInvalidRequest, fmt.Errorf(
-			"no prepared database image is configured for engine %q version %q",
-			req.Engine, req.EngineVersion,
 		))
 	}
 	if req.CPU != 0 && req.CPU != plan.CPU ||
@@ -206,9 +195,9 @@ func (c *Controller) CreateInstanceOperation(
 		Name: req.Name, Engine: req.Engine, EngineVersion: req.EngineVersion,
 		Plan: req.Plan, WorkloadProfile: req.WorkloadProfile, CPU: plan.CPU,
 		MemoryMB: plan.MemoryMB, StorageGB: plan.StorageGB, Region: req.Region,
-		Status: "provisioning", Port: port, NetworkID: c.networkID,
-		OpenStackNetworkID: c.networkID,
-		CreatedAt:          now, UpdatedAt: now,
+		Status: "provisioning", Port: port,
+		Provider:  c.provider.Name(),
+		CreatedAt: now, UpdatedAt: now,
 	}
 	operation := &DatabaseOperation{
 		ID: internal.GenerateID("op"), DatabaseID: instance.ID, TenantID: req.TenantID,
@@ -243,7 +232,7 @@ func (c *Controller) CreateInstanceOperation(
 }
 
 func (c *Controller) ProvisionInstance(id string) error {
-	if c.os == nil {
+	if c.provider == nil {
 		return ErrProviderUnavailable
 	}
 	instance, err := c.store.GetInstance(id)
@@ -264,102 +253,26 @@ func (c *Controller) ProvisionInstance(id string) error {
 	if err := c.store.UpdateOperation(operation); err != nil {
 		return fmt.Errorf("persist database operation stage: %w", err)
 	}
-	plan, ok := c.plans[instance.Plan]
-	if !ok || plan.FlavorID == "" || c.engineImages[engineImageKey(instance.Engine, instance.EngineVersion)] == "" {
-		return c.failProvision(instance, operation, errors.New("database plan or engine image is no longer configured"))
+	if _, ok := c.plans[instance.Plan]; !ok || instance.Provider != c.provider.Name() || !c.provider.Supports(instance.Engine, instance.EngineVersion, instance.Plan, instance.Region) {
+		return c.failProvision(instance, operation, ErrProviderUnavailable)
 	}
-	resourceName := instance.Name + "-" + instance.ID
-	if instance.OpenStackServerID == "" {
-		serverID, found, err := c.os.FindServerByName(resourceName)
-		if err != nil {
-			return c.retryOrFail(instance, operation, fmt.Errorf("find Nova server: %w", err))
-		}
-		if !found {
-			serverID, err = c.os.CreateServer(
-				resourceName, c.engineImages[engineImageKey(instance.Engine, instance.EngineVersion)],
-				plan.FlavorID, c.networkID, c.securityGroup,
-			)
-			if err != nil {
-				return c.retryOrFail(instance, operation, fmt.Errorf("create Nova server: %w", err))
-			}
-		}
-		instance.OpenStackServerID = serverID
+	progress, err := c.provider.Provision(instance, func(stage string) error {
+		instance.UpdatedAt = time.Now().UTC()
 		if err := c.store.UpdateInstance(instance); err != nil {
-			return fmt.Errorf("persist Nova server ID: %w", err)
+			return err
 		}
-	}
-	serverStatus, ip, err := c.os.GetServerState(instance.OpenStackServerID)
+		operation.Stage = stage
+		operation.UpdatedAt = instance.UpdatedAt
+		return c.store.UpdateOperation(operation)
+	})
 	if err != nil {
-		return c.retryOrFail(instance, operation, fmt.Errorf("check Nova server status: %w", err))
-	}
-	instance.OpenStackServerStatus = serverStatus
-	instance.OpenStackServerIP = ip
-	if serverStatus == "ERROR" {
-		return c.failProvision(instance, operation, errors.New("Nova server entered ERROR state"))
-	}
-	if serverStatus != "ACTIVE" {
-		instance.UpdatedAt = time.Now().UTC()
-		return c.store.UpdateInstance(instance)
-	}
-	operation.Stage = "PROVISIONING_STORAGE"
-	operation.UpdatedAt = time.Now().UTC()
-	if err := c.store.UpdateOperation(operation); err != nil {
-		return fmt.Errorf("persist database storage stage: %w", err)
-	}
-	if instance.OpenStackVolumeID == "" {
-		volumeName := resourceName + "-data"
-		volumeID, found, err := c.os.FindVolumeByName(volumeName)
-		if err != nil {
-			return c.retryOrFail(instance, operation, fmt.Errorf("find Cinder volume: %w", err))
+		if errors.Is(err, ErrProvisioningFailed) {
+			return c.failProvision(instance, operation, err)
 		}
-		if !found {
-			volumeID, err = c.os.CreateVolume(volumeName, instance.StorageGB)
-			if err != nil {
-				return c.retryOrFail(instance, operation, fmt.Errorf("create Cinder volume: %w", err))
-			}
-		}
-		instance.OpenStackVolumeID = volumeID
-		if err := c.store.UpdateInstance(instance); err != nil {
-			return fmt.Errorf("persist Cinder volume ID: %w", err)
-		}
+		return c.retryOrFail(instance, operation, err)
 	}
-	volumeStatus, err := c.os.GetVolumeState(instance.OpenStackVolumeID)
-	if err != nil {
-		return c.retryOrFail(instance, operation, fmt.Errorf("check Cinder volume status: %w", err))
-	}
-	instance.OpenStackVolumeStatus = volumeStatus
-	switch volumeStatus {
-	case "error":
-		return c.failProvision(instance, operation, errors.New("Cinder volume entered error state"))
-	case "available":
-	case "in-use":
-		attached, err := c.os.IsVolumeAttached(instance.OpenStackServerID, instance.OpenStackVolumeID)
-		if err != nil {
-			return c.retryOrFail(instance, operation, fmt.Errorf("check Nova volume attachment: %w", err))
-		}
-		if !attached {
-			return c.failProvision(instance, operation, errors.New("Cinder volume is in-use but not attached to the expected server"))
-		}
-		instance.OpenStackVolumeAttached = true
-	default:
-		instance.UpdatedAt = time.Now().UTC()
-		return c.store.UpdateInstance(instance)
-	}
-	if !instance.OpenStackVolumeAttached {
-		attached, err := c.os.IsVolumeAttached(instance.OpenStackServerID, instance.OpenStackVolumeID)
-		if err != nil {
-			return c.retryOrFail(instance, operation, fmt.Errorf("check Nova volume attachment: %w", err))
-		}
-		if !attached {
-			if err := c.os.AttachVolume(instance.OpenStackServerID, instance.OpenStackVolumeID); err != nil {
-				return c.retryOrFail(instance, operation, fmt.Errorf("attach Cinder volume: %w", err))
-			}
-		}
-		instance.OpenStackVolumeAttached = true
-	}
-	if ip == "" {
-		instance.UpdatedAt = time.Now().UTC()
-		return c.store.UpdateInstance(instance)
+	if !progress.InfrastructureReady {
+		return nil
 	}
 	instance.Status = "starting"
 	operation.Status = "blocked"
@@ -384,7 +297,7 @@ func (c *Controller) retryOrFail(instance *DBInstance, operation *DatabaseOperat
 		responseError.HTTPStatusCode() != 429 {
 		return c.failProvision(instance, operation, cause)
 	}
-	operation.Reason = "A provider request could not complete; the operation will retry."
+	operation.Reason = "A database infrastructure request could not complete; the operation will retry."
 	operation.UpdatedAt = time.Now().UTC()
 	if err := c.store.UpdateOperation(operation); err != nil {
 		return errors.Join(cause, fmt.Errorf("persist retryable operation failure: %w", err))
@@ -393,7 +306,7 @@ func (c *Controller) retryOrFail(instance *DBInstance, operation *DatabaseOperat
 }
 
 func (c *Controller) ProcessPendingInstances(limit int) error {
-	if c.os == nil {
+	if c.provider == nil {
 		return ErrProviderUnavailable
 	}
 	instances, err := c.store.ListInstancesByStatus("provisioning", limit)

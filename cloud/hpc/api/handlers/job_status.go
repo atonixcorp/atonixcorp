@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"atonixcorp/cloud/hpc/jobs"
@@ -26,7 +27,8 @@ func (h *JobStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	job, err := h.Service.RefreshStatus(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		log.Printf("refresh HPC job status id=%s: %v", id, err)
+		writeJobError(w, http.StatusNotFound, "JOB_STATUS_UNAVAILABLE", "The job status could not be retrieved.")
 		return
 	}
 

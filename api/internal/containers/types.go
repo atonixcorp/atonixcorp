@@ -53,7 +53,7 @@ type DeploymentSpec struct {
 	Description     string                `json:"description,omitempty"`
 	Environment     string                `json:"environment"`
 	Image           string                `json:"image"`
-	ImagePullPolicy corev1.PullPolicy     `json:"image_pull_policy,omitempty"`
+	ImagePullPolicy string                `json:"image_pull_policy,omitempty"`
 	Replicas        int32                 `json:"replicas"`
 	CPURequest      string                `json:"cpu_request"`
 	CPULimit        string                `json:"cpu_limit"`
@@ -81,7 +81,7 @@ type DeploymentResponse struct {
 	CorrelationID     string         `json:"correlation_id"`
 	ProvisioningJobID string         `json:"provisioning_job_id"`
 	ErrorCode         string         `json:"error_code,omitempty"`
-	ErrorDetails      string         `json:"error_details,omitempty"`
+	ErrorDetails      string         `json:"-"`
 	CreatedAt         string         `json:"created_at"`
 	UpdatedAt         string         `json:"updated_at"`
 }
@@ -123,11 +123,11 @@ func ValidateSpec(spec *DeploymentSpec) error {
 		return errors.New("description must not exceed 2000 characters")
 	}
 	if spec.ImagePullPolicy == "" {
-		spec.ImagePullPolicy = corev1.PullIfNotPresent
+		spec.ImagePullPolicy = "IfNotPresent"
 	}
-	if spec.ImagePullPolicy != corev1.PullAlways &&
-		spec.ImagePullPolicy != corev1.PullIfNotPresent &&
-		spec.ImagePullPolicy != corev1.PullNever {
+	if spec.ImagePullPolicy != "Always" &&
+		spec.ImagePullPolicy != "IfNotPresent" &&
+		spec.ImagePullPolicy != "Never" {
 		return errors.New("image pull policy must be Always, IfNotPresent, or Never")
 	}
 	if err := validateResourcePair("cpu", spec.CPURequest, spec.CPULimit, "10m", "16"); err != nil {

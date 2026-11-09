@@ -3,22 +3,21 @@ package jobs
 import "errors"
 
 var (
-	ErrInvalidJobSpec = errors.New("invalid job specification")
+	ErrInvalidJobSpec              = errors.New("invalid job specification")
+	ErrExecutionProfileUnavailable = errors.New("execution profile is not configured")
 )
 
 type CreateJobRequest struct {
-	TenantID   string
-	UserID     string
-	Name       string
-	Backend    string
-	Partition  string
-	Account    string
-	ScriptPath string
-	CPUs       int
-	MemoryMB   int
-	GPUs       int
-	WorkingDir string
-	Env        map[string]string
+	TenantID         string            `json:"tenant_id"`
+	UserID           string            `json:"user_id"`
+	Name             string            `json:"name"`
+	ExecutionProfile string            `json:"execution_profile"`
+	ScriptPath       string            `json:"script_path"`
+	CPUs             int               `json:"cpus"`
+	MemoryMB         int               `json:"memory_mb"`
+	GPUs             int               `json:"gpus"`
+	WorkingDir       string            `json:"working_dir"`
+	Env              map[string]string `json:"env"`
 }
 
 func ValidateCreateJob(req CreateJobRequest) error {
@@ -37,7 +36,7 @@ func ValidateCreateJob(req CreateJobRequest) error {
 	if req.MemoryMB <= 0 {
 		return ErrInvalidJobSpec
 	}
-	if req.Backend == "" {
+	if req.ExecutionProfile == "" || req.GPUs < 0 {
 		return ErrInvalidJobSpec
 	}
 	return nil

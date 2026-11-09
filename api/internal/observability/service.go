@@ -44,7 +44,7 @@ func (s *Service) markMonitored(ctx context.Context, scope Scope, resources []mo
 type Resource struct {
 	ID               string    `json:"id"`
 	ResourceType     string    `json:"resource_type"`
-	Provider         string    `json:"provider"`
+	Provider         string    `json:"-"`
 	Name             string    `json:"name"`
 	Region           string    `json:"region,omitempty"`
 	ProjectID        uint      `json:"project_id"`
@@ -57,7 +57,7 @@ type ResourceGroup struct {
 	Kind   string `json:"kind"`
 	Count  int    `json:"count"`
 	Health string `json:"health"`
-	Source string `json:"source"`
+	Source string `json:"-"`
 }
 
 type Overview struct {
@@ -75,7 +75,7 @@ type Overview struct {
 
 type Integration struct {
 	Name        string `json:"name"`
-	Provider    string `json:"provider"`
+	Provider    string `json:"-"`
 	State       string `json:"state"`
 	Description string `json:"description"`
 }
@@ -84,7 +84,7 @@ type Metric struct {
 	Name         string    `json:"name"`
 	Value        float64   `json:"value"`
 	Unit         string    `json:"unit"`
-	ResourceID   string    `json:"resource_id,omitempty"`
+	ResourceID   string    `json:"-"`
 	ResourceType string    `json:"resource_type,omitempty"`
 	ObservedAt   time.Time `json:"observed_at"`
 	TenantID     uint      `json:"-"`
@@ -92,7 +92,7 @@ type Metric struct {
 }
 
 type MetricsResponse struct {
-	ResourceID   string   `json:"resource_id"`
+	ResourceID   string   `json:"-"`
 	ResourceType string   `json:"resource_type"`
 	State        string   `json:"state"`
 	Reason       string   `json:"reason,omitempty"`
@@ -119,8 +119,8 @@ type Dashboard struct {
 
 type Event struct {
 	ID         string    `json:"id"`
-	ResourceID string    `json:"resource_id"`
-	Source     string    `json:"source"`
+	ResourceID string    `json:"-"`
+	Source     string    `json:"-"`
 	Severity   string    `json:"severity"`
 	Summary    string    `json:"summary"`
 	CreatedAt  time.Time `json:"created_at"`
@@ -234,7 +234,7 @@ func (s *Service) MetricsSummary(ctx context.Context, scope Scope) (MetricsOverv
 	if s.prometheusConfigError != nil {
 		return MetricsOverview{
 			State:   "invalid_configuration",
-			Reason:  "The configured Prometheus endpoint is invalid; correct OBSERVABILITY_PROMETHEUS_URL.",
+			Reason:  "The metrics connection is invalid; contact your platform administrator.",
 			Metrics: []Metric{},
 		}, nil
 	}
@@ -381,9 +381,9 @@ func (s *Service) Integrations(ctx context.Context, scope Scope) ([]Integration,
 		}
 	}
 	return []Integration{
-		{Name: "OpenStack Ceilometer", Provider: "openstack", State: configured("CEILOMETER_API_URL"), Description: "OpenStack service meters and resource samples; no live collection is claimed until authenticated collection is verified."},
-		{Name: "Prometheus-compatible metrics", Provider: "prometheus", State: prometheusState, Description: "Prometheus-compatible adapter queries only AtonixCorp resource-labeled metric series; credentials remain server-side."},
-		{Name: "OpenHPC / Slurm", Provider: "slurm", State: configured("OBSERVABILITY_SLURM_API_URL"), Description: "Slurm scheduler, partition, job, and node telemetry adapter."},
+		{Name: "Infrastructure metrics", Provider: "openstack", State: configured("CEILOMETER_API_URL"), Description: "Infrastructure utilization and resource samples; collection is shown as active only after verification."},
+		{Name: "Metrics collection", Provider: "prometheus", State: prometheusState, Description: "Collects AtonixCorp resource-labeled metrics; connection credentials remain server-side."},
+		{Name: "HPC telemetry", Provider: "slurm", State: configured("OBSERVABILITY_SLURM_API_URL"), Description: "HPC job, node, and scheduler telemetry."},
 		{Name: "Kubernetes metrics", Provider: "kubernetes", State: "not_configured", Description: "Runtime-specific pod metrics are not yet connected to this workspace."},
 		{Name: "Database telemetry", Provider: "database", State: "not_configured", Description: "Database service metrics are not yet exposed to the observability pipeline."},
 	}, nil
@@ -409,12 +409,12 @@ func (s *Service) Dashboards(ctx context.Context, scope Scope) ([]Dashboard, err
 	}
 	return []Dashboard{
 		{ID: "cloud-overview", Name: "Cloud Overview", Description: "Cross-platform resource health and telemetry.", ResourceKinds: []string{"compute.instance", "container.workload", "storage.volume", "database.instance", "network.network", "hpc.node"}},
-		{ID: "compute-overview", Name: "Compute Overview", Description: "Compute resources and provider-reported utilization.", ResourceKinds: []string{"compute.instance", "compute.hypervisor", "compute.node"}},
-		{ID: "network-overview", Name: "Network Overview", Description: "Network resources and provider-reported traffic.", ResourceKinds: []string{"network.network", "network.router", "network.interface", "network.load_balancer"}},
-		{ID: "storage-overview", Name: "Storage Overview", Description: "Storage inventory and provider-reported capacity.", ResourceKinds: []string{"storage.volume", "storage.object"}},
+		{ID: "compute-overview", Name: "Compute Overview", Description: "Compute resources and infrastructure utilization.", ResourceKinds: []string{"compute.instance", "compute.hypervisor", "compute.node"}},
+		{ID: "network-overview", Name: "Network Overview", Description: "Network resources and traffic.", ResourceKinds: []string{"network.network", "network.router", "network.interface", "network.load_balancer"}},
+		{ID: "storage-overview", Name: "Storage Overview", Description: "Storage inventory and capacity.", ResourceKinds: []string{"storage.volume", "storage.object"}},
 		{ID: "containers-overview", Name: "Containers Overview", Description: "Kubernetes workloads and node metrics.", ResourceKinds: []string{"container.cluster", "container.node", "container.workload"}},
 		{ID: "database-overview", Name: "Database Overview", Description: "Database service inventory and metrics.", ResourceKinds: []string{"database.instance"}},
-		{ID: "hpc-overview", Name: "HPC Overview", Description: "OpenHPC nodes, Slurm jobs, and scheduler state.", ResourceKinds: []string{"hpc.node", "hpc.job"}},
+		{ID: "hpc-overview", Name: "HPC Overview", Description: "HPC nodes, jobs, and scheduler state.", ResourceKinds: []string{"hpc.node", "hpc.job"}},
 		{ID: "gpu-training", Name: "GPU / AI Training", Description: "GPU capacity and training workload telemetry.", ResourceKinds: []string{"hpc.node", "hpc.job", "container.workload"}},
 		{ID: "security-overview", Name: "Security Overview", Description: "Security audit events and platform security telemetry.", ResourceKinds: []string{"security.event"}},
 	}, nil

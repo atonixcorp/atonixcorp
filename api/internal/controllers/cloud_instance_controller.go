@@ -99,7 +99,7 @@ func (c *CloudInstanceController) Capabilities(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id is required"})
 		return
 	}
-	provisioningEnabled, region, services, err := c.service.TenantCapabilities(
+	provisioningEnabled, _, services, err := c.service.TenantCapabilities(
 		ctx.Request.Context(), userID, uint(tenantID),
 	)
 	if err != nil {
@@ -108,7 +108,6 @@ func (c *CloudInstanceController) Capabilities(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{
 		"organization_provisioning": provisioningEnabled,
-		"region":                    region,
 		"services":                  services,
 	})
 }
@@ -300,42 +299,52 @@ func writeCloudInstanceError(ctx *gin.Context, err error) {
 	switch {
 	case errors.Is(err, cloud.ErrSecurityGroupUnavailable):
 		ctx.JSON(http.StatusServiceUnavailable, gin.H{
-			"error": "OpenStack security groups are not configured.",
+			"error": "Security groups are not available.",
 			"code":  "SECURITY_GROUPS_UNAVAILABLE",
 		})
 	case errors.Is(err, cloud.ErrProviderUnavailable):
 		ctx.JSON(http.StatusServiceUnavailable, gin.H{
-			"error": "OpenStack compute is not configured.", "code": "NOVA_UNAVAILABLE",
+			"error": "Compute services are not available.", "code": "COMPUTE_UNAVAILABLE",
 		})
 	case errors.Is(err, cloud.ErrCloudAccountNotConfigured):
 		ctx.JSON(http.StatusServiceUnavailable, gin.H{
-			"error": "An OpenStack project is not configured for this organization.",
+			"error": "This organization is not configured for cloud resources.",
 			"code":  "CLOUD_ACCOUNT_NOT_CONFIGURED",
 		})
 	case errors.Is(err, cloud.ErrAccountEncryptionUnavailable):
 		ctx.JSON(http.StatusServiceUnavailable, gin.H{
-			"error": "OpenStack account encryption is not configured.",
+			"error": "Compute services are not available.",
 			"code":  "ACCOUNT_ENCRYPTION_UNAVAILABLE",
 		})
 	case errors.Is(err, cloud.ErrProjectProvisioningDisabled):
 		ctx.JSON(http.StatusServiceUnavailable, gin.H{
-			"error": "Organization-scoped OpenStack provisioning is not enabled.",
+			"error": "Compute provisioning is not enabled for this organization.",
 			"code":  "PROJECT_PROVISIONING_DISABLED",
 		})
 	case errors.Is(err, cloud.ErrProviderRequest):
+		log.Printf(
+			"compute provider request failed request_id=%s: %v",
+			ctx.GetString("security_request_id"), err,
+		)
 		ctx.JSON(http.StatusBadGateway, gin.H{
-			"error": err.Error(), "code": "OPENSTACK_PROVIDER_REQUEST_FAILED",
+			"error": "The compute service could not complete the request.",
+			"code":  "COMPUTE_REQUEST_FAILED",
 		})
 	case errors.Is(err, cloud.ErrForbidden):
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "project access denied", "code": "FORBIDDEN"})
 	case errors.Is(err, cloud.ErrNotFound):
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "instance not found", "code": "NOT_FOUND"})
 	case errors.Is(err, cloud.ErrInvalid):
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error(), "code": "INVALID_REQUEST"})
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{
+			"error": "The compute request is invalid.", "code": "INVALID_REQUEST",
+		})
 	case errors.Is(err, cloud.ErrConflict):
-		ctx.JSON(http.StatusConflict, gin.H{"error": err.Error(), "code": "STATE_CONFLICT"})
+		ctx.JSON(http.StatusConflict, gin.H{
+			"error": "The requested operation conflicts with the current resource state.",
+			"code":  "STATE_CONFLICT",
+		})
 	default:
-		log.Printf("Nova instance request failed: %v", err)
+		log.Printf("Compute instance request failed: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "the instance request could not be completed", "code": "INSTANCE_ERROR",
 		})

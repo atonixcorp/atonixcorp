@@ -255,7 +255,7 @@ func TestScopedNeutronUsesMappedAccount(t *testing.T) {
 	defer server.Close()
 
 	backend, err := NewScopedNeutronBackend(testCloudAccountSource{account: core.CloudAccount{
-		ProjectID: "mapped-project", CredentialID: "mapped-credential",
+		ScopeID: "mapped-project", LegacyCredentialID: "mapped-credential",
 		EncryptedSecret: encryptedSecret, Region: "RegionOne",
 	}}, NeutronConfig{
 		AuthURL: server.URL + "/v3", Region: "RegionOne", Interface: "public",
@@ -280,6 +280,53 @@ func TestScopedNeutronUsesMappedAccount(t *testing.T) {
 	}
 	if inspected.ProviderID != "mapped-provider-network" || inspected.Status != "ACTIVE" {
 		t.Fatalf("unexpected mapped-project network details: %+v", inspected)
+	}
+}
+
+func TestScopedNeutronDecodesVersionedProviderCredentials(t *testing.T) {
+	key := bytes.Repeat([]byte{7}, 32)
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nonce := bytes.Repeat([]byte{3}, gcm.NonceSize())
+	payload := []byte(`{"project_id":"mapped-project","credential_id":"mapped-credential","credential_secret":"mapped-secret","region":"RegionOne"}`)
+	account := core.CloudAccount{Provider: "openstack", ScopeID: "mapped-project", CredentialVersion: 1, Region: "RegionOne", EncryptedSecret: gcm.Seal(nonce, nonce, payload, nil)}
+	for _, test := range []struct {
+		name, provider, scope string
+		version               int
+		wantError             bool
+	}{
+		{"versioned", "openstack", "mapped-project", 1, false},
+		{"foreign-provider", "test-only", "mapped-project", 1, true},
+		{"changed-scope", "openstack", "another-project", 1, true},
+		{"unknown-version", "openstack", "mapped-project", 2, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			mapped := account
+			mapped.Provider, mapped.ScopeID, mapped.CredentialVersion = test.provider, test.scope, test.version
+			backend, err := NewScopedNeutronBackend(testCloudAccountSource{account: mapped}, NeutronConfig{AuthURL: "https://keystone.example/v3"}, key)
+			if err != nil {
+				t.Fatal(err)
+			}
+			client, err := backend.clientForTenant("7")
+			if test.wantError {
+				if err == nil {
+					t.Fatal("invalid mapped account accepted")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if client.config.ApplicationCredentialID != "mapped-credential" || client.config.ApplicationCredentialSecret != "mapped-secret" || client.config.ProjectID != "mapped-project" {
+				t.Fatal("provider credential payload decoded incorrectly")
+			}
+		})
 	}
 }
 

@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export async function POST(): Promise<NextResponse> {
   return NextResponse.json(
     {
-      error: "Pricing is unavailable for this OpenStack account.",
+      error: "Pricing is currently unavailable for this project.",
       code: "PRICING_UNAVAILABLE",
       pricing_available: false,
     },

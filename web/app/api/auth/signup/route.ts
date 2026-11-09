@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
+import { isSameOriginRequest } from "@/app/shared/lib/request-security";
 
 export async function POST(request: Request): Promise<NextResponse> {
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json({ error: "Cross-origin request rejected." }, { status: 403 });
+  }
   const apiURL = process.env.API_URL;
   if (!apiURL) {
     return NextResponse.json({ error: "Account service is unavailable." }, { status: 503 });

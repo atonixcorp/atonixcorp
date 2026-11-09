@@ -3,13 +3,11 @@ export type StorageProject = { id: number; tenant_id: number; name: string; slug
 export type StorageVolumeType = {
   id: string;
   name: string;
-  driver: string;
   region: string;
   availability_zones: string[];
   encrypted: boolean;
 };
 export type StorageOverview = {
-  driver: string;
   tags: Record<string, string>;
   volumes: number;
   used_gb: number;
@@ -29,9 +27,6 @@ export type StorageVolume = {
   encrypted: boolean;
   delete_protection: boolean;
   state: string;
-  driver: string;
-  provider_id?: string;
-  provider_status?: string;
   attachments?: { id?: string; server_id?: string; device?: string }[];
   error_code?: string;
   created_at: string;

@@ -14,14 +14,15 @@ import (
 )
 
 type fakeProvider struct {
-	region      string
-	instance    ProviderInstance
-	catalog     ComputeCatalog
-	createCalls int
-	stopCalls   int
-	deleteCalls int
-	createErr   error
-	getErr      error
+	region        string
+	instance      ProviderInstance
+	catalog       ComputeCatalog
+	createRequest ProviderCreateRequest
+	createCalls   int
+	stopCalls     int
+	deleteCalls   int
+	createErr     error
+	getErr        error
 }
 
 type fakeSecurityGroupProvider struct {
@@ -49,6 +50,7 @@ func (p *fakeSecurityGroupProvider) CreateSecurityGroup(
 	return group, nil
 }
 
+func (p *fakeProvider) Name() string   { return "openstack" }
 func (p *fakeProvider) Region() string { return p.region }
 
 func (p *fakeProvider) ComputeCatalog(context.Context) (ComputeCatalog, error) {
@@ -66,6 +68,7 @@ func (p *fakeProvider) CreateInstanceForProject(
 
 func (p *fakeProvider) CreateInstance(_ context.Context, request ProviderCreateRequest) (ProviderInstance, error) {
 	p.createCalls++
+	p.createRequest = request
 	if p.createErr != nil {
 		return ProviderInstance{}, p.createErr
 	}
@@ -114,6 +117,17 @@ func TestCreateInstanceIsIdempotentAndStoresNovaReference(t *testing.T) {
 		first.Status != "PROVISIONING" || first.ProviderStatus != "BUILD" {
 		t.Fatalf("unexpected persisted provider instance: %+v", first)
 	}
+	if first.RegionResourceID != testRegionResourceID ||
+		first.ImageResourceID != testImageResourceID ||
+		first.SizeResourceID != testSizeResourceID ||
+		first.NetworkResourceID != testNetworkResourceID {
+		t.Fatalf("instance response did not retain AtonixCorp catalog IDs: %+v", first)
+	}
+	if provider.createRequest.ImageID != "provider-image-id" ||
+		provider.createRequest.SizeID != "provider-size-id" ||
+		provider.createRequest.NetworkID != "provider-network-id" {
+		t.Fatalf("provider received untranslated catalog IDs: %+v", provider.createRequest)
+	}
 	var persisted models.CloudInstance
 	if err := db.First(&persisted, "id = ?", first.ID).Error; err != nil {
 		t.Fatalf("load persisted instance: %v", err)
@@ -124,7 +138,7 @@ func TestCreateInstanceIsIdempotentAndStoresNovaReference(t *testing.T) {
 	if provider.createCalls != 1 {
 		t.Fatalf("Nova create called %d times, want 1", provider.createCalls)
 	}
-	request.ImageID = "another-image"
+	request.ImageID = "00000000000000000000000000000005"
 	if _, err := service.CreateInstance(context.Background(), 1, 1, 1, "request-key-0001", request); !errors.Is(err, ErrConflict) {
 		t.Fatalf("reused key with changed request returned %v, want ErrConflict", err)
 	}
@@ -136,9 +150,9 @@ func TestCatalogReturnsProjectScopedProviderResourcesAndRequiresMembership(t *te
 		region: "RegionOne",
 		catalog: ComputeCatalog{
 			Region:       "RegionOne",
-			Capabilities: OpenStackCapabilities{Compute: true, Image: true, Network: true},
+			Capabilities: ComputeCapabilities{Compute: true, Image: true, Network: true},
 			Images:       []CatalogImage{{ID: "image-real", Name: "Ubuntu", Status: "ACTIVE"}},
-			Flavors:      []CatalogFlavor{{ID: "flavor-real", Name: "small", VCPUs: 2, MemoryMB: 2048}},
+			Sizes:        []ComputeSize{{ID: "flavor-real", Name: "small", VCPUs: 2, MemoryMB: 2048}},
 			Networks:     []CatalogNetwork{{ID: "network-real", Name: "private", Status: "ACTIVE", AdminStateUp: true}},
 		},
 	}
@@ -147,12 +161,81 @@ func TestCatalogReturnsProjectScopedProviderResourcesAndRequiresMembership(t *te
 	if err != nil {
 		t.Fatalf("Catalog() error = %v", err)
 	}
-	if !catalog.Provisioning || catalog.Images[0].ID != "image-real" ||
-		catalog.Flavors[0].MemoryMB != 2048 || catalog.Networks[0].ID != "network-real" {
-		t.Fatalf("Catalog() = %+v, want live provider entries and enabled provisioning", catalog)
+	if !catalog.Provisioning || catalog.RegionID == "RegionOne" ||
+		catalog.Images[0].ID == "image-real" ||
+		catalog.Sizes[0].ID == "flavor-real" ||
+		catalog.Sizes[0].Name != "AX Compute 2" ||
+		catalog.Sizes[0].MemoryMB != 2048 ||
+		catalog.Networks[0].ID == "network-real" {
+		t.Fatalf("Catalog() = %+v, want mapped catalog IDs and enabled provisioning", catalog)
+	}
+	secondCatalog, err := service.Catalog(context.Background(), 1, 1, 1)
+	if err != nil {
+		t.Fatalf("second Catalog() error = %v", err)
+	}
+	if catalog.RegionID != secondCatalog.RegionID ||
+		catalog.Images[0].ID != secondCatalog.Images[0].ID ||
+		catalog.Sizes[0].ID != secondCatalog.Sizes[0].ID ||
+		catalog.Networks[0].ID != secondCatalog.Networks[0].ID {
+		t.Fatalf("catalog mappings were not stable across refreshes: first=%+v second=%+v", catalog, secondCatalog)
 	}
 	if _, err := service.Catalog(context.Background(), 2, 1, 1); !errors.Is(err, ErrForbidden) {
 		t.Fatalf("Catalog() for non-member returned %v, want ErrForbidden", err)
+	}
+	encoded, err := json.Marshal(catalog)
+	if err != nil {
+		t.Fatalf("marshal customer catalog: %v", err)
+	}
+	for _, providerID := range []string{"RegionOne", "image-real", "flavor-real", "network-real", "small"} {
+		if strings.Contains(string(encoded), providerID) {
+			t.Errorf("customer catalog exposed provider ID %q: %s", providerID, encoded)
+		}
+	}
+	var response map[string]any
+	if err := json.Unmarshal(encoded, &response); err != nil {
+		t.Fatalf("decode customer catalog: %v", err)
+	}
+	if _, ok := response["sizes"]; !ok {
+		t.Errorf("customer catalog omitted sizes: %s", encoded)
+	}
+	if _, ok := response["flavors"]; ok {
+		t.Errorf("customer catalog exposed provider terminology: %s", encoded)
+	}
+}
+
+func TestCatalogRefreshDeactivatesRemovedMappings(t *testing.T) {
+	db := newCloudTestDB(t)
+	provider := &fakeProvider{
+		region: "RegionOne",
+		catalog: ComputeCatalog{
+			Region:       "RegionOne",
+			Capabilities: ComputeCapabilities{Compute: true, Image: true, Network: true},
+			Images:       []CatalogImage{{ID: "image-real", Name: "Ubuntu", Status: "ACTIVE"}},
+			Sizes:        []ComputeSize{{ID: "flavor-real", Name: "small", VCPUs: 2, MemoryMB: 2048}},
+			Networks:     []CatalogNetwork{{ID: "network-real", Name: "private", Status: "ACTIVE", AdminStateUp: true}},
+		},
+	}
+	service := NewService(db, provider)
+	catalog, err := service.Catalog(context.Background(), 1, 1, 1)
+	if err != nil {
+		t.Fatalf("Catalog() error = %v", err)
+	}
+	provider.catalog.Networks = []CatalogNetwork{}
+	if _, err := service.Catalog(context.Background(), 1, 1, 1); err != nil {
+		t.Fatalf("Catalog() after network removal error = %v", err)
+	}
+	request := CreateInstanceRequest{
+		TenantID: 1, ProjectID: 1, Name: "stale-network-vm",
+		RegionID: catalog.RegionID, ImageID: catalog.Images[0].ID,
+		SizeID: catalog.Sizes[0].ID, NetworkID: catalog.Networks[0].ID,
+	}
+	if _, err := service.CreateInstance(
+		context.Background(), 1, 1, 1, "request-key-0015", request,
+	); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("CreateInstance() with a removed catalog mapping returned %v, want ErrInvalid", err)
+	}
+	if provider.createCalls != 0 {
+		t.Fatalf("provider was called %d times for a removed catalog mapping, want 0", provider.createCalls)
 	}
 }
 
@@ -329,6 +412,32 @@ func TestCreateInstanceRequiresProjectScopedProvider(t *testing.T) {
 	}
 }
 
+func TestCreateInstanceRejectsProviderAndCrossProjectCatalogIDs(t *testing.T) {
+	db := newCloudTestDB(t)
+	provider := &fakeProvider{region: "RegionOne"}
+	service := NewService(db, provider)
+	request := validCreateRequest()
+	request.ImageID = "provider-image-id"
+	if _, err := service.CreateInstance(context.Background(), 1, 1, 1, "request-key-0013", request); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("CreateInstance() with provider image ID returned %v, want ErrInvalid", err)
+	}
+
+	if err := db.Create(&models.Project{ID: 2, TenantID: 1, Name: "Other", Slug: "other"}).Error; err != nil {
+		t.Fatalf("create second project: %v", err)
+	}
+	if err := db.Create(&models.ProjectMembership{ProjectID: 2, UserID: 1, Role: "owner"}).Error; err != nil {
+		t.Fatalf("create second project membership: %v", err)
+	}
+	request = validCreateRequest()
+	request.ProjectID = 2
+	if _, err := service.CreateInstance(context.Background(), 1, 1, 2, "request-key-0014", request); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("CreateInstance() with another project's catalog IDs returned %v, want ErrInvalid", err)
+	}
+	if provider.createCalls != 0 {
+		t.Fatalf("provider was called %d times for invalid catalog IDs, want 0", provider.createCalls)
+	}
+}
+
 func TestInstanceLookupRequiresProjectMembership(t *testing.T) {
 	db := newCloudTestDB(t)
 	provider := &fakeProvider{region: "RegionOne"}
@@ -439,10 +548,14 @@ func TestDeleteFailedProvisioningReleasesInstanceName(t *testing.T) {
 	}
 }
 
-func TestCloudInstanceJSONExposesProviderDetailsAndKeepsIdempotencyPrivate(t *testing.T) {
+func TestCloudInstanceJSONHidesProviderDetailsAndKeepsIdempotencyPrivate(t *testing.T) {
 	encoded, err := json.Marshal(models.CloudInstance{
 		ID: "atonixcorp-id", Provider: "openstack", ProviderInstanceID: "nova-id",
 		ProviderStatus: "BUILD", PrivateIP: "10.0.0.10",
+		Region: "RegionOne", ImageID: "provider-image-id",
+		FlavorID: "provider-size-id", NetworkID: "provider-network-id",
+		RegionResourceID: testRegionResourceID, ImageResourceID: testImageResourceID,
+		SizeResourceID: testSizeResourceID, NetworkResourceID: testNetworkResourceID,
 		IdempotencyKey: "private-key", RequestHash: "private-hash",
 	})
 	if err != nil {
@@ -453,13 +566,20 @@ func TestCloudInstanceJSONExposesProviderDetailsAndKeepsIdempotencyPrivate(t *te
 		t.Fatalf("decode CloudInstance JSON: %v", err)
 	}
 	for key, expected := range map[string]any{
-		"provider_id": "nova-id", "provider_status": "BUILD", "private_ip": "10.0.0.10",
+		"private_ip": "10.0.0.10",
+		"region_id":  testRegionResourceID,
+		"image_id":   testImageResourceID,
+		"size_id":    testSizeResourceID,
+		"network_id": testNetworkResourceID,
 	} {
 		if response[key] != expected {
 			t.Errorf("CloudInstance JSON %s = %v, want %v", key, response[key], expected)
 		}
 	}
-	for _, privateField := range []string{"idempotency_key", "request_hash"} {
+	for _, privateField := range []string{
+		"provider", "provider_id", "provider_status", "region", "flavor_id",
+		"idempotency_key", "request_hash",
+	} {
 		if _, exists := response[privateField]; exists {
 			t.Errorf("CloudInstance JSON exposed private field %q: %s", privateField, encoded)
 		}
@@ -490,7 +610,7 @@ func newCloudTestDB(t *testing.T) *gorm.DB {
 	if err := db.AutoMigrate(
 		&models.Tenant{}, &models.TenantMembership{}, &models.Project{},
 		&models.ProjectMembership{}, &models.CloudAccount{}, &models.CloudInstance{},
-		&models.CloudOperation{}, &models.CloudAuditEvent{},
+		&models.ProviderCatalogResource{}, &models.CloudOperation{}, &models.CloudAuditEvent{},
 	); err != nil {
 		t.Fatalf("migrate test database: %v", err)
 	}
@@ -506,6 +626,27 @@ func newCloudTestDB(t *testing.T) *gorm.DB {
 	if err := db.Create(&models.ProjectMembership{ProjectID: 1, UserID: 1, Role: "owner"}).Error; err != nil {
 		t.Fatalf("create test project membership: %v", err)
 	}
+	mappings := []models.ProviderCatalogResource{
+		{
+			ID: testRegionResourceID, TenantID: 1, ProjectID: 1, Provider: "openstack",
+			ResourceType: "region", ProviderResourceID: "RegionOne", Active: true,
+		},
+		{
+			ID: testImageResourceID, TenantID: 1, ProjectID: 1, Provider: "openstack",
+			ResourceType: "image", ProviderResourceID: "provider-image-id", Active: true,
+		},
+		{
+			ID: testSizeResourceID, TenantID: 1, ProjectID: 1, Provider: "openstack",
+			ResourceType: "size", ProviderResourceID: "provider-size-id", Active: true,
+		},
+		{
+			ID: testNetworkResourceID, TenantID: 1, ProjectID: 1, Provider: "openstack",
+			ResourceType: "network", ProviderResourceID: "provider-network-id", Active: true,
+		},
+	}
+	if err := db.Create(&mappings).Error; err != nil {
+		t.Fatalf("seed provider catalog mappings: %v", err)
+	}
 	return db
 }
 
@@ -515,7 +656,14 @@ type unscopedProvider struct {
 
 func validCreateRequest() CreateInstanceRequest {
 	return CreateInstanceRequest{
-		TenantID: 1, ProjectID: 1, Name: "test-vm", Region: "RegionOne",
-		ImageID: "image-id", FlavorID: "flavor-id", NetworkID: "network-id",
+		TenantID: 1, ProjectID: 1, Name: "test-vm", RegionID: testRegionResourceID,
+		ImageID: testImageResourceID, SizeID: testSizeResourceID, NetworkID: testNetworkResourceID,
 	}
 }
+
+const (
+	testRegionResourceID  = "00000000000000000000000000000001"
+	testImageResourceID   = "00000000000000000000000000000002"
+	testSizeResourceID    = "00000000000000000000000000000003"
+	testNetworkResourceID = "00000000000000000000000000000004"
+)

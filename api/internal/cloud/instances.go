@@ -15,6 +15,7 @@ import (
 	"atonixcorp/api/internal/models"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var (
@@ -30,8 +31,10 @@ var (
 )
 
 var instanceNamePattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]{0,62}$`)
+var catalogResourceIDPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
 
-type Provider interface {
+type ComputeProvider interface {
+	Name() string
 	Region() string
 	GetInstance(context.Context, string) (ProviderInstance, error)
 	StartInstance(context.Context, string) error
@@ -40,19 +43,34 @@ type Provider interface {
 	DeleteInstance(context.Context, string) error
 }
 
-// ProjectScopedProvider must resolve the AtonixCorp IDs to OpenStack credentials
-// scoped to that project's cloud account before creating a server.
-type ProjectScopedProvider interface {
+type ComputeCapabilities struct {
+	Compute       bool `json:"compute"`
+	Network       bool `json:"network"`
+	Image         bool `json:"image"`
+	BlockStorage  bool `json:"blockStorage"`
+	Identity      bool `json:"identity"`
+	ObjectStorage bool `json:"objectStorage"`
+	LoadBalancer  bool `json:"loadBalancer"`
+	DNS           bool `json:"dns"`
+	KeyManagement bool `json:"keyManagement"`
+	Orchestration bool `json:"orchestration"`
+}
+
+type Provider = ComputeProvider
+
+type ProjectScopedComputeProvider interface {
 	CreateInstanceForProject(
 		context.Context, uint, uint, ProviderCreateRequest,
 	) (ProviderInstance, error)
 }
 
+type ProjectScopedProvider = ProjectScopedComputeProvider
+
 type ProviderCreateRequest struct {
 	ID        string
 	Name      string
 	ImageID   string
-	FlavorID  string
+	SizeID    string
 	NetworkID string
 	KeyName   string
 }
@@ -72,7 +90,7 @@ type CatalogImage struct {
 	MinMemoryMB int    `json:"min_memory_mb"`
 }
 
-type CatalogFlavor struct {
+type ComputeSize struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	VCPUs       int    `json:"vcpus"`
@@ -81,6 +99,8 @@ type CatalogFlavor struct {
 	EphemeralGB int    `json:"ephemeral_gb"`
 	SwapMB      int    `json:"swap_mb"`
 }
+
+type CatalogFlavor = ComputeSize
 
 type CatalogNetwork struct {
 	ID           string `json:"id"`
@@ -92,33 +112,38 @@ type CatalogNetwork struct {
 }
 
 type ComputeCatalog struct {
-	Region       string                `json:"region"`
-	Capabilities OpenStackCapabilities `json:"capabilities"`
-	Images       []CatalogImage        `json:"images"`
-	Flavors      []CatalogFlavor       `json:"flavors"`
-	Networks     []CatalogNetwork      `json:"networks"`
-	Provisioning bool                  `json:"provisioning_enabled"`
+	Region       string              `json:"-"`
+	RegionID     string              `json:"region_id"`
+	Capabilities ComputeCapabilities `json:"capabilities"`
+	Images       []CatalogImage      `json:"images"`
+	Sizes        []ComputeSize       `json:"sizes"`
+	Networks     []CatalogNetwork    `json:"networks"`
+	Provisioning bool                `json:"provisioning_enabled"`
 }
 
-type CatalogProvider interface {
+type ComputeCatalogProvider interface {
 	ComputeCatalog(context.Context) (ComputeCatalog, error)
 }
 
-type SecurityGroupProvider interface {
+type CatalogProvider = ComputeCatalogProvider
+
+type ComputeSecurityGroupProvider interface {
 	ListSecurityGroups(context.Context) ([]SecurityGroup, error)
 	CreateSecurityGroup(context.Context, string) (SecurityGroup, error)
 }
 
+type SecurityGroupProvider = ComputeSecurityGroupProvider
+
 type SecurityGroup struct {
-	ID          string              `json:"id"`
+	ID          string              `json:"-"`
 	Name        string              `json:"name"`
 	Description string              `json:"description"`
-	ProjectID   string              `json:"project_id"`
+	ProjectID   string              `json:"-"`
 	Rules       []SecurityGroupRule `json:"rules"`
 }
 
 type SecurityGroupRule struct {
-	ID             string `json:"id"`
+	ID             string `json:"-"`
 	Direction      string `json:"direction"`
 	Ethertype      string `json:"ethertype"`
 	Protocol       string `json:"protocol"`
@@ -135,24 +160,36 @@ type CreateInstanceRequest struct {
 	TenantID  uint   `json:"tenant_id"`
 	ProjectID uint   `json:"project_id"`
 	Name      string `json:"name"`
-	Region    string `json:"region"`
+	RegionID  string `json:"region_id"`
 	ImageID   string `json:"image_id"`
-	FlavorID  string `json:"flavor_id"`
+	SizeID    string `json:"size_id"`
 	NetworkID string `json:"network_id"`
 	KeyName   string `json:"key_name"`
 }
 
 type Service struct {
 	db        *gorm.DB
-	provider  Provider
+	provider  ComputeProvider
+	registry  *ComputeProviderRegistry
 	secretKey []byte
 }
 
-func NewService(db *gorm.DB, provider Provider, secretKey ...[]byte) *Service {
+func NewService(db *gorm.DB, provider ComputeProvider, secretKey ...[]byte) *Service {
 	service := &Service{db: db, provider: provider}
 	if len(secretKey) > 0 {
 		service.secretKey = secretKey[0]
 	}
+	return service
+}
+
+func NewServiceWithRegistry(
+	db *gorm.DB,
+	provider ComputeProvider,
+	registry *ComputeProviderRegistry,
+	secretKey ...[]byte,
+) *Service {
+	service := NewService(db, provider, secretKey...)
+	service.registry = registry
 	return service
 }
 
@@ -163,12 +200,12 @@ func (s *Service) Region() string {
 	return s.provider.Region()
 }
 
-func (s *Service) ProviderCapabilities() OpenStackCapabilities {
+func (s *Service) ProviderCapabilities() ComputeCapabilities {
 	provider, ok := s.provider.(interface {
-		Capabilities() OpenStackCapabilities
+		Capabilities() ComputeCapabilities
 	})
 	if !ok {
-		return OpenStackCapabilities{}
+		return ComputeCapabilities{}
 	}
 	return provider.Capabilities()
 }
@@ -186,7 +223,7 @@ func (s *Service) Catalog(
 	if err != nil {
 		return ComputeCatalog{}, err
 	}
-	catalogProvider, ok := provider.(CatalogProvider)
+	catalogProvider, ok := provider.(ComputeCatalogProvider)
 	if !ok {
 		return ComputeCatalog{}, ErrProviderUnavailable
 	}
@@ -194,9 +231,12 @@ func (s *Service) Catalog(
 	if err != nil {
 		return ComputeCatalog{}, err
 	}
+	if err := s.mapCatalogResources(ctx, provider, tenantID, projectID, &catalog); err != nil {
+		return ComputeCatalog{}, err
+	}
 	catalog.Provisioning = catalog.Capabilities.Compute &&
 		catalog.Capabilities.Image && catalog.Capabilities.Network &&
-		len(catalog.Images) > 0 && len(catalog.Flavors) > 0 && len(catalog.Networks) > 0
+		len(catalog.Images) > 0 && len(catalog.Sizes) > 0 && len(catalog.Networks) > 0
 	return catalog, nil
 }
 
@@ -213,7 +253,7 @@ func (s *Service) ListSecurityGroups(
 	if err != nil {
 		return nil, err
 	}
-	groupProvider, ok := provider.(SecurityGroupProvider)
+	groupProvider, ok := provider.(ComputeSecurityGroupProvider)
 	if !ok {
 		return nil, ErrSecurityGroupUnavailable
 	}
@@ -237,7 +277,7 @@ func (s *Service) CreateSecurityGroup(
 	if err != nil {
 		return SecurityGroup{}, err
 	}
-	groupProvider, ok := provider.(SecurityGroupProvider)
+	groupProvider, ok := provider.(ComputeSecurityGroupProvider)
 	if !ok {
 		return SecurityGroup{}, ErrSecurityGroupUnavailable
 	}
@@ -252,6 +292,178 @@ func providerComputeAvailable(provider Provider) bool {
 		ComputeAvailable() bool
 	})
 	return !ok || computeProvider.ComputeAvailable()
+}
+
+func (s *Service) mapCatalogResources(
+	ctx context.Context,
+	provider Provider,
+	tenantID, projectID uint,
+	catalog *ComputeCatalog,
+) error {
+	providerName := strings.TrimSpace(provider.Name())
+	if providerName == "" || strings.TrimSpace(catalog.Region) == "" {
+		return ErrProviderUnavailable
+	}
+
+	type catalogResource struct {
+		resourceType string
+		providerID   string
+		name         string
+		setID        func(string)
+	}
+	resources := []catalogResource{{
+		resourceType: "region",
+		providerID:   catalog.Region,
+		name:         "Primary region",
+		setID:        func(id string) { catalog.RegionID = id },
+	}}
+	for i := range catalog.Images {
+		image := &catalog.Images[i]
+		resources = append(resources, catalogResource{
+			resourceType: "image", providerID: image.ID, name: image.Name,
+			setID: func(id string) { image.ID = id },
+		})
+	}
+	sizeCounts := make(map[int]int, len(catalog.Sizes))
+	for _, size := range catalog.Sizes {
+		sizeCounts[size.VCPUs]++
+	}
+	for i := range catalog.Sizes {
+		size := &catalog.Sizes[i]
+		size.Name = fmt.Sprintf("AX Compute %d", size.VCPUs)
+		if size.VCPUs < 1 {
+			size.Name = "AX Compute Size"
+		}
+		if sizeCounts[size.VCPUs] > 1 {
+			size.Name += fmt.Sprintf(" · %d MiB RAM · %d GiB disk", size.MemoryMB, size.DiskGB)
+		}
+		resources = append(resources, catalogResource{
+			resourceType: "size", providerID: size.ID, name: size.Name,
+			setID: func(id string) { size.ID = id },
+		})
+	}
+	for i := range catalog.Networks {
+		network := &catalog.Networks[i]
+		resources = append(resources, catalogResource{
+			resourceType: "network", providerID: network.ID, name: network.Name,
+			setID: func(id string) { network.ID = id },
+		})
+	}
+
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		activeTypes := map[string]struct{}{
+			"region": {}, "image": {}, "size": {}, "network": {},
+		}
+		for resourceType := range activeTypes {
+			if err := tx.Model(&models.ProviderCatalogResource{}).
+				Where(
+					"tenant_id = ? AND project_id = ? AND provider = ? AND resource_type = ?",
+					tenantID, projectID, providerName, resourceType,
+				).Update("active", false).Error; err != nil {
+				return fmt.Errorf("deactivate stale catalog mappings: %w", err)
+			}
+		}
+		for _, resource := range resources {
+			if resource.providerID == "" {
+				return fmt.Errorf("%w: provider catalog entry is missing an identifier", ErrProviderUnavailable)
+			}
+			mapping, err := s.upsertCatalogResource(
+				tx, tenantID, projectID, providerName,
+				resource.resourceType, resource.providerID, resource.name,
+			)
+			if err != nil {
+				return err
+			}
+			resource.setID(mapping.ID)
+			if err := backfillInstanceCatalogID(
+				tx, tenantID, projectID, resource.resourceType,
+				resource.providerID, mapping.ID,
+			); err != nil {
+				return fmt.Errorf("update existing resource catalog mapping: %w", err)
+			}
+		}
+		return nil
+	})
+}
+
+func (s *Service) upsertCatalogResource(
+	tx *gorm.DB,
+	tenantID, projectID uint,
+	provider, resourceType, providerResourceID, name string,
+) (models.ProviderCatalogResource, error) {
+	id, err := newInstanceID()
+	if err != nil {
+		return models.ProviderCatalogResource{}, err
+	}
+	mapping := models.ProviderCatalogResource{
+		ID: id, TenantID: tenantID, ProjectID: projectID,
+		Provider: provider, ResourceType: resourceType,
+		ProviderResourceID: providerResourceID, Name: name, Active: true,
+	}
+	if err := tx.Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "tenant_id"}, {Name: "project_id"}, {Name: "provider"},
+			{Name: "resource_type"}, {Name: "provider_resource_id"},
+		},
+		DoUpdates: clause.AssignmentColumns([]string{"name", "active", "updated_at"}),
+	}).Create(&mapping).Error; err != nil {
+		return models.ProviderCatalogResource{}, fmt.Errorf("save catalog mapping: %w", err)
+	}
+	var persisted models.ProviderCatalogResource
+	if err := tx.Where(
+		"tenant_id = ? AND project_id = ? AND provider = ? AND resource_type = ? AND provider_resource_id = ?",
+		tenantID, projectID, provider, resourceType, providerResourceID,
+	).First(&persisted).Error; err != nil {
+		return models.ProviderCatalogResource{}, fmt.Errorf("load catalog mapping: %w", err)
+	}
+	return persisted, nil
+}
+
+func backfillInstanceCatalogID(
+	tx *gorm.DB,
+	tenantID, projectID uint,
+	resourceType, providerResourceID, catalogResourceID string,
+) error {
+	var providerColumn, resourceColumn string
+	switch resourceType {
+	case "region":
+		providerColumn, resourceColumn = "region", "region_resource_id"
+	case "image":
+		providerColumn, resourceColumn = "image_id", "image_resource_id"
+	case "size":
+		providerColumn, resourceColumn = "flavor_id", "size_resource_id"
+	case "network":
+		providerColumn, resourceColumn = "network_id", "network_resource_id"
+	default:
+		return fmt.Errorf("unsupported catalog resource type %q", resourceType)
+	}
+	return tx.Model(&models.CloudInstance{}).
+		Where(
+			"tenant_id = ? AND project_id = ? AND "+providerColumn+" = ? AND ("+resourceColumn+" = '' OR "+resourceColumn+" IS NULL)",
+			tenantID, projectID, providerResourceID,
+		).Update(resourceColumn, catalogResourceID).Error
+}
+
+func (s *Service) resolveCatalogResource(
+	ctx context.Context,
+	tenantID, projectID uint,
+	provider, resourceType, id string,
+) (models.ProviderCatalogResource, error) {
+	if !catalogResourceIDPattern.MatchString(id) {
+		return models.ProviderCatalogResource{}, fmt.Errorf("%w: invalid catalog resource", ErrInvalid)
+	}
+	var mapping models.ProviderCatalogResource
+	err := s.db.WithContext(ctx).Where(
+		"id = ? AND tenant_id = ? AND project_id = ? AND provider = ? AND resource_type = ? AND active = ?",
+		id, tenantID, projectID, provider, resourceType, true,
+	).First(&mapping).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return models.ProviderCatalogResource{}, fmt.Errorf("%w: unavailable catalog resource", ErrInvalid)
+	}
+	if err != nil {
+		return models.ProviderCatalogResource{}, err
+	}
+	return mapping, nil
 }
 
 func (s *Service) ListInstances(
@@ -310,14 +522,14 @@ func (s *Service) CreateInstance(
 	if !providerComputeAvailable(provider) {
 		return models.CloudInstance{}, ErrProviderUnavailable
 	}
-	projectProvider, ok := provider.(ProjectScopedProvider)
+	projectProvider, ok := provider.(ProjectScopedComputeProvider)
 	if !ok {
 		return models.CloudInstance{}, ErrProjectProvisioningDisabled
 	}
 	if len(idempotencyKey) < 8 || len(idempotencyKey) > 128 {
 		return models.CloudInstance{}, fmt.Errorf("%w: an Idempotency-Key between 8 and 128 characters is required", ErrInvalid)
 	}
-	if err := normalizeCreateRequest(&request, provider.Region()); err != nil {
+	if err := normalizeCreateRequest(&request); err != nil {
 		return models.CloudInstance{}, err
 	}
 
@@ -352,14 +564,36 @@ func (s *Service) CreateInstance(
 		return models.CloudInstance{}, err
 	}
 
+	region, err := s.resolveCatalogResource(ctx, tenantID, projectID, provider.Name(), "region", request.RegionID)
+	if err != nil {
+		return models.CloudInstance{}, err
+	}
+	if region.ProviderResourceID != provider.Region() {
+		return models.CloudInstance{}, fmt.Errorf("%w: selected region is unavailable", ErrInvalid)
+	}
+	image, err := s.resolveCatalogResource(ctx, tenantID, projectID, provider.Name(), "image", request.ImageID)
+	if err != nil {
+		return models.CloudInstance{}, err
+	}
+	size, err := s.resolveCatalogResource(ctx, tenantID, projectID, provider.Name(), "size", request.SizeID)
+	if err != nil {
+		return models.CloudInstance{}, err
+	}
+	network, err := s.resolveCatalogResource(ctx, tenantID, projectID, provider.Name(), "network", request.NetworkID)
+	if err != nil {
+		return models.CloudInstance{}, err
+	}
+
 	id, err := newInstanceID()
 	if err != nil {
 		return models.CloudInstance{}, err
 	}
 	instance := models.CloudInstance{
 		ID: id, TenantID: tenantID, ProjectID: projectID, OwnerID: userID,
-		Name: request.Name, Provider: "openstack", Region: request.Region,
-		ImageID: request.ImageID, FlavorID: request.FlavorID, NetworkID: request.NetworkID,
+		Name: request.Name, Provider: provider.Name(), Region: region.ProviderResourceID,
+		ImageID: image.ProviderResourceID, FlavorID: size.ProviderResourceID, NetworkID: network.ProviderResourceID,
+		RegionResourceID: request.RegionID, ImageResourceID: request.ImageID,
+		SizeResourceID: request.SizeID, NetworkResourceID: request.NetworkID,
 		KeyName: request.KeyName, Status: "PROVISIONING",
 		IdempotencyKey: idempotencyKey, RequestHash: hash,
 	}
@@ -400,8 +634,8 @@ func (s *Service) CreateInstance(
 	}
 	providerInstance, err := projectProvider.CreateInstanceForProject(
 		ctx, tenantID, projectID, ProviderCreateRequest{
-			ID: instance.ID, Name: request.Name, ImageID: request.ImageID,
-			FlavorID: request.FlavorID, NetworkID: request.NetworkID, KeyName: request.KeyName,
+			ID: instance.ID, Name: request.Name, ImageID: image.ProviderResourceID,
+			SizeID: size.ProviderResourceID, NetworkID: network.ProviderResourceID, KeyName: request.KeyName,
 		})
 	if err != nil {
 		stateErr := s.db.WithContext(ctx).Model(&instance).Updates(map[string]any{
@@ -418,9 +652,9 @@ func (s *Service) CreateInstance(
 	}
 	if providerInstance.ID == "" {
 		stateErr := s.db.WithContext(ctx).Model(&instance).Updates(map[string]any{
-			"status": "ERROR", "error_code": "PROVIDER_RESPONSE_INVALID",
+			"status": "ERROR", "error_code": "COMPUTE_RESPONSE_INVALID",
 		}).Error
-		operationErr := s.completeOperation(ctx, &operation, "FAILED", "PROVIDER_RESPONSE_INVALID", "failed")
+		operationErr := s.completeOperation(ctx, &operation, "FAILED", "COMPUTE_RESPONSE_INVALID", "failed")
 		if stateErr != nil {
 			return models.CloudInstance{}, fmt.Errorf("Nova omitted the server ID and provisioning state could not be saved: %w", stateErr)
 		}
@@ -554,7 +788,7 @@ func (s *Service) OperateInstance(
 		err = provider.RebootInstance(ctx, instance.ProviderInstanceID)
 	}
 	if err != nil {
-		if operationErr := s.completeOperation(ctx, &operation, "FAILED", "PROVIDER_REQUEST_FAILED", "failed"); operationErr != nil {
+		if operationErr := s.completeOperation(ctx, &operation, "FAILED", "COMPUTE_REQUEST_FAILED", "failed"); operationErr != nil {
 			return models.CloudInstance{}, fmt.Errorf("%w: %s server; record operation failure: %v", ErrProviderRequest, action, operationErr)
 		}
 		if errors.Is(err, ErrProviderUnavailable) {
@@ -592,7 +826,7 @@ func (s *Service) DeleteInstance(ctx context.Context, userID uint, id string) er
 			return fmt.Errorf("create cloud operation record: %w", err)
 		}
 		if err := provider.DeleteInstance(ctx, instance.ProviderInstanceID); err != nil {
-			if operationErr := s.completeOperation(ctx, &operation, "FAILED", "PROVIDER_REQUEST_FAILED", "failed"); operationErr != nil {
+			if operationErr := s.completeOperation(ctx, &operation, "FAILED", "COMPUTE_REQUEST_FAILED", "failed"); operationErr != nil {
 				return fmt.Errorf("%w: delete server; record operation failure: %v", ErrProviderRequest, operationErr)
 			}
 			if errors.Is(err, ErrProviderUnavailable) {
@@ -649,7 +883,7 @@ func (s *Service) refreshInstance(
 			markDeleted(instance)
 		} else {
 			instance.Status = "ERROR"
-			instance.ErrorCode = "PROVIDER_RESOURCE_NOT_FOUND"
+			instance.ErrorCode = "RESOURCE_NOT_FOUND"
 		}
 		if saveErr := s.db.WithContext(ctx).Model(instance).Updates(map[string]any{
 			"status": instance.Status, "error_code": instance.ErrorCode, "deleted_at": instance.DeletedAt,
@@ -705,27 +939,21 @@ func (s *Service) authorizeProject(
 	return nil
 }
 
-func normalizeCreateRequest(request *CreateInstanceRequest, region string) error {
+func normalizeCreateRequest(request *CreateInstanceRequest) error {
 	request.Name = strings.TrimSpace(request.Name)
-	request.Region = strings.TrimSpace(request.Region)
+	request.RegionID = strings.TrimSpace(request.RegionID)
 	request.ImageID = strings.TrimSpace(request.ImageID)
-	request.FlavorID = strings.TrimSpace(request.FlavorID)
+	request.SizeID = strings.TrimSpace(request.SizeID)
 	request.NetworkID = strings.TrimSpace(request.NetworkID)
 	request.KeyName = strings.TrimSpace(request.KeyName)
 	if !instanceNamePattern.MatchString(request.Name) {
 		return fmt.Errorf("%w: name must use 1-63 letters, numbers, dots, underscores, or hyphens", ErrInvalid)
 	}
-	if request.ImageID == "" || request.FlavorID == "" || request.NetworkID == "" {
-		return fmt.Errorf("%w: image, flavor, and network are required", ErrInvalid)
-	}
-	if region == "" {
-		return fmt.Errorf("%w: the configured Nova region is unavailable", ErrInvalid)
-	}
-	if request.Region == "" {
-		request.Region = region
-	}
-	if request.Region != region {
-		return fmt.Errorf("%w: requested region is not configured", ErrInvalid)
+	if !catalogResourceIDPattern.MatchString(request.RegionID) ||
+		!catalogResourceIDPattern.MatchString(request.ImageID) ||
+		!catalogResourceIDPattern.MatchString(request.SizeID) ||
+		!catalogResourceIDPattern.MatchString(request.NetworkID) {
+		return fmt.Errorf("%w: region, image, size, and network must be selected from the current catalog", ErrInvalid)
 	}
 	if len(request.KeyName) > 255 {
 		return fmt.Errorf("%w: key name is too long", ErrInvalid)

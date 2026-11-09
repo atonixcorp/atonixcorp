@@ -53,10 +53,6 @@ func main() {
 		"mariadb:11.4": os.Getenv("OPENSTACK_DATABASE_IMAGE_MARIADB_11_4"),
 		"redis:7":      os.Getenv("OPENSTACK_DATABASE_IMAGE_REDIS_7"),
 	}
-	for id, plan := range plans.Plans {
-		plan.FlavorID = strings.TrimSpace(os.Getenv("OPENSTACK_DATABASE_FLAVOR_" + strings.ToUpper(id)))
-		plans.Plans[id] = plan
-	}
 	osConfig := openstack.AuthConfig{
 		AuthURL:                     os.Getenv("OPENSTACK_AUTH_URL"),
 		ApplicationCredentialID:     os.Getenv("OPENSTACK_APPLICATION_CREDENTIAL_ID"),
@@ -81,11 +77,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("configure OpenStack database provider: %v", err)
 	}
-	controller := core.NewController(metadataStore, openstack.NewServiceClient(client))
+	flavors := make(map[string]string, len(plans.Plans))
+	for id := range plans.Plans {
+		flavors[id] = strings.TrimSpace(os.Getenv("OPENSTACK_DATABASE_FLAVOR_" + strings.ToUpper(id)))
+	}
+	provider := openstack.NewDatabaseProvisioner(openstack.NewServiceClient(client), openstack.ProvisionerConfig{
+		EngineImages: engineImages, PlanFlavors: flavors, NetworkID: osConfig.DatabaseNetwork, SecurityGroupID: osConfig.SecurityGroupID, Region: osConfig.Region,
+	})
+	controller := core.NewController(metadataStore, provider)
 	controller.SetPlans(plans.Plans)
-	controller.SetProvisioningConfig(
-		engineImages, osConfig.DatabaseNetwork, osConfig.SecurityGroupID,
-	)
 	controller.SetDefaultRegion(envOrDefault("DATABASE_DEFAULT_REGION", env.DefaultRegion))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

@@ -5,14 +5,12 @@ import type {
   ComputeSSHKey,
 } from "./types";
 
-type NovaCloudInstance = {
+type CloudInstanceResponse = {
   id: string;
-  provider_id: string;
-  provider_status: string;
   name: string;
-  region: string;
+  region_id: string;
   image_id: string;
-  flavor_id: string;
+  size_id: string;
   network_id: string;
   key_name?: string;
   status: string;
@@ -22,12 +20,12 @@ type NovaCloudInstance = {
   updated_at: string;
 };
 
-type OpenStackCatalogResponse = {
-  region: string;
+type ComputeCatalogResponse = {
+  region_id: string;
   provisioning_enabled: boolean;
   capabilities: { compute: boolean; image: boolean; network: boolean };
   images: Array<{ id: string; name: string; status: string; min_disk_gb: number; min_memory_mb: number }>;
-  flavors: Array<{
+  sizes: Array<{
     id: string;
     name: string;
     vcpus: number;
@@ -48,13 +46,13 @@ type OpenStackCatalogResponse = {
 
 export type ComputeTenant = { id: number; name: string };
 export type ComputeProject = { id: number; tenant_id: number; name: string };
-export type NovaCreateRequest = {
+export type CreateInstanceRequest = {
   tenant_id: number;
   project_id: number;
   name: string;
-  region: string;
+  region_id: string;
   image_id: string;
-  flavor_id: string;
+  size_id: string;
   network_id: string;
   key_name?: string;
 };
@@ -76,7 +74,9 @@ async function requestJSON<T>(path: string, init?: RequestInit): Promise<T> {
     const error = payload && typeof payload === "object" && "error" in payload
       ? payload.error
       : undefined;
-    throw new Error(error || `Compute request failed (${response.status}).`);
+    const requestError = new Error(error || `Compute request failed (${response.status}).`) as Error & { status: number };
+    requestError.status = response.status;
+    throw requestError;
   }
   if (payload === null) {
     throw new Error("The Compute API returned an empty response.");
@@ -86,7 +86,7 @@ async function requestJSON<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function getCatalog(tenantID: number, projectID: number): Promise<ComputeCatalog> {
   const query = new URLSearchParams({ tenant_id: String(tenantID), project_id: String(projectID) });
-  const live = await requestJSON<OpenStackCatalogResponse>(`/api/compute/catalog?${query}`);
+  const live = await requestJSON<ComputeCatalogResponse>(`/api/compute/catalog?${query}`);
   const available = Boolean(
     live.provisioning_enabled && live.capabilities.compute &&
     live.capabilities.image && live.capabilities.network,
@@ -95,35 +95,34 @@ export async function getCatalog(tenantID: number, projectID: number): Promise<C
     provisioning_enabled: available,
     pricing_available: false,
     compute_types: live.capabilities.compute
-      ? [{ id: "openstack", name: "OpenStack", description: "Provider-backed virtual machine" }]
+      ? [{ id: "virtual-machine", name: "Virtual machine", description: "General-purpose virtual machine" }]
       : [],
-    regions: live.region ? [{
-      id: live.region,
-      name: live.region,
-      country: "OpenStack",
+    regions: live.region_id ? [{
+      id: live.region_id,
+      name: "Primary region",
       available,
-      capacity_status: available ? "provider_catalog_available" : "provider_capabilities_unavailable",
+      capacity_status: available ? "available" : "unavailable",
     }] : [],
     images: live.images.map((image) => ({
       id: image.id,
-      name: image.name || image.id,
+      name: image.name || "Unnamed image",
       status: image.status,
       min_disk_gb: image.min_disk_gb,
       min_memory_mb: image.min_memory_mb,
       available: image.status === "ACTIVE",
     })),
-    plans: live.flavors.map((flavor) => ({
-      id: flavor.id,
-      name: flavor.name || flavor.id,
-      family: "OpenStack flavors",
-      compute_type: "openstack",
-      region: live.region,
-      vcpus: flavor.vcpus,
-      memory_mb: flavor.memory_mb,
+    plans: live.sizes.map((size) => ({
+      id: size.id,
+      name: size.name || "Standard size",
+      family: "General purpose",
+      compute_type: "virtual-machine",
+      region: live.region_id,
+      vcpus: size.vcpus,
+      memory_mb: size.memory_mb,
       gpu_count: undefined,
-      boot_disk_gb: flavor.disk_gb,
-      ephemeral_disk_gb: flavor.ephemeral_gb,
-      swap_mb: flavor.swap_mb,
+      boot_disk_gb: size.disk_gb,
+      ephemeral_disk_gb: size.ephemeral_gb,
+      swap_mb: size.swap_mb,
       hourly_price: null,
       monthly_price: null,
       currency: "",
@@ -131,8 +130,8 @@ export async function getCatalog(tenantID: number, projectID: number): Promise<C
     })),
     networks: live.networks.map((network) => ({
       id: network.id,
-      name: network.name || network.id,
-      region: live.region,
+      name: network.name || "Virtual network",
+      region: live.region_id,
       status: network.status,
       shared: network.shared,
       external: network.external,
@@ -161,7 +160,7 @@ export async function getSecurityCatalog(): Promise<{
 }
 
 export function getInstance(instanceId: string): Promise<ComputeInstance> {
-  return requestJSON<NovaCloudInstance>(
+  return requestJSON<CloudInstanceResponse>(
     `/api/compute/instances/${encodeURIComponent(instanceId)}`,
   ).then(toComputeInstance);
 }
@@ -174,13 +173,12 @@ export function getInstances(
     tenant_id: String(tenantID),
     project_id: String(projectID),
   });
-  return requestJSON<NovaCloudInstance[]>(`/api/compute/instances?${query}`)
+  return requestJSON<CloudInstanceResponse[]>(`/api/compute/instances?${query}`)
     .then((instances) => instances.map(toComputeInstance));
 }
 
-export function getNovaCapabilities(tenantID: number): Promise<{
+export function getComputeCapabilities(tenantID: number): Promise<{
   organization_provisioning: boolean;
-  region: string;
   services: {
     compute: boolean;
     network: boolean;
@@ -196,7 +194,6 @@ export function getNovaCapabilities(tenantID: number): Promise<{
 }> {
   return requestJSON<{
     organization_provisioning: boolean;
-    region: string;
     services: {
       compute: boolean;
       network: boolean;
@@ -212,11 +209,11 @@ export function getNovaCapabilities(tenantID: number): Promise<{
   }>(`/api/compute/instances/capabilities?tenant_id=${tenantID}`);
 }
 
-export function createNovaInstance(
-  request: NovaCreateRequest,
+export function createInstance(
+  request: CreateInstanceRequest,
   idempotencyKey: string,
 ): Promise<ComputeInstance> {
-  return requestJSON<NovaCloudInstance>("/api/compute/instances", {
+  return requestJSON<CloudInstanceResponse>("/api/compute/instances", {
     method: "POST",
     headers: { "Idempotency-Key": idempotencyKey },
     body: JSON.stringify(request),
@@ -227,7 +224,7 @@ export function operateInstance(
   instanceID: string,
   action: "start" | "stop" | "reboot",
 ): Promise<ComputeInstance> {
-  return requestJSON<NovaCloudInstance>(
+  return requestJSON<CloudInstanceResponse>(
     `/api/compute/instances/${encodeURIComponent(instanceID)}?action=${action}`,
     { method: "POST" },
   ).then(toComputeInstance);
@@ -239,21 +236,19 @@ export function deleteInstance(instanceID: string): Promise<{ status: string }> 
   });
 }
 
-function toComputeInstance(instance: NovaCloudInstance): ComputeInstance {
+function toComputeInstance(instance: CloudInstanceResponse): ComputeInstance {
   const status = normalizeInstanceStatus(instance.status);
   return {
     id: instance.id,
-    provider_id: instance.provider_id,
-    provider_status: instance.provider_status,
     deployment_id: instance.id,
     name: instance.name,
     hostname: instance.name,
     label: instance.name,
-    region: instance.region,
-    compute_type: "openstack",
-    plan_id: instance.flavor_id,
+    region: "Primary region",
+    compute_type: "virtual-machine",
+    plan_id: instance.size_id,
     image_id: instance.image_id,
-    authentication_method: instance.key_name ? "ssh-key" : "provider-default",
+    authentication_method: instance.key_name ? "ssh-key" : "default",
     network_id: instance.network_id,
     ssh_key_ids: instance.key_name ? [instance.key_name] : [],
     public_ipv4: Boolean(instance.public_ip),

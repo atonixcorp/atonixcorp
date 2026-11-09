@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"atonixcorp/api/internal/models"
+
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs"
@@ -30,18 +32,7 @@ type OpenStackConfig struct {
 	AllowInsecureHTTP           bool
 }
 
-type OpenStackCapabilities struct {
-	Compute       bool `json:"compute"`
-	Network       bool `json:"network"`
-	Image         bool `json:"image"`
-	BlockStorage  bool `json:"blockStorage"`
-	Identity      bool `json:"identity"`
-	ObjectStorage bool `json:"objectStorage"`
-	LoadBalancer  bool `json:"loadBalancer"`
-	DNS           bool `json:"dns"`
-	KeyManagement bool `json:"keyManagement"`
-	Orchestration bool `json:"orchestration"`
-}
+type OpenStackCapabilities = ComputeCapabilities
 
 type OpenStackProvider struct {
 	Provider                 *gophercloud.ProviderClient
@@ -51,7 +42,7 @@ type OpenStackProvider struct {
 	region                   string
 	projectID                string
 	allowProjectProvisioning bool
-	capabilities             OpenStackCapabilities
+	capabilities             ComputeCapabilities
 }
 
 type openStackImage struct {
@@ -217,23 +208,78 @@ func NewOpenStackProvider(ctx context.Context, cfg OpenStackConfig) (*OpenStackP
 	}, nil
 }
 
-type CloudAccountCredentials struct {
+type OpenStackAccountCredentials struct {
 	ProjectID        string `json:"project_id"`
 	CredentialID     string `json:"credential_id"`
 	CredentialSecret string `json:"credential_secret"`
 	Region           string `json:"region"`
 }
 
+func (account OpenStackAccountCredentials) ProviderName() string { return "openstack" }
+func (account OpenStackAccountCredentials) ScopeID() string {
+	return strings.TrimSpace(account.ProjectID)
+}
+func (account OpenStackAccountCredentials) RegionName() string {
+	return strings.TrimSpace(account.Region)
+}
+func (account OpenStackAccountCredentials) Validate() error {
+	if account.ScopeID() == "" || strings.TrimSpace(account.CredentialID) == "" || strings.TrimSpace(account.CredentialSecret) == "" ||
+		len(account.ScopeID()) > 255 || len(account.CredentialID) > 255 || len(account.RegionName()) > 64 {
+		return ErrInvalid
+	}
+	return nil
+}
+func (account OpenStackAccountCredentials) Encode() ([]byte, error) {
+	if err := account.Validate(); err != nil {
+		return nil, err
+	}
+	account.ProjectID = account.ScopeID()
+	account.Region = account.RegionName()
+	account.CredentialID = strings.TrimSpace(account.CredentialID)
+	return json.Marshal(account)
+}
+
+func (p *OpenStackProvider) DecodeStoredAccount(record models.CloudAccount, plaintext []byte) (CloudAccountCredentials, error) {
+	if record.Provider != "" && record.Provider != p.Name() {
+		return nil, ErrInvalid
+	}
+	var account OpenStackAccountCredentials
+	switch record.CredentialVersion {
+	case 0:
+		account = OpenStackAccountCredentials{ProjectID: record.ScopeID, CredentialID: record.CredentialID, CredentialSecret: string(plaintext), Region: record.Region}
+	case 1:
+		if err := json.Unmarshal(plaintext, &account); err != nil {
+			return nil, ErrInvalid
+		}
+	default:
+		return nil, ErrInvalid
+	}
+	if err := account.Validate(); err != nil {
+		return nil, err
+	}
+	if account.ScopeID() != record.ScopeID || account.RegionName() != record.Region {
+		return nil, ErrInvalid
+	}
+	return account, nil
+}
+
 func (p *OpenStackProvider) ForAccount(
 	ctx context.Context, account CloudAccountCredentials,
 ) (Provider, error) {
+	credential, ok := account.(OpenStackAccountCredentials)
+	if !ok {
+		return nil, ErrInvalid
+	}
+	if err := credential.Validate(); err != nil {
+		return nil, err
+	}
 	config := p.config
-	config.ApplicationCredentialID = account.CredentialID
-	config.ApplicationCredentialSecret = account.CredentialSecret
-	config.ProjectID = account.ProjectID
+	config.ApplicationCredentialID = strings.TrimSpace(credential.CredentialID)
+	config.ApplicationCredentialSecret = credential.CredentialSecret
+	config.ProjectID = credential.ScopeID()
 	config.AllowProjectProvisioning = true
-	if account.Region != "" {
-		config.Region = account.Region
+	if credential.RegionName() != "" {
+		config.Region = credential.RegionName()
 	}
 	return NewOpenStackProvider(ctx, config)
 }
@@ -309,8 +355,8 @@ func verifyCredentialProject(ctx context.Context, cfg OpenStackConfig, token str
 
 func openStackCapabilities(
 	catalog []openStackCatalogService, region, interfaceName string,
-) OpenStackCapabilities {
-	var capabilities OpenStackCapabilities
+) ComputeCapabilities {
+	var capabilities ComputeCapabilities
 	for _, service := range catalog {
 		available := false
 		for _, endpoint := range service.Endpoints {
@@ -386,11 +432,15 @@ func (p *OpenStackProvider) Region() string {
 	return p.region
 }
 
+func (p *OpenStackProvider) Name() string {
+	return "openstack"
+}
+
 func (p *OpenStackProvider) ProjectProvisioningEnabled() bool {
 	return p.allowProjectProvisioning && p.projectID != "" && p.capabilities.Compute
 }
 
-func (p *OpenStackProvider) Capabilities() OpenStackCapabilities {
+func (p *OpenStackProvider) Capabilities() ComputeCapabilities {
 	return p.capabilities
 }
 
@@ -401,7 +451,7 @@ func (p *OpenStackProvider) ComputeAvailable() bool {
 func (p *OpenStackProvider) ComputeCatalog(ctx context.Context) (ComputeCatalog, error) {
 	catalog := ComputeCatalog{
 		Region: p.region, Capabilities: p.capabilities,
-		Images: []CatalogImage{}, Flavors: []CatalogFlavor{}, Networks: []CatalogNetwork{},
+		Images: []CatalogImage{}, Sizes: []ComputeSize{}, Networks: []CatalogNetwork{},
 	}
 	if p.Provider == nil || p.Compute == nil {
 		return catalog, ErrProviderUnavailable
@@ -454,7 +504,7 @@ func (p *OpenStackProvider) ComputeCatalog(ctx context.Context) (ComputeCatalog,
 				continue
 			}
 			swapMB, _ := strconv.Atoi(flavor.Swap)
-			catalog.Flavors = append(catalog.Flavors, CatalogFlavor{
+			catalog.Sizes = append(catalog.Sizes, ComputeSize{
 				ID: flavor.ID, Name: flavor.Name, VCPUs: flavor.VCPUs, MemoryMB: flavor.RAM,
 				DiskGB: flavor.Disk, EphemeralGB: flavor.Ephemeral, SwapMB: swapMB,
 			})
@@ -648,7 +698,7 @@ func (p *OpenStackProvider) CreateInstanceForProject(
 		CreateOptsBuilder: servers.CreateOpts{
 			Name:      request.Name,
 			ImageRef:  request.ImageID,
-			FlavorRef: request.FlavorID,
+			FlavorRef: request.SizeID,
 			Networks:  []servers.Network{{UUID: request.NetworkID}},
 			Metadata: map[string]string{
 				"atonixcorp_instance_id":          request.ID,

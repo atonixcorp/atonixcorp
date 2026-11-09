@@ -54,7 +54,7 @@ type VolumeResponse struct {
 }
 
 type Overview struct {
-	Driver      string `json:"driver"`
+	Driver      string `json:"-"`
 	Volumes     int64  `json:"volumes"`
 	UsedGB      int64  `json:"used_gb"`
 	QuotaGB     int64  `json:"quota_gb"`
@@ -292,11 +292,12 @@ func (s *Service) reconcileVolume(ctx context.Context, volume *models.StorageVol
 }
 
 func (s *Service) reconcileVolumeWithDrivers(ctx context.Context, volume *models.StorageVolume, drivers map[string]BlockDriver) error {
-	if volume.Driver != "openstack-cinder" || volume.ProviderID == "" || volume.State == "DELETED" {
+	if volume.ProviderID == "" || volume.State == "DELETED" {
 		return nil
 	}
 	originalState := volume.State
-	driver := drivers[volume.ProviderProjectID]
+	driverKey := volume.Driver + "\x00" + volume.ProviderProjectID
+	driver := drivers[driverKey]
 	if driver == nil {
 		var err error
 		driver, err = s.driverForVolume(ctx, *volume)
@@ -304,7 +305,7 @@ func (s *Service) reconcileVolumeWithDrivers(ctx context.Context, volume *models
 			return err
 		}
 		if drivers != nil {
-			drivers[volume.ProviderProjectID] = driver
+			drivers[driverKey] = driver
 		}
 	}
 	provider, err := driver.InspectVolume(ctx, volume.ProviderID)
@@ -622,7 +623,7 @@ func (s *Service) failOperation(
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		status := "FAILED"
 		updates := map[string]any{
-			"status": status, "error_code": "DRIVER_FAILURE", "attempts": current.Attempts,
+			"status": status, "error_code": "STORAGE_OPERATION_FAILED", "attempts": current.Attempts,
 		}
 		if retry {
 			updates = map[string]any{"status": "PENDING", "error_code": "", "attempts": current.Attempts}
@@ -639,7 +640,7 @@ func (s *Service) failOperation(
 				state = "AVAILABLE"
 			}
 			if err := tx.Model(&volume).Updates(map[string]any{
-				"state": state, "error_code": "DRIVER_FAILURE",
+				"state": state, "error_code": "STORAGE_OPERATION_FAILED",
 			}).Error; err != nil {
 				return err
 			}

@@ -45,6 +45,7 @@ func migrate(db *gorm.DB) {
 		&models.Project{},
 		&models.ProjectMembership{},
 		&models.CloudAccount{},
+		&models.ProviderCatalogResource{},
 		&models.CloudInstance{},
 		&models.CloudOperation{},
 		&models.CloudAuditEvent{},

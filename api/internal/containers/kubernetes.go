@@ -175,7 +175,7 @@ func (k *KubernetesProvisioner) Create(
 	container := corev1.Container{
 		Name:            "application",
 		Image:           spec.Image,
-		ImagePullPolicy: spec.ImagePullPolicy,
+		ImagePullPolicy: corev1.PullPolicy(spec.ImagePullPolicy),
 		Ports:           containerPorts,
 		Env:             environment,
 		VolumeMounts:    volumeMounts,

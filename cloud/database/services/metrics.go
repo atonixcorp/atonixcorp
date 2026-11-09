@@ -8,12 +8,12 @@ import (
 )
 
 type MetricsService struct {
-	store core.Store
-	os    core.OpenStackClient
+	store    core.Store
+	provider core.DatabaseProvisioner
 }
 
-func NewMetricsService(store core.Store, os core.OpenStackClient) *MetricsService {
-	return &MetricsService{store, os}
+func NewMetricsService(store core.Store, provider core.DatabaseProvisioner) *MetricsService {
+	return &MetricsService{store, provider}
 }
 
 // CollectInstanceMetrics gathers metrics from OpenStack and DB instance.

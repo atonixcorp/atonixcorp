@@ -63,6 +63,27 @@ provider-level quota and security boundary.
 
 ## Current capability boundary
 
+The domain controller depends on `core.DatabaseProvisioner`, not Nova/Cinder
+client methods. Engine/version/plan/region availability is resolved through
+the provisioner's capability check. The OpenStack adapter privately selects
+appliance images, flavors, networks, and security groups and checkpoints
+resource IDs in opaque provider metadata. OpenStack is the only adapter wired
+into the database executables; the test-only provisioner is not a supported
+cloud provider.
+
+Existing metadata is migrated non-destructively into private JSONB state.
+The migration preserves legacy columns but new writes do not maintain those
+columns for old binaries. Back up metadata and validate upgrade/rollback before
+deployment. The isolated-schema PostgreSQL test can be run from this module:
+
+```sh
+DATABASE_TEST_DSN='<isolated PostgreSQL DSN>' go test ./store -run TestPostgresProviderMetadataMigrationAndRoundTrip -v
+```
+
+This test is skipped without a test DSN. On the current host it compiled but
+was not run against PostgreSQL. Domain and adapter recovery tests passed;
+live OpenStack provisioning and production readiness are not claimed.
+
 Provisioning requests require an `Idempotency-Key`. The database row,
 operation, initial lifecycle event, outbox entry, and scoped idempotency key
 are persisted together. Replaying a key with the same request returns the
@@ -79,7 +100,7 @@ state as proof that a database is ready for connections. Selecting the
 OpenHPC workload profile is outside the scope of this OpenStack integration;
 OpenHPC is not provisioned or enabled by these changes.
 
-Database inventory responses expose the provider-returned Nova server ID,
-server status and fixed IP, plus the Cinder volume ID, status, attachment
-state, and configured network ID. These fields describe infrastructure
-resources only; a `starting` database is not a healthy database endpoint.
+Database inventory responses expose the AtonixCorp database ID, service
+status, and connection endpoint when available. Infrastructure resource IDs,
+provider status, attachment state, and network mappings remain internal to the
+database service. A `starting` database is not a healthy database endpoint.

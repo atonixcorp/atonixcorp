@@ -41,10 +41,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
     result.cookies.set("atonixcorp_session", payload.token, {
       httpOnly: true,
-      secure: !(
-        process.env.NODE_ENV === "development" &&
-        process.env.AUTH_COOKIE_SECURE?.toLowerCase() === "false"
-      ),
+      secure: process.env.NODE_ENV !== "development" ||
+        process.env.AUTH_COOKIE_SECURE?.toLowerCase() === "true",
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24,

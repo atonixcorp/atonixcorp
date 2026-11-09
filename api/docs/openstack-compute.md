@@ -13,7 +13,7 @@ Set these values in the root `.env` file:
 - `OPENSTACK_REGION` (defaults to `RegionOne`)
 - `OPENSTACK_INTERFACE` (`public`, `internal`, or `admin`; defaults to `public`)
 - `OPENSTACK_ACCOUNT_ENCRYPTION_KEY`: base64-encoded 32-byte key used to
-  encrypt organization-scoped application credential secrets at rest
+  encrypt organization-scoped provider credential payloads at rest
 - `OPENSTACK_ACCOUNT_MANAGEMENT_TOKEN`: a separate random token of at least
   32 characters for operator-only account enrollment
 - `OPENSTACK_ACCOUNT_MANAGEMENT_TRUSTED_PROXY_CIDRS`: optional comma-separated
@@ -56,7 +56,7 @@ loopback peers and should only be used for isolated development.
 The API authenticates with the supplied application credential and verifies
 that its Keystone token is scoped to the supplied project and that Nova is
 available in the selected region/interface before persisting the mapping.
-Credential secrets are AES-GCM encrypted in the database and never returned
+Credential payloads are AES-GCM encrypted in the database and never returned
 by the API. A Keystone project can be mapped to only one AtonixCorp
 organization. The account-management token is not an AtonixCorp customer
 session and must only be used by trusted operators.
@@ -84,10 +84,10 @@ resources.
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/v1/cloud/catalog?tenant_id={id}&project_id={id}` | Return project-authorized Glance images, Nova flavors, Neutron networks, and provider capabilities |
+| `GET` | `/api/v1/cloud/catalog?tenant_id={id}&project_id={id}` | Return project-authorized images, instance sizes, networks, and service capabilities |
 | `GET` | `/api/v1/cloud/security-groups?tenant_id={id}&project_id={id}` | List Neutron security groups and rules in the organization's mapped OpenStack project |
 | `POST` | `/api/v1/cloud/security-groups?tenant_id={id}&project_id={id}` | Create a mapped-project security group with a restricted TCP 443 test rule |
-| `GET` | `/api/v1/cloud/instances/capabilities?tenant_id={id}` | Return region and service capabilities discovered for that organization's account |
+| `GET` | `/api/v1/cloud/instances/capabilities?tenant_id={id}` | Return service capabilities discovered for that organization's account |
 | `GET` | `/api/v1/cloud/instances?tenant_id={id}&project_id={id}` | List mapped AtonixCorp instances in an authorized project |
 | `POST` | `/api/v1/cloud/instances` | Request an instance; requires an `Idempotency-Key` |
 | `GET` | `/api/v1/cloud/instances/{id}` | Get an instance after checking stored ownership |
@@ -99,23 +99,39 @@ resources.
 | `GET` | `/api/v1/cloud/operations/{id}` | Get an operation after checking project membership |
 
 The catalog endpoint authorizes both tenant and project membership, resolves
-the organization's encrypted OpenStack account, and reads actual image, flavor,
-and network records from the configured Glance, Nova, and Neutron endpoints.
+the organization's configured infrastructure account, and reads its live
+image, size, and network catalog. Provider identifiers are translated to
+persistent AtonixCorp catalog IDs scoped to the tenant, project, provider, and
+resource type. The response exposes `region_id`, `images`, `sizes`, and
+`networks` using those AtonixCorp IDs. IDs remain stable across catalog
+refreshes, and provider IDs are never sent back by the customer UI.
 Provider errors are returned as errors; the API does not substitute sample
-rows. Flavor metadata includes vCPU, RAM, root disk, ephemeral disk, and swap.
-The web deploy flow submits selected provider IDs and an idempotency key to
-instance creation. No AtonixCorp plan-to-flavor mapping or pricing is inferred;
-pricing is explicitly unavailable and does not block provider tests.
+rows. Size metadata includes vCPU, RAM, root disk, ephemeral disk, and swap.
+No AtonixCorp plan or pricing is inferred; pricing is explicitly unavailable.
 
-Instance creation accepts `tenant_id`, `project_id`, `name`, `image_id`,
-`flavor_id`, `network_id`, and optional `region` and `key_name`. The provider
-ID and raw provider status are returned separately from the AtonixCorp ID and
-normalized platform status. Fixed and floating IPs are reported from Nova's
-address metadata. Existing OpenStack servers are not automatically imported.
+The compute service depends on provider-neutral compute, catalog, and
+project-scoped provisioning interfaces. A startup registry resolves
+account-scoped provider factories by their stable provider name. OpenStack is
+the only compute adapter registered today. Credentials implement a generic
+interface, with OpenStack fields and validation in `OpenStackAccountCredentials`.
+Legacy secret-only records remain readable; new records encrypt the complete
+credential payload. The enrollment endpoint above remains an explicit
+OpenStack operator integration. These changes do not establish another working
+provider or a completed multi-provider platform.
+
+Instance creation accepts `tenant_id`, `project_id`, `name`, `region_id`,
+`image_id`, `size_id`, `network_id`, and optional `key_name`. Catalog IDs are
+resolved only within the authenticated tenant/project/provider scope, then
+translated to provider IDs inside the service before provisioning. Instance
+responses expose the AtonixCorp resource ID and catalog IDs, along with
+normalized platform status; provider instance IDs, provider type, and raw
+provider status remain internal. Fixed and floating IPs are reported from the
+provider's address metadata. Existing infrastructure instances are not
+automatically imported.
 
 Nova lifecycle statuses are normalized for the platform API (for example,
-`ACTIVE` becomes `RUNNING` and `SHUTOFF` becomes `STOPPED`). The raw Nova status
-and provider resource ID are also returned for compute instance details.
+`ACTIVE` becomes `RUNNING` and `SHUTOFF` becomes `STOPPED`). Raw provider
+statuses and resource IDs are retained internally for reconciliation.
 
 Compute create, lifecycle, and delete requests now persist operation records
 and append-only audit events. Create/start/stop/reboot/delete operations remain
@@ -125,7 +141,8 @@ normalized outcomes. The reconciler runs every 30 seconds when the OpenStack
 provider is configured.
 
 Security group reads and creation use the organization's mapped OpenStack
-credentials and project, and return provider IDs and rules. The initial test
+credentials and project. Customer responses omit provider IDs and expose only
+group names and rules. The initial test
 creation only allows inbound TCP 443 from `192.0.2.0/24`, a documentation-only
 range; it does not expose a service to ordinary public clients. Security group
 changes are not yet durable AtonixCorp operations and are not attached to
@@ -133,13 +150,13 @@ instances automatically.
 
 ## Current implementation boundary
 
-The main API supports organization-scoped compute account mappings and Nova
-instance list, get, create, delete, start, stop, and reboot operations, along
-with live project-scoped image, flavor, and network catalogs. Service
+The main API supports organization-scoped compute account mappings and instance
+list, get, create, delete, start, stop, and reboot operations, along with live
+project-scoped image, size, and network catalogs. Service
 availability is derived from the Keystone catalog for the configured region
 and interface. Compute subscription quotas, AtonixCorp billing/pricing,
 resize/rebuild, and administrative controls are not yet implemented. Storage
 uses organization-scoped Cinder credentials for mapped accounts. The separate
-networking service still uses its configured provider project rather than the
-organization account mapping, and its durable operations, reconciliation,
+networking service decodes the same organization account mapping through its
+Neutron adapter, including legacy and versioned credentials. Its durable operations, reconciliation,
 quotas, and audit support remain outstanding.

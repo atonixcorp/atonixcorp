@@ -208,14 +208,14 @@ func (s *PostgresStore) AuthorizeProject(userID, tenantID, projectID string) (bo
 func (s *PostgresStore) GetCloudAccountForTenant(tenantID string) (CloudAccount, error) {
 	var account CloudAccount
 	err := s.db.QueryRow(`
-		SELECT open_stack_project_id, credential_id, encrypted_secret, region
+		SELECT provider, open_stack_project_id, credential_version, credential_id, encrypted_secret, region
 		FROM cloud_accounts
 		WHERE tenant_id = $1
 	`, tenantID).Scan(
-		&account.ProjectID, &account.CredentialID, &account.EncryptedSecret, &account.Region,
+		&account.Provider, &account.ScopeID, &account.CredentialVersion, &account.LegacyCredentialID, &account.EncryptedSecret, &account.Region,
 	)
 	if err != nil {
-		return CloudAccount{}, fmt.Errorf("load mapped OpenStack account: %w", err)
+		return CloudAccount{}, fmt.Errorf("load mapped cloud account: %w", err)
 	}
 	return account, nil
 }

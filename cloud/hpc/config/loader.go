@@ -19,8 +19,9 @@ type HPCConfig struct {
 	} `yaml:"auth"`
 
 	Scheduler struct {
-		DefaultBackend string `yaml:"default_backend"`
-		Slurm          struct {
+		ExecutionProfiles map[string]ExecutionProfile `yaml:"execution_profiles"`
+		DefaultBackend    string                      `yaml:"default_backend"`
+		Slurm             struct {
 			Enabled bool `yaml:"enabled"`
 		} `yaml:"slurm"`
 		K8s struct {
@@ -57,6 +58,12 @@ type HPCConfig struct {
 		DiscoveryInterval string `yaml:"discovery_interval"`
 		HealthInterval    string `yaml:"health_interval"`
 	} `yaml:"cluster"`
+}
+
+type ExecutionProfile struct {
+	Backend   string `yaml:"backend"`
+	Partition string `yaml:"partition"`
+	Account   string `yaml:"account"`
 }
 
 func Load(path string) (*HPCConfig, error) {

@@ -92,7 +92,7 @@ export default function ComputeInstanceDetailsPage() {
   return (
     <div className="compute-page">
       <header className="compute-page-heading">
-        <div><p className="compute-eyebrow"><Link href="/compute/instances">COMPUTE / INSTANCES</Link> / {instance.id}</p><h1>{instance.name}</h1><p>AtonixCorp ID {instance.id} · OpenStack ID {instance.provider_id || "pending"} · {instance.region}</p></div>
+        <div><p className="compute-eyebrow"><Link href="/compute/instances">COMPUTE / INSTANCES</Link> / {instance.id}</p><h1>{instance.name}</h1><p>{instance.region ? "Primary region" : "Not assigned"}</p></div>
         <div className="compute-detail-actions">
           <span className={`compute-instance-status ${instance.status}`}>{instance.status}</span>
           <button className="compute-secondary-button" type="button" disabled={Boolean(operation) || instance.status !== "stopped"} onClick={() => void operate("start")}>{operation === "start" ? "Starting…" : "Start"}</button>
@@ -105,9 +105,9 @@ export default function ComputeInstanceDetailsPage() {
       <section className="compute-card compute-timeline-card" aria-live="polite">
         <header className="compute-table-toolbar">
           <div>
-            <h2>Live provider state</h2>
-            <p>Platform status: {instance.status} · OpenStack status: {instance.provider_status || "not reported"}</p>
-            <p>Instance data refreshes from the provider while the resource is in transition.</p>
+            <h2>Instance status</h2>
+            <p>{instance.status}</p>
+            <p>Status refreshes automatically while the instance is changing.</p>
           </div>
         </header>
       </section>
@@ -117,10 +117,9 @@ export default function ComputeInstanceDetailsPage() {
       <section className="compute-card compute-detail-overview">
         <h2>Instance information</h2>
         <dl>
-          <div><dt>AtonixCorp ID</dt><dd>{instance.id}</dd></div><div><dt>OpenStack provider ID</dt><dd>{instance.provider_id || "Pending"}</dd></div>
-          <div><dt>Platform status</dt><dd>{instance.status}</dd></div><div><dt>OpenStack provider status</dt><dd>{instance.provider_status || "Pending"}</dd></div>
-          <div><dt>Region</dt><dd>{instance.region}</dd></div><div><dt>Image ID</dt><dd>{instance.image_id}</dd></div>
-          <div><dt>Flavor ID</dt><dd>{instance.plan_id}</dd></div><div><dt>Network ID</dt><dd>{instance.network_id || "Not assigned"}</dd></div>
+          <div><dt>Resource ID</dt><dd>{instance.id}</dd></div>
+          <div><dt>Status</dt><dd>{instance.status}</dd></div>
+          <div><dt>Region</dt><dd>{instance.region}</dd></div>
           <div><dt>Floating IP</dt><dd>{instance.public_ip || "Not assigned"}</dd></div><div><dt>Fixed IP</dt><dd>{instance.private_ip || "Not assigned"}</dd></div>
           <div><dt>Created</dt><dd>{new Date(instance.created_at).toLocaleString()}</dd></div>
         </dl>

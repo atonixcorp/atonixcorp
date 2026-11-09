@@ -291,11 +291,9 @@ export default function StoragePage() {
         </header>
 
         <div className="storage-environment"><span aria-hidden="true">i</span>
-          {overview?.driver === "local-file"
-            ? "Local development storage driver. Volumes are sparse backing files in the API container’s persistent data volume; they are not attachable compute block devices and do not provide at-rest encryption."
-            : overview?.driver === "openstack-cinder"
-              ? "OpenStack Cinder block storage. Actual attachment to compute instances and snapshot, backup, object, and file-share workflows are not yet connected."
-              : "Storage provisioning is unavailable until a storage backend is configured."}
+          {overview
+            ? "Volumes are provided by the storage service for this project. Attachment to compute instances and snapshot, backup, object, and file-share workflows are not yet connected."
+            : "Storage provisioning is unavailable until a storage service is configured."}
         </div>
 
         <nav className="storage-tabs" aria-label="Storage resources">
@@ -316,7 +314,7 @@ export default function StoragePage() {
             <section className="storage-metrics" aria-label="Storage summary">
               <article><span>Provisioned capacity</span><strong>{overview ? formatBytes(overview.used_gb) : "—"}</strong><small>{overview ? `${formatBytes(overview.quota_gb)} project quota` : "Loading quota"}</small></article>
               <article><span>Volumes</span><strong>{overview?.volumes ?? "—"}</strong><small>{overview ? `${overview.volume_quota} volume limit` : "Project resources"}</small></article>
-              <article><span>Storage driver</span><strong>{overview?.driver ?? "—"}</strong><small>Selected workspace backend</small></article>
+              <article><span>Storage service</span><strong>{overview ? "Block storage" : "—"}</strong><small>Selected project resources</small></article>
             </section>
             <section className="storage-table-panel">
               <div className="storage-panel-heading">
@@ -330,10 +328,10 @@ export default function StoragePage() {
                     <thead><tr><th>Name</th><th>Status</th><th>Capacity</th><th>Type</th><th>Protection</th><th>Created</th><th><span className="storage-visually-hidden">Actions</span></th></tr></thead>
                     <tbody>{volumes.map((volume) => (
                       <tr key={volume.id}>
-                        <td><strong>{volume.name}</strong><small>{volume.description || volume.id.slice(0, 12)}</small>{volume.driver === "openstack-cinder" && volume.provider_id && <small>Cinder ID: {volume.provider_id}</small>}</td>
-                        <td><span className={`storage-status ${volume.state.toLowerCase()}`}>{volume.state}</span>{volume.provider_status && <small>Cinder: {volume.provider_status}</small>}</td>
+                        <td><strong>{volume.name}</strong><small>{volume.description || volume.id.slice(0, 12)}</small></td>
+                        <td><span className={`storage-status ${volume.state.toLowerCase()}`}>{volume.state}</span></td>
                         <td>{formatBytes(volume.size_gb)}</td>
-                        <td>{volume.storage_class}<small>Zone: {volume.availability_zone || "—"}</small>{volume.attachments?.map((attachment, index) => <small key={`${attachment.id ?? attachment.server_id ?? "attachment"}-${index}`}>Attached: {attachment.server_id || "unknown server"}{attachment.device ? ` (${attachment.device})` : ""}</small>)}</td>
+                        <td>{volume.storage_class}</td>
                         <td>{volume.delete_protection ? "Delete protected" : "Unprotected"}</td>
                         <td>{new Date(volume.created_at).toLocaleDateString()}</td>
                         <td>{!volume.delete_protection && volume.state === "AVAILABLE" && <button className="storage-delete-button" type="button" onClick={() => void handleDelete(volume)}>Delete</button>}</td>

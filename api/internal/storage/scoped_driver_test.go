@@ -25,12 +25,47 @@ type testAccounts struct {
 	calls    int
 }
 
+func TestBlockDriverRegistryRegistersStaticAndScopedDrivers(t *testing.T) {
+	registry := NewBlockDriverRegistry()
+	local := &scopedTestDriver{name: "local-file"}
+	if err := registry.Register(local); err != nil {
+		t.Fatalf("register local driver: %v", err)
+	}
+	if err := registry.Register(local); !errors.Is(err, ErrDriverNameConflict) {
+		t.Fatalf("duplicate driver error = %v, want ErrDriverNameConflict", err)
+	}
+	if err := registry.RegisterFactory(NewCinderDriverFactory()); err != nil {
+		t.Fatalf("register Cinder factory: %v", err)
+	}
+	if registry.DefaultFactoryName() != "openstack-cinder" {
+		t.Fatalf("default scoped driver = %q, want openstack-cinder", registry.DefaultFactoryName())
+	}
+	if _, err := registry.Driver("unknown"); !errors.Is(err, ErrDriverUnavailable) {
+		t.Fatalf("unknown driver error = %v, want ErrDriverUnavailable", err)
+	}
+	if _, err := NewScopedDriversWithRegistry(
+		&testAccounts{}, registry, "local-file",
+	); err != nil {
+		t.Fatalf("create scoped drivers from registry: %v", err)
+	}
+	if _, err := NewScopedDrivers(
+		&testAccounts{}, &scopedTestDriver{name: "openstack-cinder"}, CinderConfig{},
+	); !errors.Is(err, ErrDriverNameConflict) {
+		t.Fatalf("conflicting driver registration error = %v, want ErrDriverNameConflict", err)
+	}
+}
+
 func TestScopedCinderUsesTenantTokenAndEndpoint(t *testing.T) {
 	accounts := &testAccounts{accounts: map[uint]cloud.CloudAccountCredentials{
-		1: {ProjectID: "project-one", CredentialID: "cred-one", CredentialSecret: "secret-one", Region: "region"},
-		2: {ProjectID: "project-two", CredentialID: "cred-two", CredentialSecret: "secret-two", Region: "region"},
+		1: cloud.OpenStackAccountCredentials{ProjectID: "project-one", CredentialID: "cred-one", CredentialSecret: "secret-one", Region: "region"},
+		2: cloud.OpenStackAccountCredentials{ProjectID: "project-two", CredentialID: "cred-two", CredentialSecret: "secret-two", Region: "region"},
 	}}
-	resolver := NewScopedDrivers(accounts, nil, CinderConfig{AuthURL: "https://keystone.example/v3", Interface: "public", VolumeTypeIDs: []string{"fast"}})
+	resolver, err := NewScopedDrivers(accounts, nil, CinderConfig{
+		AuthURL: "https://keystone.example/v3", Interface: "public", VolumeTypeIDs: []string{"fast"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	seen := map[string]bool{}
 	resolver.newCinder = func(cfg CinderConfig) (BlockDriver, error) {
 		driver, err := NewCinderDriver(cfg)
@@ -98,7 +133,7 @@ func TestMappedAccountCreateWorkerUsesEncryptedCredentials(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, item := range []any{
-		&models.CloudAccount{TenantID: 1, OpenStackProjectID: "tenant-project", CredentialID: "tenant-credential", EncryptedSecret: secret, Region: "region"},
+		&models.CloudAccount{TenantID: 1, ScopeID: "tenant-project", CredentialID: "tenant-credential", EncryptedSecret: secret, Region: "region"},
 		&models.TenantMembership{TenantID: 1, UserID: 1, Role: "owner"},
 		&models.Project{ID: 1, TenantID: 1, Name: "project", Slug: "project"},
 		&models.ProjectMembership{ProjectID: 1, UserID: 1, Role: "owner"},
@@ -107,9 +142,12 @@ func TestMappedAccountCreateWorkerUsesEncryptedCredentials(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	accounts := cloud.NewService(db, nil, key)
+	accounts := cloud.NewService(db, &cloud.OpenStackProvider{}, key)
 	local := &scopedTestDriver{name: "local-file"}
-	resolver := NewScopedDrivers(accounts, local, CinderConfig{})
+	resolver, err := NewScopedDrivers(accounts, local, CinderConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	provider := &scopedTestDriver{name: "openstack-cinder", volume: ProviderVolume{ID: "provider-id", Status: "available", SizeGB: 12}}
 	resolver.newCinder = func(cfg CinderConfig) (BlockDriver, error) {
 		if cfg.ProjectID != "tenant-project" || cfg.ApplicationCredentialID != "tenant-credential" || cfg.ApplicationCredentialSecret != "tenant-secret" {
@@ -145,11 +183,11 @@ func TestMappedAccountCreateWorkerUsesEncryptedCredentials(t *testing.T) {
 func (a *testAccounts) StorageAccountCredentials(_ context.Context, tenant uint) (cloud.CloudAccountCredentials, error) {
 	a.calls++
 	if a.err != nil {
-		return cloud.CloudAccountCredentials{}, a.err
+		return nil, a.err
 	}
 	account, ok := a.accounts[tenant]
 	if !ok {
-		return cloud.CloudAccountCredentials{}, cloud.ErrCloudAccountNotConfigured
+		return nil, cloud.ErrCloudAccountNotConfigured
 	}
 	return account, nil
 }
@@ -180,11 +218,16 @@ func (d *scopedTestDriver) DeleteVolume(context.Context, models.StorageVolume) (
 func TestScopedDriversFailClosedAndPinProject(t *testing.T) {
 	ctx := context.Background()
 	accounts := &testAccounts{accounts: map[uint]cloud.CloudAccountCredentials{
-		1: {ProjectID: "project-one", CredentialID: "cred-one", CredentialSecret: "secret-one", Region: "region-one"},
-		2: {ProjectID: "project-two", CredentialID: "cred-two", CredentialSecret: "secret-two", Region: "region-two"},
+		1: cloud.OpenStackAccountCredentials{ProjectID: "project-one", CredentialID: "cred-one", CredentialSecret: "secret-one", Region: "region-one"},
+		2: cloud.OpenStackAccountCredentials{ProjectID: "project-two", CredentialID: "cred-two", CredentialSecret: "secret-two", Region: "region-two"},
 	}}
 	local := &scopedTestDriver{name: "local-file"}
-	resolver := NewScopedDrivers(accounts, local, CinderConfig{ProjectID: "shared-project", Username: "shared-user", Password: "shared-password"})
+	resolver, err := NewScopedDrivers(accounts, local, CinderConfig{
+		ProjectID: "shared-project", Username: "shared-user", Password: "shared-password",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	resolver.newCinder = func(cfg CinderConfig) (BlockDriver, error) {
 		if cfg.ProjectID == "shared-project" || cfg.Username != "" || cfg.Password != "" {
 			t.Fatal("shared credentials reached tenant driver")
@@ -240,8 +283,11 @@ func TestScopedVolumeReadReconcilesAndAuthorizes(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	accounts := &testAccounts{accounts: map[uint]cloud.CloudAccountCredentials{1: {ProjectID: "project-one", CredentialID: "cred", CredentialSecret: "secret"}}}
-	resolver := NewScopedDrivers(accounts, nil, CinderConfig{})
+	accounts := &testAccounts{accounts: map[uint]cloud.CloudAccountCredentials{1: cloud.OpenStackAccountCredentials{ProjectID: "project-one", CredentialID: "cred", CredentialSecret: "secret"}}}
+	resolver, err := NewScopedDrivers(accounts, nil, CinderConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	provider := &scopedTestDriver{name: "openstack-cinder", volume: ProviderVolume{ID: "cinder-id", Status: "in-use", SizeGB: 20, AvailabilityZone: "zone-a", Attachments: []models.StorageAttachment{{ID: "attachment", ServerID: "server", Device: "/dev/vdb"}}}}
 	resolver.newCinder = func(CinderConfig) (BlockDriver, error) { return provider, nil }
 	service := NewService(db, nil)

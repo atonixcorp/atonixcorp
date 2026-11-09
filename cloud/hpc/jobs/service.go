@@ -8,7 +8,35 @@ import (
 )
 
 type BackendSelector interface {
-	SelectBackend(tenantID, partition string) (scheduler.Scheduler, string, error)
+	SelectBackend(tenantID, executionProfile string) (ExecutionTarget, error)
+}
+
+type ExecutionTarget struct {
+	Scheduler scheduler.Scheduler
+	Backend   string
+	Partition string
+	Account   string
+}
+
+type ProfileSelector struct{ profiles map[string]ExecutionTarget }
+
+func NewProfileSelector(profiles map[string]ExecutionTarget) *ProfileSelector {
+	copyOfProfiles := make(map[string]ExecutionTarget, len(profiles))
+	for name, target := range profiles {
+		copyOfProfiles[name] = target
+	}
+	return &ProfileSelector{profiles: copyOfProfiles}
+}
+
+func (selector *ProfileSelector) SelectBackend(tenantID, profile string) (ExecutionTarget, error) {
+	if selector == nil || tenantID == "" {
+		return ExecutionTarget{}, ErrExecutionProfileUnavailable
+	}
+	target, ok := selector.profiles[profile]
+	if !ok || target.Scheduler == nil || target.Backend == "" {
+		return ExecutionTarget{}, ErrExecutionProfileUnavailable
+	}
+	return target, nil
 }
 
 type Service struct {
@@ -30,29 +58,33 @@ func (s *Service) CreateAndSubmit(ctx context.Context, req CreateJobRequest) (*J
 		return nil, err
 	}
 
-	backend, backendName, err := s.selector.SelectBackend(req.TenantID, req.Partition)
+	target, err := s.selector.SelectBackend(req.TenantID, req.ExecutionProfile)
 	if err != nil {
 		return nil, err
+	}
+	if target.Scheduler == nil {
+		return nil, ErrExecutionProfileUnavailable
 	}
 
 	now := time.Now().UTC()
 	job := &Job{
-		ID:         generateJobID(), // implement ID generator
-		TenantID:   req.TenantID,
-		UserID:     req.UserID,
-		Name:       req.Name,
-		Backend:    backendName,
-		Partition:  req.Partition,
-		Account:    req.Account,
-		ScriptPath: req.ScriptPath,
-		CPUs:       req.CPUs,
-		MemoryMB:   req.MemoryMB,
-		GPUs:       req.GPUs,
-		WorkingDir: req.WorkingDir,
-		Env:        req.Env,
-		State:      JobStatePending,
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		ID:               generateJobID(), // implement ID generator
+		TenantID:         req.TenantID,
+		UserID:           req.UserID,
+		Name:             req.Name,
+		Backend:          target.Backend,
+		ExecutionProfile: req.ExecutionProfile,
+		Partition:        target.Partition,
+		Account:          target.Account,
+		ScriptPath:       req.ScriptPath,
+		CPUs:             req.CPUs,
+		MemoryMB:         req.MemoryMB,
+		GPUs:             req.GPUs,
+		WorkingDir:       req.WorkingDir,
+		Env:              req.Env,
+		State:            JobStatePending,
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}
 
 	if err := s.repo.SaveJob(ctx, job); err != nil {
@@ -80,7 +112,7 @@ func (s *Service) CreateAndSubmit(ctx context.Context, req CreateJobRequest) (*J
 		Env:        job.Env,
 	}
 
-	schedulerID, err := backend.Submit(ctx, spec)
+	schedulerID, err := target.Scheduler.Submit(ctx, spec)
 	if err != nil {
 		job.State = JobStateFailed
 		job.UpdatedAt = time.Now().UTC()
@@ -116,12 +148,15 @@ func (s *Service) RefreshStatus(ctx context.Context, id string) (*Job, error) {
 		return nil, err
 	}
 
-	backend, _, err := s.selector.SelectBackend(job.TenantID, job.Partition)
+	target, err := s.selector.SelectBackend(job.TenantID, job.ExecutionProfile)
 	if err != nil {
 		return nil, err
 	}
+	if target.Scheduler == nil || target.Backend != job.Backend || target.Partition != job.Partition || target.Account != job.Account {
+		return nil, ErrExecutionProfileUnavailable
+	}
 
-	status, err := backend.Status(ctx, job.SchedulerID)
+	status, err := target.Scheduler.Status(ctx, job.SchedulerID)
 	if err != nil {
 		return nil, err
 	}
@@ -167,12 +202,15 @@ func (s *Service) Cancel(ctx context.Context, id string) (*Job, error) {
 		return nil, err
 	}
 
-	backend, _, err := s.selector.SelectBackend(job.TenantID, job.Partition)
+	target, err := s.selector.SelectBackend(job.TenantID, job.ExecutionProfile)
 	if err != nil {
 		return nil, err
 	}
+	if target.Scheduler == nil || target.Backend != job.Backend || target.Partition != job.Partition || target.Account != job.Account {
+		return nil, ErrExecutionProfileUnavailable
+	}
 
-	if err := backend.Cancel(ctx, job.SchedulerID); err != nil {
+	if err := target.Scheduler.Cancel(ctx, job.SchedulerID); err != nil {
 		return nil, err
 	}
 

@@ -1,7 +1,6 @@
 "use client";
 
 import "../styles/Onboard.css";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import TopHeader from "../sections/header/TopHeader";
@@ -128,27 +127,6 @@ export default function OnboardPage() {
             </form>
             {error && <p className="login-notice" role="alert">{error}</p>}
             {created && <p className="login-notice" role="status">Account created. <Link href="/login">Sign in to open your workspace.</Link></p>}
-
-            <div className="onboard-divider"><span>or continue with</span></div>
-
-            <div className="oauth-row">
-              <button className="oauth-btn github" type="button">
-                <Image src="/icons/github.svg" alt="" aria-hidden="true" width={16} height={16} />
-                GitHub
-              </button>
-              <button className="oauth-btn linkedin" type="button">
-                <Image src="/icons/linkedin.svg" alt="" aria-hidden="true" width={16} height={16} />
-                LinkedIn
-              </button>
-              <button className="oauth-btn google" type="button">
-                <Image src="/icons/google.svg" alt="" aria-hidden="true" width={16} height={16} />
-                Google
-              </button>
-              <button className="oauth-btn gmail" type="button">
-                <Image src="/icons/gmail.svg" alt="" aria-hidden="true" width={16} height={16} />
-                Gmail
-              </button>
-            </div>
 
             <p className="login-text">
               Already have an account? <Link href="/login">Sign in <span aria-hidden="true">→</span></Link>

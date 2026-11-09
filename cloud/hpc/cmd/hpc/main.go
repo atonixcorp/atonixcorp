@@ -15,6 +15,7 @@ import (
 	"atonixcorp/cloud/hpc/metrics"
 	"atonixcorp/cloud/hpc/nodes"
 	"atonixcorp/cloud/hpc/openhpc/resource_managers/slurm"
+	"atonixcorp/cloud/hpc/scheduler"
 	"atonixcorp/cloud/hpc/scheduler/k8s"
 )
 
@@ -54,20 +55,41 @@ func main() {
 	// ------------------------------------------------------------
 	// 4. Initialize scheduler backends
 	// ------------------------------------------------------------
-	slurmAdapter := slurm.NewSlurmAdapter()
-
-	k8sAdapter, err := k8s.NewK8sAdapter(cfg.Scheduler.K8s.Namespace)
-	if err != nil {
-		log.Fatalf("failed to init k8s adapter: %v", err)
+	var slurmAdapter, k8sAdapter scheduler.Scheduler
+	if cfg.Scheduler.Slurm.Enabled {
+		slurmAdapter = slurm.NewSlurmAdapter()
+	}
+	if cfg.Scheduler.K8s.Enabled {
+		k8sAdapter, err = k8s.NewK8sAdapter(cfg.Scheduler.K8s.Namespace)
+		if err != nil {
+			log.Fatalf("failed to init k8s adapter: %v", err)
+		}
 	}
 
-	selector := api.NewBackendSelector(slurmAdapter, k8sAdapter)
+	var selector jobs.BackendSelector = api.NewBackendSelector(slurmAdapter, k8sAdapter)
+	if len(cfg.Scheduler.ExecutionProfiles) > 0 {
+		targets := make(map[string]jobs.ExecutionTarget, len(cfg.Scheduler.ExecutionProfiles))
+		for name, profile := range cfg.Scheduler.ExecutionProfiles {
+			var backend scheduler.Scheduler
+			switch profile.Backend {
+			case "slurm":
+				backend = slurmAdapter
+			case "k8s":
+				backend = k8sAdapter
+			default:
+				log.Fatalf("execution profile %s has an unknown backend", name)
+			}
+			if backend == nil {
+				log.Fatalf("execution profile %s selects a disabled backend", name)
+			}
+			targets[name] = jobs.ExecutionTarget{Scheduler: backend, Backend: profile.Backend, Partition: profile.Partition, Account: profile.Account}
+		}
+		selector = jobs.NewProfileSelector(targets)
+	}
 
 	// ------------------------------------------------------------
 	// 5. Initialize job services
 	// ------------------------------------------------------------
-	jobService := jobs.NewService(jobRepo, eventPublisher, selector)
-	logService := jobs.NewLogService(jobRepo)
 
 	// ------------------------------------------------------------
 	// 6. Initialize node inventory + discovery + health
@@ -112,6 +134,7 @@ func main() {
 		jobRepo,
 		exporter,
 		[]byte(cfg.Auth.JWTSigningKey),
+		selector,
 	)
 
 	// ------------------------------------------------------------

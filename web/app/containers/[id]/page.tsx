@@ -225,7 +225,12 @@ export default function ContainerDeploymentDetailPage() {
             <div className="container-detail-body">
               {tab === "overview" && (
                 <>
-                  {deployment.error_details && <div className="container-alert">{deployment.error_details}</div>}
+                  {deployment.error_code && (
+                    <div className="container-alert">
+                      The latest deployment operation did not complete ({deployment.error_code}).
+                      Reference ID: {deployment.correlation_id}
+                    </div>
+                  )}
                   <div className="container-detail-grid">
                     <div><small>Deployment ID</small><strong>{deployment.id}</strong></div>
                     <div><small>Current revision</small><strong>{deployment.current_revision}</strong></div>
@@ -326,7 +331,6 @@ export default function ContainerDeploymentDetailPage() {
                     <article className="container-event" key={`audit-${event.id}`}>
                       <strong>{String(event.new_state ?? "Event")} · {String(event.reason ?? "")}</strong>
                       <small>{event.created_at ? new Date(String(event.created_at)).toLocaleString() : ""} · correlation {String(event.correlation_id ?? deployment.correlation_id)}</small>
-                      {Boolean(event.error_details) && <p>{String(event.error_details)}</p>}
                     </article>
                   ))}
                   {(events?.runtime ?? []).map((event, index) => (

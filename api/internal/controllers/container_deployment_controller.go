@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -263,7 +264,7 @@ func writeContainerError(ctx *gin.Context, err error) {
 	case errors.Is(err, containers.ErrRuntimeUnavailable):
 		ctx.JSON(http.StatusServiceUnavailable, gin.H{"error": "Kubernetes runtime is not configured.", "code": "RUNTIME_UNAVAILABLE"})
 	case errors.Is(err, containers.ErrSecretKeyUnavailable):
-		ctx.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error(), "code": "SECRET_ENCRYPTION_UNAVAILABLE"})
+		ctx.JSON(http.StatusServiceUnavailable, gin.H{"error": "Secure deployment configuration is unavailable.", "code": "SECRET_ENCRYPTION_UNAVAILABLE"})
 	case errors.Is(err, containers.ErrNotFound):
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "container deployment not found", "code": "NOT_FOUND"})
 	case errors.Is(err, containers.ErrForbidden):
@@ -277,6 +278,10 @@ func writeContainerError(ctx *gin.Context, err error) {
 	case errors.Is(err, containers.ErrInvalidRequest):
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error(), "code": "INVALID_DEPLOYMENT"})
 	default:
+		log.Printf(
+			"container control plane request failed correlation_id=%s: %v",
+			ctx.GetString("security_correlation_id"), err,
+		)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "container control plane request failed", "code": "CONTROL_PLANE_ERROR"})
 	}
 }

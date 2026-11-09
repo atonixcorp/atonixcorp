@@ -2,7 +2,9 @@ package observability
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -225,5 +227,24 @@ func TestSecurityEventsRequireElevatedAuditPermissions(t *testing.T) {
 	events, err = service.Events(context.Background(), Scope{UserID: 7, TenantID: 1, ProjectID: 1})
 	if err != nil || len(events) != 1 || events[0].Source != "security" {
 		t.Fatalf("security owner should see scoped audit events: %+v, %v", events, err)
+	}
+}
+
+func TestIntegrationResponsesUseAtonixCorpNames(t *testing.T) {
+	service, _ := newTestService(t)
+	integrations, err := service.Integrations(
+		context.Background(), Scope{UserID: 7, TenantID: 1, ProjectID: 1},
+	)
+	if err != nil {
+		t.Fatalf("list integrations: %v", err)
+	}
+	payload, err := json.Marshal(integrations)
+	if err != nil {
+		t.Fatalf("marshal integrations: %v", err)
+	}
+	for _, providerTerm := range []string{"openstack", "ceilometer", "slurm", "prometheus"} {
+		if strings.Contains(strings.ToLower(string(payload)), providerTerm) {
+			t.Fatalf("customer integration response leaked %q: %s", providerTerm, payload)
+		}
 	}
 }

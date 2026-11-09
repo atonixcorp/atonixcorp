@@ -1,6 +1,9 @@
 package core
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Supported engines
 const (
@@ -16,7 +19,6 @@ type Plan struct {
 	CPU          int         `yaml:"cpu"`
 	MemoryMB     int         `yaml:"memory_mb"`
 	StorageGB    int         `yaml:"storage_gb"`
-	FlavorID     string      `yaml:"flavor_id"`
 	HA           bool        `yaml:"ha"`
 	Backups      string      `yaml:"backups"`
 	ReadReplicas int         `yaml:"read_replicas"`
@@ -51,33 +53,25 @@ type NodePricing struct {
 	StorageUSD float64 `yaml:"storage_usd"`
 }
 
-// DBInstance represents a database instance provisioned on OpenStack.
+// DBInstance is an AtonixCorp database resource.
 type DBInstance struct {
-	ID              string `json:"id"`
-	TenantID        string `json:"tenant_id"`
-	ProjectID       string `json:"project_id"`
-	Name            string `json:"name"`
-	Engine          string `json:"engine"`
-	EngineVersion   string `json:"engine_version"`
-	Plan            string `json:"plan"`
-	WorkloadProfile string `json:"workload_profile"`
-	CPU             int    `json:"cpu"`
-	MemoryMB        int    `json:"memory_mb"`
-	StorageGB       int    `json:"storage_gb"`
-	Region          string `json:"region"`
-	Status          string `json:"status"`
-	Endpoint        string `json:"endpoint"`
-	Port            int    `json:"port"`
-	NetworkID       string `json:"-"`
-
-	// OpenStack resources
-	OpenStackServerID       string `json:"openstack_server_id,omitempty"`
-	OpenStackServerStatus   string `json:"openstack_server_status,omitempty"`
-	OpenStackServerIP       string `json:"openstack_server_ip,omitempty"`
-	OpenStackVolumeID       string `json:"openstack_volume_id,omitempty"`
-	OpenStackVolumeStatus   string `json:"openstack_volume_status,omitempty"`
-	OpenStackVolumeAttached bool   `json:"openstack_volume_attached"`
-	OpenStackNetworkID      string `json:"openstack_network_id,omitempty"`
+	ID               string          `json:"id"`
+	TenantID         string          `json:"tenant_id"`
+	ProjectID        string          `json:"project_id"`
+	Name             string          `json:"name"`
+	Engine           string          `json:"engine"`
+	EngineVersion    string          `json:"engine_version"`
+	Plan             string          `json:"plan"`
+	WorkloadProfile  string          `json:"workload_profile"`
+	CPU              int             `json:"cpu"`
+	MemoryMB         int             `json:"memory_mb"`
+	StorageGB        int             `json:"storage_gb"`
+	Region           string          `json:"region"`
+	Status           string          `json:"status"`
+	Endpoint         string          `json:"endpoint"`
+	Port             int             `json:"port"`
+	Provider         string          `json:"-"`
+	ProviderMetadata json.RawMessage `json:"-"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

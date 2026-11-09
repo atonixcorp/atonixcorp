@@ -1,0 +1,6 @@
+.page { display: grid; width: min(100% - 40px, 620px); min-height: 100vh; align-content: center; gap: 12px; margin: 0 auto; color: var(--color-text-primary); }
+.eyebrow { color: var(--color-primary); font-size: var(--font-size-caption); font-weight: 750; }
+.page h1 { font-size: 1.8rem; font-weight: 680; line-height: 1.2; }
+.page > p:not(.eyebrow) { color: var(--color-text-secondary); font-size: var(--font-size-body); }
+.actions { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
+.actions a { color: var(--color-primary); font-size: var(--font-size-label); font-weight: 700; }

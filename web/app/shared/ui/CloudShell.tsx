@@ -15,6 +15,7 @@ const products = [
   { label: "Storage", href: "/storage" },
   { label: "Databases", href: "/cloud/databases" },
   { label: "Networking", href: "/networking" },
+  { label: "Security", href: "/security" },
   { label: "Observability", href: "/observability" },
   { label: "Billing", href: "/billing" },
 ];

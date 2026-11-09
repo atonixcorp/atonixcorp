@@ -14,13 +14,11 @@ import (
 )
 
 var (
-	ErrCloudAccountNotConfigured    = errors.New("OpenStack account is not configured for this organization")
-	ErrAccountEncryptionUnavailable = errors.New("OpenStack account encryption is not configured")
+	ErrCloudAccountNotConfigured    = errors.New("cloud account is not configured for this organization")
+	ErrAccountEncryptionUnavailable = errors.New("cloud account encryption is not configured")
 )
 
-type CloudAccountProviderFactory interface {
-	ForAccount(context.Context, CloudAccountCredentials) (Provider, error)
-}
+type CloudAccountProviderFactory = ComputeProviderFactory
 
 func AccountEncryptionKeyFromEnvironment(encoded string) ([]byte, error) {
 	if strings.TrimSpace(encoded) == "" {
@@ -38,29 +36,24 @@ func (s *Service) SetCloudAccount(
 	tenantID uint,
 	account CloudAccountCredentials,
 ) error {
-	if tenantID == 0 || strings.TrimSpace(account.ProjectID) == "" ||
-		strings.TrimSpace(account.CredentialID) == "" ||
-		strings.TrimSpace(account.CredentialSecret) == "" {
+	if tenantID == 0 || account == nil || account.ProviderName() != s.providerName() {
+		return ErrInvalid
+	}
+	if err := account.Validate(); err != nil {
 		return ErrInvalid
 	}
 	if len(s.secretKey) != 32 {
 		return ErrAccountEncryptionUnavailable
 	}
-	account.ProjectID = strings.TrimSpace(account.ProjectID)
-	account.CredentialID = strings.TrimSpace(account.CredentialID)
-	account.Region = strings.TrimSpace(account.Region)
-	if account.Region == "" {
-		account.Region = s.Region()
-	}
-	if len(account.ProjectID) > 255 || len(account.CredentialID) > 255 || len(account.Region) > 64 {
+	payload, err := account.Encode()
+	if err != nil {
 		return ErrInvalid
 	}
-	factory, ok := s.provider.(CloudAccountProviderFactory)
-	if !ok {
-		return ErrProviderUnavailable
-	}
-	provider, err := factory.ForAccount(ctx, account)
+	provider, err := s.providerForAccount(ctx, account)
 	if err != nil {
+		if errors.Is(err, ErrProviderUnavailable) || errors.Is(err, ErrProviderNotRegistered) {
+			return ErrProviderUnavailable
+		}
 		return fmt.Errorf("%w: validate organization cloud account", ErrProviderRequest)
 	}
 	if provider == nil {
@@ -71,10 +64,10 @@ func (s *Service) SetCloudAccount(
 		return ErrProviderUnavailable
 	}
 	encryptedSecret, err := platformcrypto.EncryptAESGCM(
-		s.secretKey, []byte(account.CredentialSecret),
+		s.secretKey, payload,
 	)
 	if err != nil {
-		return fmt.Errorf("encrypt OpenStack organization credential: %w", err)
+		return fmt.Errorf("encrypt organization cloud credential: %w", err)
 	}
 
 	var tenant models.Tenant
@@ -86,7 +79,7 @@ func (s *Service) SetCloudAccount(
 	}
 	var projectMapping models.CloudAccount
 	err = s.db.WithContext(ctx).
-		Where("open_stack_project_id = ? AND tenant_id <> ?", account.ProjectID, tenantID).
+		Where("open_stack_project_id = ? AND tenant_id <> ?", account.ScopeID(), tenantID).
 		First(&projectMapping).Error
 	if err == nil {
 		return ErrConflict
@@ -99,16 +92,16 @@ func (s *Service) SetCloudAccount(
 	err = s.db.WithContext(ctx).Where("tenant_id = ?", tenantID).First(&record).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		record = models.CloudAccount{
-			TenantID: tenantID, OpenStackProjectID: account.ProjectID,
-			CredentialID: account.CredentialID, EncryptedSecret: encryptedSecret,
-			Region: account.Region,
+			TenantID: tenantID, Provider: account.ProviderName(), ScopeID: account.ScopeID(),
+			CredentialVersion: 1, EncryptedSecret: encryptedSecret,
+			Region: account.RegionName(),
 		}
 		return s.db.WithContext(ctx).Create(&record).Error
 	}
 	if err != nil {
 		return err
 	}
-	if record.OpenStackProjectID != account.ProjectID {
+	if record.ScopeID != account.ScopeID() || record.Provider != account.ProviderName() {
 		var resourceCount int64
 		if err := s.db.WithContext(ctx).Model(&models.CloudInstance{}).
 			Where("tenant_id = ?", tenantID).Count(&resourceCount).Error; err != nil {
@@ -118,10 +111,12 @@ func (s *Service) SetCloudAccount(
 			return ErrConflict
 		}
 	}
-	record.OpenStackProjectID = account.ProjectID
-	record.CredentialID = account.CredentialID
+	record.Provider = account.ProviderName()
+	record.ScopeID = account.ScopeID()
+	record.CredentialVersion = 1
+	record.CredentialID = ""
 	record.EncryptedSecret = encryptedSecret
-	record.Region = account.Region
+	record.Region = account.RegionName()
 	return s.db.WithContext(ctx).Save(&record).Error
 }
 
@@ -137,53 +132,57 @@ func (s *Service) StorageAccountCredentials(ctx context.Context, tenantID uint) 
 	var account models.CloudAccount
 	if err := s.db.WithContext(ctx).Where("tenant_id = ?", tenantID).First(&account).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return CloudAccountCredentials{}, ErrCloudAccountNotConfigured
+			return nil, ErrCloudAccountNotConfigured
 		}
-		return CloudAccountCredentials{}, err
+		return nil, err
 	}
 	if len(s.secretKey) != 32 {
-		return CloudAccountCredentials{}, ErrAccountEncryptionUnavailable
+		return nil, ErrAccountEncryptionUnavailable
 	}
 	secret, err := platformcrypto.DecryptAESGCM(s.secretKey, account.EncryptedSecret)
 	if err != nil {
-		return CloudAccountCredentials{}, errors.New("unable to decrypt organization cloud credential")
+		return nil, errors.New("unable to decrypt organization cloud credential")
 	}
-	return CloudAccountCredentials{
-		ProjectID: account.OpenStackProjectID, CredentialID: account.CredentialID,
-		CredentialSecret: string(secret), Region: account.Region,
-	}, nil
+	if s.registry != nil {
+		return s.registry.DecodeStoredAccount(account, secret)
+	}
+	decoder, ok := s.provider.(AccountCredentialDecoder)
+	if !ok {
+		return nil, ErrProviderUnavailable
+	}
+	return decoder.DecodeStoredAccount(account, secret)
 }
 
 func (s *Service) TenantCapabilities(
 	ctx context.Context, userID, tenantID uint,
-) (bool, string, OpenStackCapabilities, error) {
+) (bool, string, ComputeCapabilities, error) {
 	if userID == 0 || tenantID == 0 {
-		return false, "", OpenStackCapabilities{}, ErrForbidden
+		return false, "", ComputeCapabilities{}, ErrForbidden
 	}
 	var membership models.TenantMembership
 	err := s.db.WithContext(ctx).
 		Where("tenant_id = ? AND user_id = ?", tenantID, userID).
 		First(&membership).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, "", OpenStackCapabilities{}, ErrForbidden
+		return false, "", ComputeCapabilities{}, ErrForbidden
 	}
 	if err != nil {
-		return false, "", OpenStackCapabilities{}, err
+		return false, "", ComputeCapabilities{}, err
 	}
 	configured, err := s.CloudAccountConfigured(ctx, tenantID)
 	if err != nil {
-		return false, "", OpenStackCapabilities{}, err
+		return false, "", ComputeCapabilities{}, err
 	}
 	if !configured {
-		return false, s.Region(), OpenStackCapabilities{}, nil
+		return false, s.Region(), ComputeCapabilities{}, nil
 	}
 	provider, err := s.providerForTenant(ctx, tenantID)
 	if err != nil {
-		return false, "", OpenStackCapabilities{}, err
+		return false, "", ComputeCapabilities{}, err
 	}
-	capabilities := OpenStackCapabilities{}
+	capabilities := ComputeCapabilities{}
 	if capabilityProvider, ok := provider.(interface {
-		Capabilities() OpenStackCapabilities
+		Capabilities() ComputeCapabilities
 	}); ok {
 		capabilities = capabilityProvider.Capabilities()
 	}
@@ -193,37 +192,64 @@ func (s *Service) TenantCapabilities(
 }
 
 func (s *Service) providerForTenant(ctx context.Context, tenantID uint) (Provider, error) {
-	if s.provider == nil {
+	providerName := s.providerName()
+	if providerName == "" {
 		return nil, ErrProviderUnavailable
+	}
+	if s.registry == nil {
+		_, ok := s.provider.(CloudAccountProviderFactory)
+		if !ok {
+			if s.provider == nil {
+				return nil, ErrProviderUnavailable
+			}
+			return s.provider, nil
+		}
+	}
+	account, err := s.StorageAccountCredentials(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	provider, err := s.providerForAccount(ctx, account)
+	if err != nil {
+		if errors.Is(err, ErrProviderUnavailable) || errors.Is(err, ErrProviderNotRegistered) {
+			return nil, ErrProviderUnavailable
+		}
+		return nil, fmt.Errorf("%w: connect organization cloud account", ErrProviderRequest)
+	}
+	return provider, nil
+}
+
+func (s *Service) providerForAccount(
+	ctx context.Context,
+	account CloudAccountCredentials,
+) (ComputeProvider, error) {
+	if s.registry != nil {
+		name := s.providerName()
+		if name == "" {
+			return nil, ErrProviderUnavailable
+		}
+		return s.registry.ForAccount(ctx, name, account)
 	}
 	factory, ok := s.provider.(CloudAccountProviderFactory)
 	if !ok {
-		return s.provider, nil
+		return nil, ErrProviderUnavailable
 	}
-	if len(s.secretKey) != 32 {
-		return nil, ErrAccountEncryptionUnavailable
-	}
-	var account models.CloudAccount
-	if err := s.db.WithContext(ctx).Where("tenant_id = ?", tenantID).
-		First(&account).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrCloudAccountNotConfigured
-		}
+	provider, err := factory.ForAccount(ctx, account)
+	if err != nil {
 		return nil, err
-	}
-	secret, err := platformcrypto.DecryptAESGCM(s.secretKey, account.EncryptedSecret)
-	if err != nil {
-		return nil, fmt.Errorf("decrypt OpenStack organization credential: %w", err)
-	}
-	provider, err := factory.ForAccount(ctx, CloudAccountCredentials{
-		ProjectID: account.OpenStackProjectID, CredentialID: account.CredentialID,
-		CredentialSecret: string(secret), Region: account.Region,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("%w: connect organization cloud account", ErrProviderRequest)
 	}
 	if provider == nil {
 		return nil, fmt.Errorf("%w: provider factory returned no client", ErrProviderRequest)
 	}
 	return provider, nil
+}
+
+func (s *Service) providerName() string {
+	if s.provider != nil {
+		return s.provider.Name()
+	}
+	if s.registry != nil {
+		return s.registry.DefaultName()
+	}
+	return ""
 }

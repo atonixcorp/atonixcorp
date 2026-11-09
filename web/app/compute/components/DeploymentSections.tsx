@@ -38,17 +38,13 @@ export function ComputeTypeSection({
 export function RegionSection({
   catalog, draft, update,
 }: { catalog: ComputeCatalog; draft: DeploymentDraft; update: (patch: Partial<DeploymentDraft>) => void }) {
-  const grouped = catalog.regions.reduce<Record<string, typeof catalog.regions>>((groups, region) => {
-    groups[region.country] = [...(groups[region.country] ?? []), region];
-    return groups;
-  }, {});
   return (
     <Section id="region" number="02" title="Region" description="Pick where your instance and its data will be located.">
-      {Object.entries(grouped).map(([country, regions]) => (
-        <div className="compute-region-group" key={country}>
-          <h3>{country}</h3>
+      {catalog.regions.length > 0 && (
+        <div className="compute-region-group">
+          <h3>Available regions</h3>
           <div className="compute-region-grid">
-            {regions.map((region) => (
+            {catalog.regions.map((region) => (
               <button
                 type="button"
                 key={region.id}
@@ -59,13 +55,13 @@ export function RegionSection({
               >
                 <span className="compute-choice-mark" aria-hidden="true">{draft.region === region.id ? "✓" : "○"}</span>
                 <strong>{region.name}</strong>
-                <code>{region.id.toUpperCase()}</code>
-                <small>{region.available ? "Provider catalog available" : region.capacity_status.replaceAll("_", " ")}</small>
+                <small>{region.available ? "Available" : "Unavailable"}</small>
               </button>
             ))}
           </div>
         </div>
-      ))}
+      )}
+      {!catalog.regions.length && <InlineEmpty>No regions are currently available.</InlineEmpty>}
     </Section>
   );
 }
@@ -74,13 +70,13 @@ export function ImageSection({
   images, draft, update,
 }: { images: ComputeImage[]; draft: DeploymentDraft; update: (patch: Partial<DeploymentDraft>) => void }) {
   return (
-    <Section id="image" number="03" title="Image" description="Select an active image from the mapped OpenStack project.">
+    <Section id="image" number="03" title="Image" description="Select an operating system image available to this project.">
       {images.some((image) => image.available) ? (
         <div className="compute-image-grid">
           {images.filter((image) => image.available).map((image) => (
             <button type="button" key={image.id} className={`compute-image-card${draft.image === image.id ? " selected" : ""}`} aria-pressed={draft.image === image.id} onClick={() => update({ image: image.id })}>
               <span className="compute-os-mark">OS</span>
-              <span><strong>{image.name}</strong><small>{image.status} · minimum {image.min_disk_gb} GB disk / {image.min_memory_mb} MB RAM · {image.id}</small></span>
+              <span><strong>{image.name}</strong><small>{image.status} · minimum {image.min_disk_gb} GB disk / {image.min_memory_mb} MB RAM</small></span>
               <span className="compute-choice-mark" aria-hidden="true">{draft.image === image.id ? "✓" : "○"}</span>
             </button>
           ))}
@@ -97,11 +93,11 @@ export function PlanSection({
 }: { plans: ComputePlan[]; draft: DeploymentDraft; update: (patch: Partial<DeploymentDraft>) => void }) {
   const visiblePlans = plans.filter((plan) => plan.available);
   return (
-    <Section id="plan" number="04" title="Instance size" description="vCPU, memory, and root-disk metadata come from Nova flavors; pricing is unavailable.">
+    <Section id="plan" number="04" title="Instance size" description="Choose capacity for your workload. Pricing is unavailable.">
       {visiblePlans.length ? (
         <div className="compute-table-scroll">
           <table className="compute-table compute-plan-table">
-            <thead><tr><th>Flavor</th><th>vCPU</th><th>Memory</th><th>Root disk</th><th>Pricing</th></tr></thead>
+            <thead><tr><th>Size</th><th>vCPU</th><th>Memory</th><th>Root disk</th><th>Pricing</th></tr></thead>
             <tbody>{visiblePlans.map((plan) => (
               <tr key={plan.id} className={draft.plan === plan.id ? "selected" : ""}>
                 <td><button className="compute-plan-select" type="button" aria-pressed={draft.plan === plan.id} onClick={() => update({ plan: plan.id })}>{plan.name}</button></td>
@@ -145,11 +141,11 @@ export function NetworkSection({
 }: { catalog: ComputeCatalog; draft: DeploymentDraft; update: (patch: Partial<DeploymentDraft>) => void }) {
   const networks = catalog.networks.filter((item) => item.region === draft.region && item.available);
   return (
-    <Section id="network" number="05" title="Networking" description="Attach the instance to a network visible to this OpenStack project.">
+    <Section id="network" number="05" title="Networking" description="Choose a network available to this project.">
       <label className="compute-field">Virtual private cloud
         <select required value={draft.network} onChange={(event) => update({ network: event.target.value })}>
           <option value="">Select a network</option>
-          {networks.map((network) => <option value={network.id} key={network.id}>{network.name} · {network.status}{network.external ? " · external" : ""}{network.shared ? " · shared" : ""} · {network.id}</option>)}
+          {networks.map((network) => <option value={network.id} key={network.id}>{network.name} · {network.status}{network.external ? " · external" : ""}{network.shared ? " · shared" : ""}</option>)}
         </select>
       </label>
       {!networks.length && <InlineEmpty>No active networks are available for this project.</InlineEmpty>}
@@ -261,7 +257,7 @@ export function ReviewSection({
         </div>
       ))}</div>
       <div className="compute-review-actions">
-        <p>Pricing is unavailable. The request creates one server in the selected OpenStack project.</p>
+        <p>Pricing is unavailable. The request creates one virtual machine in the selected project.</p>
         <button type="button" className="compute-primary-button" disabled={deployBlocked} onClick={onDeploy}>
           {submitting ? "Submitting…" : "Deploy instance"}
         </button>

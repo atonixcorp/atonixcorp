@@ -9,33 +9,20 @@ import (
 	"atonixcorp/cloud/hpc/jobs"
 	"atonixcorp/cloud/hpc/metrics"
 	"atonixcorp/cloud/hpc/nodes"
-	"atonixcorp/cloud/hpc/openhpc/resource_managers/slurm"
 	"atonixcorp/cloud/hpc/scheduler"
-	"atonixcorp/cloud/hpc/scheduler/k8s"
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 )
 
 // Simple backend selector: choose Slurm or K8s based on partition or config.
-type BackendSelector struct {
-	slurm scheduler.Scheduler
-	k8s   scheduler.Scheduler
-}
+type BackendSelector = jobs.ProfileSelector
 
 func NewBackendSelector(sl scheduler.Scheduler, ka scheduler.Scheduler) *BackendSelector {
-	return &BackendSelector{
-		slurm: sl,
-		k8s:   ka,
-	}
-}
-
-func (b *BackendSelector) SelectBackend(tenantID, partition string) (scheduler.Scheduler, string, error) {
-	// You can make this smarter (per-tenant, per-partition config).
-	if partition == "k8s" {
-		return b.k8s, "k8s", nil
-	}
-	return b.slurm, "slurm", nil
+	return jobs.NewProfileSelector(map[string]jobs.ExecutionTarget{
+		"batch":     {Scheduler: sl, Backend: "slurm"},
+		"container": {Scheduler: ka, Backend: "k8s"},
+	})
 }
 
 func NewRouter(
@@ -45,6 +32,7 @@ func NewRouter(
 	logRepo jobs.Repository, // same repo if logs stored together
 	exporter *metrics.Exporter,
 	signingKey []byte,
+	selector jobs.BackendSelector,
 ) http.Handler {
 	r := chi.NewRouter()
 
@@ -63,11 +51,6 @@ func NewRouter(
 	r.Use(auth.Middleware)
 	r.Use(rate.Middleware)
 	r.Use(tenantScope.Middleware)
-
-	// Scheduler backends
-	slurmAdapter := slurm.NewSlurmAdapter()
-	k8sAdapter, _ := k8s.NewK8sAdapter("hpc-jobs") // namespace
-	selector := NewBackendSelector(slurmAdapter, k8sAdapter)
 
 	// Core services
 	jobService := jobs.NewService(jobRepo, eventPublisher, selector)

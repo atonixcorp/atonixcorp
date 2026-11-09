@@ -11,9 +11,10 @@ type Network struct {
 	ProjectID            string `json:"project_id"`
 	External             bool   `json:"external"`
 	Status               string `json:"status,omitempty"`
-	ProviderID           string `json:"provider_id,omitempty"`
-	ProviderSubnetID     string `json:"provider_subnet_id,omitempty"`
-	ProviderSubnetStatus string `json:"provider_subnet_status,omitempty"`
+	SubnetStatus         string `json:"subnet_status,omitempty"`
+	ProviderID           string `json:"-"`
+	ProviderSubnetID     string `json:"-"`
+	ProviderSubnetStatus string `json:"-"`
 }
 
 // -----------------------------
@@ -29,10 +30,12 @@ type Subnet struct {
 }
 
 type CloudAccount struct {
-	ProjectID       string
-	CredentialID    string
-	EncryptedSecret []byte
-	Region          string
+	Provider           string
+	ScopeID            string
+	CredentialVersion  int
+	LegacyCredentialID string
+	EncryptedSecret    []byte
+	Region             string
 }
 
 // -----------------------------

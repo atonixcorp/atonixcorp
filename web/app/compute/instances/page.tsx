@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  createNovaInstance,
+  createInstance,
   getCatalog,
   getInstances,
-  getNovaCapabilities,
+  getComputeCapabilities,
   getProjects,
   getTenants,
 } from "../lib/api";
@@ -30,7 +30,7 @@ export default function ComputeInstancesPage() {
   const [projectID, setProjectID] = useState("");
   const [scopeError, setScopeError] = useState("");
   const [organizationProvisioning, setOrganizationProvisioning] = useState(false);
-  const [novaRegion, setNovaRegion] = useState("");
+  const [computeRegion, setComputeRegion] = useState("");
   const [capabilityError, setCapabilityError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -39,7 +39,7 @@ export default function ComputeInstancesPage() {
   const [createDraft, setCreateDraft] = useState({
     name: "",
     imageID: "",
-    flavorID: "",
+    sizeID: "",
     networkID: "",
     keyName: "",
   });
@@ -67,7 +67,10 @@ export default function ComputeInstancesPage() {
       if (!active) return;
       setTenants(items);
       if (items.length) setTenantID(String(items[0].id));
-      else setLoading(false);
+      else {
+        setLoading(false);
+        setPlanCatalogLoading(false);
+      }
     }).catch((loadError: unknown) => {
       if (active) {
         setScopeError(loadError instanceof Error ? loadError.message : "Could not load workspaces.");
@@ -84,7 +87,10 @@ export default function ComputeInstancesPage() {
       if (!active) return;
       setProjects(items);
       setProjectID(items.length ? String(items[0].id) : "");
-      if (!items.length) setLoading(false);
+      if (!items.length) {
+        setLoading(false);
+        setPlanCatalogLoading(false);
+      }
     }).catch((loadError: unknown) => {
       if (active) {
         setScopeError(loadError instanceof Error ? loadError.message : "Could not load projects.");
@@ -100,50 +106,35 @@ export default function ComputeInstancesPage() {
   }, [loadInstances]);
 
   useEffect(() => {
-    if (!tenantID) {
-      setOrganizationProvisioning(false);
-      setNovaRegion("");
-      return;
-    }
+    if (!tenantID) return;
     let active = true;
-    setOrganizationProvisioning(false);
-    setCapabilityError("");
-    void getNovaCapabilities(Number(tenantID)).then((capabilities) => {
+    void getComputeCapabilities(Number(tenantID)).then((capabilities) => {
       if (!active) return;
       setOrganizationProvisioning(capabilities.organization_provisioning);
-      setNovaRegion(capabilities.region);
     }).catch((loadError: unknown) => {
       if (active) {
         setCapabilityError(loadError instanceof Error
           ? loadError.message
-          : "Nova provisioning capability could not be checked.");
+          : "Compute availability could not be checked.");
       }
     });
     return () => { active = false; };
   }, [tenantID]);
 
   useEffect(() => {
-    if (!tenantID || !projectID) {
-      setPlans([]);
-      setImages([]);
-      setNetworks([]);
-      setCatalogProvisioning(false);
-      setPlanCatalogLoading(false);
-      return;
-    }
+    if (!tenantID || !projectID) return;
     let active = true;
-    setPlanCatalogLoading(true);
-    setPlanCatalogError("");
     void getCatalog(Number(tenantID), Number(projectID)).then((catalog) => {
       if (active) {
         setPlans(catalog.plans);
         setImages(catalog.images);
         setNetworks(catalog.networks);
+        setComputeRegion(catalog.regions[0]?.id ?? "");
         setCatalogProvisioning(catalog.provisioning_enabled);
         setCreateDraft((current) => ({
           ...current,
           imageID: catalog.images.find((item) => item.available)?.id ?? "",
-          flavorID: catalog.plans.find((item) => item.available)?.id ?? "",
+          sizeID: catalog.plans.find((item) => item.available)?.id ?? "",
           networkID: catalog.networks.find((item) => item.available)?.id ?? "",
         }));
       }
@@ -178,24 +169,24 @@ export default function ComputeInstancesPage() {
     setCreateError("");
     if (!createIdempotencyKey.current) createIdempotencyKey.current = crypto.randomUUID();
     try {
-      await createNovaInstance({
+      await createInstance({
         tenant_id: Number(tenantID),
         project_id: Number(projectID),
         name: createDraft.name,
-        region: novaRegion,
+        region_id: computeRegion,
         image_id: createDraft.imageID,
-        flavor_id: createDraft.flavorID,
+        size_id: createDraft.sizeID,
         network_id: createDraft.networkID,
         key_name: createDraft.keyName || undefined,
       }, createIdempotencyKey.current);
       createIdempotencyKey.current = "";
-      setCreateDraft({ name: "", imageID: "", flavorID: "", networkID: "", keyName: "" });
+      setCreateDraft({ name: "", imageID: "", sizeID: "", networkID: "", keyName: "" });
       setCreateOpen(false);
       await loadInstances();
     } catch (requestError) {
       setCreateError(requestError instanceof Error
         ? requestError.message
-        : "Nova could not create the instance.");
+        : "The virtual machine could not be created.");
     } finally {
       setCreating(false);
     }
@@ -214,7 +205,7 @@ export default function ComputeInstancesPage() {
           type="button"
           onClick={() => { setCreateError(""); setCreateOpen((open) => !open); }}
           disabled={!organizationProvisioning || !catalogProvisioning}
-          title={organizationProvisioning && catalogProvisioning ? "Create a VM in this organization's mapped OpenStack project" : "A mapped project and live provider catalog are required"}
+          title={organizationProvisioning && catalogProvisioning ? "Create a VM in this organization's project" : "A project and available compute resources are required"}
         >
           ＋ Create instance
         </button>
@@ -222,27 +213,27 @@ export default function ComputeInstancesPage() {
 
       {capabilityError ? (
         <p className="compute-inline-error" role="alert">
-          Instance creation is unavailable because Nova capabilities could not be checked: {capabilityError}
+          Instance creation is unavailable because compute services could not be checked: {capabilityError}
         </p>
       ) : !organizationProvisioning && (
         <p className="compute-deploy-notice" role="status">
-          Nova instance creation is disabled because this organization does not have a validated OpenStack project mapping.
+          Instance creation is unavailable because this organization does not have a validated project.
         </p>
       )}
 
       {createOpen && (
-        <section className="compute-card" aria-label="Create Nova instance">
+        <section className="compute-card" aria-label="Create virtual machine">
           <header className="compute-table-toolbar">
             <div>
-              <h2>Create a Nova instance</h2>
-              <p>Region {novaRegion || "not configured"} · organization-scoped OpenStack project</p>
+              <h2>Create a virtual machine</h2>
+              <p>Region {computeRegion ? "Primary region" : "not configured"} · organization project</p>
             </div>
             <button type="button" className="compute-secondary-button" onClick={() => setCreateOpen(false)}>
               Cancel
             </button>
           </header>
           <p className="compute-deploy-notice" role="note">
-            This organization is isolated to its mapped OpenStack project. Existing OpenStack servers are not imported.
+            Resources created here are isolated to this organization’s project.
           </p>
           {createError && <p className="compute-inline-error" role="alert">{createError}</p>}
           <form
@@ -260,24 +251,24 @@ export default function ComputeInstancesPage() {
               />
             </label>
             <label className="compute-filter">
-              OpenStack image
+              Operating system image
               <select required value={createDraft.imageID} onChange={(event) => setCreateDraft((current) => ({ ...current, imageID: event.target.value }))}>
                 <option value="">Select an active image</option>
-                {images.filter((image) => image.available).map((image) => <option value={image.id} key={image.id}>{image.name} · {image.id}</option>)}
+                {images.filter((image) => image.available).map((image) => <option value={image.id} key={image.id}>{image.name}</option>)}
               </select>
             </label>
             <label className="compute-filter">
-              Nova flavor
-              <select required value={createDraft.flavorID} onChange={(event) => setCreateDraft((current) => ({ ...current, flavorID: event.target.value }))}>
-                <option value="">Select a flavor</option>
+              Instance size
+              <select required value={createDraft.sizeID} onChange={(event) => setCreateDraft((current) => ({ ...current, sizeID: event.target.value }))}>
+                <option value="">Select an instance size</option>
                 {plans.filter((plan) => plan.available).map((plan) => <option value={plan.id} key={plan.id}>{plan.name} · {plan.vcpus} vCPU / {Math.round(plan.memory_mb / 1024)} GB RAM</option>)}
               </select>
             </label>
             <label className="compute-filter">
-              Neutron network
+              Virtual network
               <select required value={createDraft.networkID} onChange={(event) => setCreateDraft((current) => ({ ...current, networkID: event.target.value }))}>
                 <option value="">Select a network</option>
-                {networks.filter((network) => network.available).map((network) => <option value={network.id} key={network.id}>{network.name} · {network.id}</option>)}
+                {networks.filter((network) => network.available).map((network) => <option value={network.id} key={network.id}>{network.name}</option>)}
               </select>
             </label>
             <label className="compute-filter">
@@ -305,14 +296,14 @@ export default function ComputeInstancesPage() {
           <div className="compute-table-actions">
             <label className="compute-filter">
               <span className="sr-only">Workspace</span>
-              <select value={tenantID} onChange={(event) => { setScopeError(""); setProjects([]); setProjectID(""); setTenantID(event.target.value); }} aria-label="Workspace">
+              <select value={tenantID} onChange={(event) => { setScopeError(""); setProjects([]); setProjectID(""); setOrganizationProvisioning(false); setComputeRegion(""); setCapabilityError(""); setPlans([]); setImages([]); setNetworks([]); setCatalogProvisioning(false); setPlanCatalogError(""); setPlanCatalogLoading(true); setTenantID(event.target.value); }} aria-label="Workspace">
                 <option value="">Choose workspace</option>
                 {tenants.map((tenant) => <option key={tenant.id} value={tenant.id}>{tenant.name}</option>)}
               </select>
             </label>
             <label className="compute-filter">
               <span className="sr-only">Project</span>
-              <select value={projectID} onChange={(event) => { setScopeError(""); setProjectID(event.target.value); }} aria-label="Project" disabled={!projects.length}>
+              <select value={projectID} onChange={(event) => { setScopeError(""); setPlans([]); setImages([]); setNetworks([]); setComputeRegion(""); setCatalogProvisioning(false); setPlanCatalogError(""); setPlanCatalogLoading(true); setProjectID(event.target.value); }} aria-label="Project" disabled={!projects.length}>
                 <option value="">Choose project</option>
                 {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
               </select>
@@ -347,7 +338,7 @@ export default function ComputeInstancesPage() {
           <div className="compute-state-panel">
             <span className="compute-empty-icon" aria-hidden="true">▣</span>
             <h3>No instances yet</h3>
-            <p>Choose a workspace and project, then create an instance in the organization's mapped OpenStack project.</p>
+            <p>Choose a workspace and project, then create an instance in that project.</p>
             <button
               className="compute-primary-button"
               type="button"
@@ -400,7 +391,7 @@ function InstanceRow({
     <tr>
       <td><Link className="compute-instance-name" href={`/compute/instances/${encodeURIComponent(instance.id)}`}>{instance.label || instance.name}<small>{instance.hostname}</small></Link></td>
       <td><span className={`compute-instance-status ${statusTone(instance.status)}`}><i />{instance.status}</span></td>
-      <td>{instance.region.toUpperCase()}</td>
+      <td>{instance.region ? "Primary region" : "Not assigned"}</td>
       <td>{plan ? plan.vcpus : planCatalogLoading ? "Loading…" : "—"}</td>
       <td>{plan ? `${Math.round(plan.memory_mb / 1024)} GB` : planCatalogLoading ? "Loading…" : "—"}</td>
       <td>{instance.public_ip || "—"}</td>

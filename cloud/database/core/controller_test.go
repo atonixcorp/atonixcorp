@@ -1,8 +1,11 @@
-package core
+package core_test
 
 import (
+	. "atonixcorp/cloud/database/core"
+	"atonixcorp/cloud/database/openstack"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -177,13 +180,12 @@ func (os *fakeOpenStack) GetServerState(string) (string, string, error) {
 func TestProvisioningFindsNovaResourceAfterMetadataWriteFailure(t *testing.T) {
 	store := newMemoryStore()
 	provider := &fakeOpenStack{serverStatus: "ACTIVE", volumeStatus: "creating"}
-	controller := NewController(store, provider)
+	controller := NewController(store, openstack.NewDatabaseProvisioner(provider, openstack.ProvisionerConfig{
+		EngineImages: map[string]string{"postgres:16": "image-1"}, PlanFlavors: map[string]string{"basic": "flavor-1"}, NetworkID: "network-1",
+	}))
 	controller.SetPlans(map[string]Plan{
-		"basic": {CPU: 1, MemoryMB: 2048, StorageGB: 20, FlavorID: "flavor-1", Engines: []string{EnginePostgres}},
+		"basic": {CPU: 1, MemoryMB: 2048, StorageGB: 20, Engines: []string{EnginePostgres}},
 	})
-	controller.SetProvisioningConfig(
-		map[string]string{"postgres:16": "image-1"}, "network-1", "",
-	)
 	instance, err := controller.CreateInstance(CreateInstanceRequest{
 		TenantID: "1", ProjectID: "2", Name: "recovery-db", Engine: EnginePostgres,
 		EngineVersion: "16", Plan: "basic",
@@ -222,13 +224,12 @@ func (os *fakeOpenStack) AttachVolume(string, string) error {
 func TestProvisioningWaitsForOpenStackResources(t *testing.T) {
 	store := newMemoryStore()
 	provider := &fakeOpenStack{serverStatus: "BUILD", volumeStatus: "creating"}
-	controller := NewController(store, provider)
+	controller := NewController(store, openstack.NewDatabaseProvisioner(provider, openstack.ProvisionerConfig{
+		EngineImages: map[string]string{"postgres:16": "image-1"}, PlanFlavors: map[string]string{"basic": "flavor-1"}, NetworkID: "network-1", SecurityGroupID: "db-sg",
+	}))
 	controller.SetPlans(map[string]Plan{
-		"basic": {CPU: 1, MemoryMB: 2048, StorageGB: 20, FlavorID: "flavor-1", Engines: []string{EnginePostgres}},
+		"basic": {CPU: 1, MemoryMB: 2048, StorageGB: 20, Engines: []string{EnginePostgres}},
 	})
-	controller.SetProvisioningConfig(
-		map[string]string{"postgres:16": "image-1"}, "network-1", "db-sg",
-	)
 	instance, err := controller.CreateInstance(CreateInstanceRequest{
 		TenantID: "1", ProjectID: "2", Name: "analytics-db", Engine: EnginePostgres,
 		EngineVersion: "16", Plan: "basic", WorkloadProfile: "hpc",
@@ -241,8 +242,9 @@ func TestProvisioningWaitsForOpenStackResources(t *testing.T) {
 		t.Fatalf("wait for Nova BUILD state: %v", err)
 	}
 	provisioned, _ := store.GetInstance(instance.ID)
-	if provisioned.Status != "provisioning" || provisioned.OpenStackServerID != "server-1" ||
-		provisioned.OpenStackServerStatus != "BUILD" || provisioned.OpenStackVolumeID != "" {
+	state := readProviderState(t, provisioned)
+	if provisioned.Status != "provisioning" || state.ServerID != "server-1" ||
+		state.ServerStatus != "BUILD" || state.VolumeID != "" {
 		t.Fatalf("expected only the Nova server while it is building, got %+v", provisioned)
 	}
 
@@ -251,8 +253,9 @@ func TestProvisioningWaitsForOpenStackResources(t *testing.T) {
 		t.Fatalf("wait for Cinder volume: %v", err)
 	}
 	provisioned, _ = store.GetInstance(instance.ID)
-	if provisioned.Status != "provisioning" || provisioned.OpenStackServerStatus != "ACTIVE" ||
-		provisioned.OpenStackVolumeStatus != "creating" || provider.attachCalls != 0 {
+	state = readProviderState(t, provisioned)
+	if provisioned.Status != "provisioning" || state.ServerStatus != "ACTIVE" ||
+		state.VolumeStatus != "creating" || provider.attachCalls != 0 {
 		t.Fatalf("volume should not be attached before Cinder is available: %+v", provisioned)
 	}
 
@@ -262,20 +265,17 @@ func TestProvisioningWaitsForOpenStackResources(t *testing.T) {
 		t.Fatalf("attach available volume: %v", err)
 	}
 	provisioned, _ = store.GetInstance(instance.ID)
+	state = readProviderState(t, provisioned)
 	if provisioned.Status != "starting" || provisioned.Endpoint != "" ||
-		provisioned.OpenStackServerIP != "10.0.0.15" ||
-		provisioned.OpenStackVolumeStatus != "available" ||
-		!provisioned.OpenStackVolumeAttached || provider.attachCalls != 1 {
+		state.ServerIP != "10.0.0.15" || state.VolumeStatus != "available" ||
+		!state.VolumeAttached || provider.attachCalls != 1 {
 		t.Fatalf("expected VM-ready starting state with one volume attachment, got %+v", provisioned)
 	}
 }
 
-func TestDatabaseJSONExposesProviderResourceMetadata(t *testing.T) {
+func TestDatabaseJSONHidesProviderResourceMetadata(t *testing.T) {
 	instance := DBInstance{
-		OpenStackServerID: "nova-server-id", OpenStackServerStatus: "ACTIVE",
-		OpenStackServerIP: "10.0.0.15", OpenStackVolumeID: "cinder-volume-id",
-		OpenStackVolumeStatus: "in-use", OpenStackVolumeAttached: true,
-		OpenStackNetworkID: "neutron-network-id",
+		Provider: "openstack", ProviderMetadata: json.RawMessage(`{"server_id":"nova-server-id","volume_id":"cinder-volume-id"}`),
 	}
 	encoded, err := json.Marshal(instance)
 	if err != nil {
@@ -285,30 +285,26 @@ func TestDatabaseJSONExposesProviderResourceMetadata(t *testing.T) {
 	if err := json.Unmarshal(encoded, &result); err != nil {
 		t.Fatalf("decode database instance JSON: %v", err)
 	}
-	for key, expected := range map[string]any{
-		"openstack_server_id":       "nova-server-id",
-		"openstack_server_status":   "ACTIVE",
-		"openstack_server_ip":       "10.0.0.15",
-		"openstack_volume_id":       "cinder-volume-id",
-		"openstack_volume_status":   "in-use",
-		"openstack_volume_attached": true,
-		"openstack_network_id":      "neutron-network-id",
+	for _, privateField := range []string{
+		"Provider", "ProviderMetadata", "provider", "provider_metadata",
+		"openstack_server_id", "openstack_server_status", "openstack_server_ip",
+		"openstack_volume_id", "openstack_volume_status", "openstack_volume_attached",
+		"openstack_network_id",
 	} {
-		if result[key] != expected {
-			t.Errorf("JSON %s = %v, want %v", key, result[key], expected)
+		if _, exists := result[privateField]; exists {
+			t.Errorf("database JSON exposed provider field %q: %s", privateField, encoded)
 		}
 	}
 }
 
 func TestCreateInstanceRejectsUnconfiguredEngineVersion(t *testing.T) {
 	store := newMemoryStore()
-	controller := NewController(store, &fakeOpenStack{})
+	controller := NewController(store, openstack.NewDatabaseProvisioner(&fakeOpenStack{}, openstack.ProvisionerConfig{
+		EngineImages: map[string]string{"postgres:16": "image-1"}, PlanFlavors: map[string]string{"basic": "flavor-1"}, NetworkID: "network-1",
+	}))
 	controller.SetPlans(map[string]Plan{
-		"basic": {CPU: 1, MemoryMB: 2048, StorageGB: 20, FlavorID: "flavor-1", Engines: []string{EnginePostgres}},
+		"basic": {CPU: 1, MemoryMB: 2048, StorageGB: 20, Engines: []string{EnginePostgres}},
 	})
-	controller.SetProvisioningConfig(
-		map[string]string{"postgres:16": "image-1"}, "network-1", "",
-	)
 	_, err := controller.CreateInstance(CreateInstanceRequest{
 		TenantID: "1", ProjectID: "2", Name: "analytics-db", Engine: EnginePostgres,
 		EngineVersion: "99", Plan: "basic",
@@ -320,13 +316,12 @@ func TestCreateInstanceRejectsUnconfiguredEngineVersion(t *testing.T) {
 
 func TestCreateInstanceOperationIsIdempotent(t *testing.T) {
 	store := newMemoryStore()
-	controller := NewController(store, &fakeOpenStack{})
+	controller := NewController(store, openstack.NewDatabaseProvisioner(&fakeOpenStack{}, openstack.ProvisionerConfig{
+		EngineImages: map[string]string{"postgres:16": "image-1"}, PlanFlavors: map[string]string{"basic": "flavor-1"}, NetworkID: "network-1",
+	}))
 	controller.SetPlans(map[string]Plan{
-		"basic": {CPU: 1, MemoryMB: 2048, StorageGB: 20, FlavorID: "flavor-1", Engines: []string{EnginePostgres}},
+		"basic": {CPU: 1, MemoryMB: 2048, StorageGB: 20, Engines: []string{EnginePostgres}},
 	})
-	controller.SetProvisioningConfig(
-		map[string]string{"postgres:16": "image-1"}, "network-1", "",
-	)
 	request := CreateInstanceRequest{
 		TenantID: "1", ProjectID: "2", Name: "repeatable-db", Engine: EnginePostgres,
 		EngineVersion: "16", Plan: "basic",
@@ -348,5 +343,86 @@ func TestCreateInstanceOperationIsIdempotent(t *testing.T) {
 	request.Name = "different-db"
 	if _, err := controller.CreateInstanceOperation(request, "client-key-12345678"); !errors.Is(err, ErrIdempotencyConflict) {
 		t.Fatalf("expected conflicting request body to be rejected, got %v", err)
+	}
+}
+
+func readProviderState(t *testing.T, instance *DBInstance) openstack.ProvisioningState {
+	t.Helper()
+	var state openstack.ProvisioningState
+	if err := json.Unmarshal(instance.ProviderMetadata, &state); err != nil {
+		t.Fatal(err)
+	}
+	return state
+}
+
+type domainProvisioner struct{ calls int }
+
+func (*domainProvisioner) Name() string { return "test-only" }
+func (*domainProvisioner) Supports(engine, version, plan, region string) bool {
+	return engine == EnginePostgres && version == "16" && plan == "basic" && region == "test-region"
+}
+func (provider *domainProvisioner) Provision(instance *DBInstance, checkpoint func(string) error) (ProvisioningProgress, error) {
+	provider.calls++
+	instance.ProviderMetadata = json.RawMessage(`{"remote_database":"test-resource"}`)
+	if err := checkpoint("PROVISIONING_STORAGE"); err != nil {
+		return ProvisioningProgress{}, err
+	}
+	return ProvisioningProgress{InfrastructureReady: true}, nil
+}
+
+func TestDatabaseDomainDoesNotRequireInfrastructureServerOrVolumeModels(t *testing.T) {
+	store := newMemoryStore()
+	provider := &domainProvisioner{}
+	controller := NewController(store, provider)
+	controller.SetDefaultRegion("test-region")
+	controller.SetPlans(map[string]Plan{"basic": {CPU: 1, MemoryMB: 2048, StorageGB: 20, Engines: []string{EnginePostgres}}})
+	if !controller.PlanCatalog()["basic"].Enabled {
+		t.Fatal("domain plan required OpenStack configuration")
+	}
+	request := CreateInstanceRequest{TenantID: "1", ProjectID: "2", Name: "domain-db", Engine: EnginePostgres, EngineVersion: "16", Plan: "basic"}
+	result, err := controller.CreateInstanceOperation(request, "domain-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := controller.ProvisionInstance(result.Database.ID); err != nil {
+		t.Fatal(err)
+	}
+	instance, _ := store.GetInstance(result.Database.ID)
+	if instance.Status != "starting" || instance.Provider != "test-only" || provider.calls != 1 {
+		t.Fatalf("incorrect domain result: %+v", instance)
+	}
+	instance.Status = "provisioning"
+	instance.Provider = "another-adapter"
+	if err := store.UpdateInstance(instance); err != nil {
+		t.Fatal(err)
+	}
+	if err := controller.ProvisionInstance(instance.ID); err == nil || provider.calls != 1 {
+		t.Fatal("provider mismatch did not fail closed")
+	}
+}
+
+func TestAdapterFailurePersistsPrivateStatusAndDomainSafeReason(t *testing.T) {
+	store := newMemoryStore()
+	adapter := openstack.NewDatabaseProvisioner(&fakeOpenStack{serverStatus: "ERROR"}, openstack.ProvisionerConfig{
+		EngineImages: map[string]string{"postgres:16": "image"}, PlanFlavors: map[string]string{"basic": "flavor"}, NetworkID: "network",
+	})
+	controller := NewController(store, adapter)
+	controller.SetPlans(map[string]Plan{"basic": {CPU: 1, MemoryMB: 2048, StorageGB: 20, Engines: []string{EnginePostgres}}})
+	result, err := controller.CreateInstanceOperation(CreateInstanceRequest{
+		TenantID: "1", ProjectID: "2", Name: "failed-db", Engine: EnginePostgres, EngineVersion: "16", Plan: "basic",
+	}, "failure-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := controller.ProvisionInstance(result.Database.ID); !errors.Is(err, ErrProvisioningFailed) {
+		t.Fatalf("provider failure not classified: %v", err)
+	}
+	instance, _ := store.GetInstance(result.Database.ID)
+	operation, _ := store.GetOperation(result.Operation.ID)
+	if instance.Status != "error" || readProviderState(t, instance).ServerStatus != "ERROR" || operation.Status != "failed" {
+		t.Fatal("failure state was not persisted")
+	}
+	if strings.Contains(operation.Reason, "Nova") || strings.Contains(operation.Reason, "server-1") {
+		t.Fatal("domain operation exposed provider diagnostics")
 	}
 }

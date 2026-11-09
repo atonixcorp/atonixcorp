@@ -16,25 +16,26 @@ const (
 )
 
 type Job struct {
-	ID          string            `json:"id"`
-	TenantID    string            `json:"tenant_id"`
-	UserID      string            `json:"user_id"`
-	Name        string            `json:"name"`
-	Backend     string            `json:"backend"` // "slurm" or "k8s"
-	SchedulerID string            `json:"scheduler_id"`
-	Partition   string            `json:"partition"`
-	Account     string            `json:"account"`
-	ScriptPath  string            `json:"script_path"`
-	CPUs        int               `json:"cpus"`
-	MemoryMB    int               `json:"memory_mb"`
-	GPUs        int               `json:"gpus"`
-	WorkingDir  string            `json:"working_dir"`
-	Env         map[string]string `json:"env"`
-	State       JobState          `json:"state"`
-	CreatedAt   time.Time         `json:"created_at"`
-	UpdatedAt   time.Time         `json:"updated_at"`
-	StartedAt   *time.Time        `json:"started_at,omitempty"`
-	FinishedAt  *time.Time        `json:"finished_at,omitempty"`
+	ID               string            `json:"id"`
+	TenantID         string            `json:"tenant_id"`
+	UserID           string            `json:"user_id"`
+	Name             string            `json:"name"`
+	Backend          string            `json:"-"`
+	SchedulerID      string            `json:"-"`
+	ExecutionProfile string            `json:"execution_profile"`
+	Partition        string            `json:"-"`
+	Account          string            `json:"-"`
+	ScriptPath       string            `json:"script_path"`
+	CPUs             int               `json:"cpus"`
+	MemoryMB         int               `json:"memory_mb"`
+	GPUs             int               `json:"gpus"`
+	WorkingDir       string            `json:"working_dir"`
+	Env              map[string]string `json:"env"`
+	State            JobState          `json:"state"`
+	CreatedAt        time.Time         `json:"created_at"`
+	UpdatedAt        time.Time         `json:"updated_at"`
+	StartedAt        *time.Time        `json:"started_at,omitempty"`
+	FinishedAt       *time.Time        `json:"finished_at,omitempty"`
 }
 
 type JobLog struct {

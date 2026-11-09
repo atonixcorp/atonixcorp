@@ -7,7 +7,7 @@ import {
   getCatalog,
   getProjects,
   getTenants,
-  createNovaInstance,
+  createInstance,
 } from "../lib/api";
 import type { ComputeProject, ComputeTenant } from "../lib/api";
 import { restoreDraft, saveDraft } from "../lib/deployment-state";
@@ -115,13 +115,8 @@ export default function DeployInstancePage() {
   }, []);
 
   useEffect(() => {
-    if (!tenantID) {
-      setProjects([]);
-      setProjectID("");
-      return;
-    }
+    if (!tenantID) return;
     let active = true;
-    setProjectID("");
     void getProjects(Number(tenantID)).then((items) => {
       if (!active) return;
       setProjects(items);
@@ -158,9 +153,9 @@ export default function DeployInstancePage() {
   const validate = () => {
     if (!catalog.compute_types.some((item) => item.id === draft.computeType)) return { section: "compute-type", message: "Choose an available compute type." };
     if (!catalog.regions.some((item) => item.id === draft.region && item.available)) return { section: "region", message: "Choose an available region." };
-    if (!catalog.images.some((item) => item.id === draft.image && item.available)) return { section: "image", message: "Choose an active provider image." };
-    if (!catalog.plans.some((item) => item.id === draft.plan && item.available)) return { section: "plan", message: "Choose an available provider flavor." };
-    if (!catalog.networks.some((item) => item.id === draft.network && item.available)) return { section: "network", message: "Choose an available provider network." };
+    if (!catalog.images.some((item) => item.id === draft.image && item.available)) return { section: "image", message: "Choose an available operating system image." };
+    if (!catalog.plans.some((item) => item.id === draft.plan && item.available)) return { section: "plan", message: "Choose an available instance size." };
+    if (!catalog.networks.some((item) => item.id === draft.network && item.available)) return { section: "network", message: "Choose an available network." };
     if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,62}$/.test(draft.name)) return { section: "identity", message: "Use 1–63 letters, numbers, dots, underscores, or hyphens for the instance name." };
     return null;
   };
@@ -197,19 +192,19 @@ export default function DeployInstancePage() {
     setSubmitting(true);
     setSubmitError("");
     try {
-      const instance = await createNovaInstance({
+      const instance = await createInstance({
         tenant_id: Number(tenantID),
         project_id: Number(projectID),
         name: draft.name,
-        region: draft.region,
+        region_id: draft.region,
         image_id: draft.image,
-        flavor_id: draft.plan,
+        size_id: draft.plan,
         network_id: draft.network,
       }, idempotencyKey.current);
       idempotencyKey.current = "";
       router.push(`/compute/instances/${encodeURIComponent(instance.id)}`);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "The provider could not create the instance.");
+      setSubmitError(error instanceof Error ? error.message : "The virtual machine could not be created.");
     } finally {
       setSubmitting(false);
     }
@@ -231,16 +226,16 @@ export default function DeployInstancePage() {
   return (
     <div className="compute-page compute-deploy-page">
       <header className="compute-page-heading">
-        <div><p className="compute-eyebrow">COMPUTE / DEPLOY</p><h1>Deploy an instance</h1><p>Launch one virtual machine from live OpenStack resources.</p></div>
+        <div><p className="compute-eyebrow">COMPUTE / DEPLOY</p><h1>Deploy an instance</h1><p>Launch one virtual machine using the resources available to your project.</p></div>
         <Link className="compute-secondary-button" href="/compute/instances">Cancel</Link>
       </header>
       <div className="compute-deploy-notice" role="status">
-        <strong>{catalog.provisioning_enabled ? "Live OpenStack catalog" : "Deployment unavailable"}</strong>
-        <span>{catalog.provisioning_enabled ? "Images, flavors, and networks below are read from the selected project's OpenStack account. Pricing is unavailable." : "A valid project mapping and provider compute, image, and network capabilities are required."}</span>
+        <strong>{catalog.provisioning_enabled ? "Compute resources available" : "Deployment unavailable"}</strong>
+        <span>{catalog.provisioning_enabled ? "Images, sizes, and networks below are available to the selected project. Pricing is unavailable." : "A valid project and available compute, image, and network services are required."}</span>
       </div>
       {scopeError && <p className="compute-inline-error" role="alert">{scopeError}</p>}
       <div className="compute-form-grid">
-        <label className="compute-field">Workspace<select value={tenantID} onChange={(event) => { idempotencyKey.current = ""; setCatalog(emptyCatalog); setCatalogError(""); setScopeError(""); setLoading(true); setProjectID(""); setTenantID(event.target.value); }}>{tenants.map((tenant) => <option key={tenant.id} value={tenant.id}>{tenant.name}</option>)}</select></label>
+        <label className="compute-field">Workspace<select value={tenantID} onChange={(event) => { idempotencyKey.current = ""; setCatalog(emptyCatalog); setCatalogError(""); setScopeError(""); setLoading(true); setProjects([]); setProjectID(""); setTenantID(event.target.value); }}>{tenants.map((tenant) => <option key={tenant.id} value={tenant.id}>{tenant.name}</option>)}</select></label>
         <label className="compute-field">Project<select value={projectID} onChange={(event) => { idempotencyKey.current = ""; setCatalog(emptyCatalog); setCatalogError(""); setScopeError(""); setLoading(true); setProjectID(event.target.value); }}>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>
       </div>
       {catalogError && <p className="compute-inline-error" role="alert">{catalogError}</p>}
@@ -256,7 +251,7 @@ export default function DeployInstancePage() {
           <PlanSection plans={availablePlans} draft={draft} update={update} />
           <NetworkSection catalog={catalog} draft={draft} update={update} />
           <section className="compute-card compute-deploy-section" id="identity" tabIndex={-1}>
-            <header className="compute-section-heading"><span>07</span><div><h2>Server identity</h2><p>Choose the server name sent to OpenStack.</p></div></header>
+            <header className="compute-section-heading"><span>07</span><div><h2>Server identity</h2><p>Choose a name for your virtual machine.</p></div></header>
             <div className="compute-section-body"><label className="compute-field">Instance name<input value={draft.name} maxLength={63} pattern="[A-Za-z0-9][A-Za-z0-9._-]{0,62}" required placeholder="worker-01" onChange={(event) => update({ name: event.target.value })} /></label></div>
           </section>
           {showReview && (

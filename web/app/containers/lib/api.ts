@@ -58,7 +58,6 @@ export type ContainerDeployment = {
   correlation_id: string;
   provisioning_job_id: string;
   error_code?: string;
-  error_details?: string;
   created_at: string;
   updated_at: string;
 };

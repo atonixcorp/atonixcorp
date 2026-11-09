@@ -1,7 +1,6 @@
 "use client";
 
 import "../styles/LoginSignup.css";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -65,7 +64,19 @@ export default function LoginSignup() {
                 }).then(async (response) => {
                   const payload = await response.json().catch(() => null) as { error?: string } | null;
                   if (!response.ok) throw new Error(payload?.error || "Could not sign in.");
-                  router.push("/dashboard");
+                  const requested = new URLSearchParams(window.location.search).get("next");
+                  let destination = "/dashboard";
+                  if (requested) {
+                    try {
+                      const parsed = new URL(requested, window.location.origin);
+                      if (parsed.origin === window.location.origin) {
+                        destination = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+                      }
+                    } catch {
+                      destination = "/dashboard";
+                    }
+                  }
+                  router.replace(destination);
                 }).catch((error: unknown) => {
                   setLoginError(error instanceof Error ? error.message : "Could not sign in.");
                 }).finally(() => setSubmitting(false));
@@ -104,25 +115,6 @@ export default function LoginSignup() {
               Need an account? <Link href="/onboard">Request access <span aria-hidden="true">→</span></Link>
             </p>
 
-            <div className="login-divider"><span>or continue with</span></div>
-            <div className="oauth-row">
-              <button className="oauth-btn github" type="button">
-                <Image src="/icons/github.svg" alt="" aria-hidden="true" width={16} height={16} />
-                GitHub
-              </button>
-              <button className="oauth-btn linkedin" type="button">
-                <Image src="/icons/linkedin.svg" alt="" aria-hidden="true" width={16} height={16} />
-                LinkedIn
-              </button>
-              <button className="oauth-btn google" type="button">
-                <Image src="/icons/google.svg" alt="" aria-hidden="true" width={16} height={16} />
-                Google
-              </button>
-              <button className="oauth-btn gmail" type="button">
-                <Image src="/icons/gmail.svg" alt="" aria-hidden="true" width={16} height={16} />
-                Gmail
-              </button>
-            </div>
             <p className="signup-text">
               New to AtonixCorp? <a href="/onboard">Request access <span aria-hidden="true">→</span></a>
             </p>

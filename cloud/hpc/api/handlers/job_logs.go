@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"atonixcorp/cloud/hpc/jobs"
@@ -26,7 +27,8 @@ func (h *JobLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	logs, err := h.Logs.List(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		log.Printf("list HPC job logs id=%s: %v", id, err)
+		writeJobError(w, http.StatusNotFound, "JOB_LOGS_UNAVAILABLE", "Job logs could not be retrieved.")
 		return
 	}
 

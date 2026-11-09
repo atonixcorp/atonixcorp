@@ -7,7 +7,6 @@ export type ComputeType = {
 export type ComputeRegion = {
   id: string;
   name: string;
-  country: string;
   available: boolean;
   capacity_status: string;
 };
@@ -100,8 +99,6 @@ export type ComputeVolume = {
 
 export type ComputeInstance = {
   id: string;
-  provider_id: string;
-  provider_status: string;
   deployment_id: string;
   name: string;
   hostname: string;

@@ -3,7 +3,6 @@ export type ObservabilityProject = { id: number; tenant_id: number; name: string
 export type Resource = {
   id: string;
   resource_type: string;
-  provider: string;
   name: string;
   region?: string;
   project_id: number;
@@ -15,7 +14,6 @@ export type ResourceGroup = {
   kind: string;
   count: number;
   health: string;
-  source: string;
 };
 export type Overview = {
   health: string;
@@ -31,7 +29,6 @@ export type Overview = {
 };
 export type Integration = {
   name: string;
-  provider: string;
   state: string;
   description: string;
 };

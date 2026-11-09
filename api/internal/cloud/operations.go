@@ -34,7 +34,7 @@ func (s *Service) createOperation(
 		ResourceID: instance.ID, ResourceType: "instance", Operation: action,
 		Provider: instance.Provider, ProviderOperationID: instance.ProviderInstanceID,
 		ProviderStatusAtStart: instance.ProviderStatus,
-		Status: "RUNNING", ActorID: actorID, RequestID: operationRequestID(ctx),
+		Status:                "RUNNING", ActorID: actorID, RequestID: operationRequestID(ctx),
 		StartedAt: time.Now().UTC(),
 	}
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -232,7 +232,7 @@ func (s *Service) reconcileOperation(
 		}
 	}
 	if instance.Status == "ERROR" {
-		return s.completeOperation(ctx, operation, "FAILED", "PROVIDER_OPERATION_FAILED", "failed")
+		return s.completeOperation(ctx, operation, "FAILED", "COMPUTE_OPERATION_FAILED", "failed")
 	}
 	if operation.Operation == "delete" && instance.Status == "DELETED" {
 		return s.completeOperation(ctx, operation, "SUCCEEDED", "", "succeeded")

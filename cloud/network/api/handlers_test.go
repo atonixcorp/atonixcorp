@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -61,5 +62,26 @@ func TestCreateSubnetRejectsGatewayOutsideCIDR(t *testing.T) {
 	}
 	if !strings.Contains(response.Body.String(), `"code":"INVALID_SUBNET"`) {
 		t.Fatalf("response does not contain stable validation error: %s", response.Body.String())
+	}
+}
+
+func TestNetworkOperationErrorsHideProviderDetails(t *testing.T) {
+	response := httptest.NewRecorder()
+	writeOperationFailure(
+		response, "create network", "NETWORK_CREATE_FAILED",
+		"The network could not be created.",
+		errors.New("Neutron authentication failed at https://provider.example"),
+	)
+
+	if response.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusInternalServerError)
+	}
+	body := response.Body.String()
+	if strings.Contains(body, "Neutron") || strings.Contains(body, "provider.example") {
+		t.Fatalf("provider details leaked in customer response: %s", body)
+	}
+	if !strings.Contains(body, `"code":"NETWORK_CREATE_FAILED"`) ||
+		!strings.Contains(body, `"error":"The network could not be created."`) {
+		t.Fatalf("response is missing the stable customer error: %s", body)
 	}
 }

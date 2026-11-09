@@ -1,6 +1,7 @@
 package containers
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -78,5 +79,22 @@ func TestNamespaceNameIsTenantAndProjectScoped(t *testing.T) {
 	second := NamespaceName(9, 5)
 	if first == second || first != "atonix-t9-p4" {
 		t.Fatalf("unexpected namespace isolation names: %q, %q", first, second)
+	}
+}
+
+func TestDeploymentResponseDoesNotExposeBackendErrorDetails(t *testing.T) {
+	payload, err := json.Marshal(DeploymentResponse{
+		ID: "deployment-id", ErrorCode: "PROVISIONING_FAILED",
+		ErrorDetails: "Kubernetes API endpoint https://cluster.example returned an internal error",
+	})
+	if err != nil {
+		t.Fatalf("marshal deployment response: %v", err)
+	}
+	if strings.Contains(string(payload), "Kubernetes API endpoint") ||
+		strings.Contains(string(payload), "cluster.example") {
+		t.Fatalf("deployment response leaked backend error details: %s", payload)
+	}
+	if !strings.Contains(string(payload), `"error_code":"PROVISIONING_FAILED"`) {
+		t.Fatalf("deployment response omitted the customer error code: %s", payload)
 	}
 }

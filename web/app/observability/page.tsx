@@ -238,19 +238,18 @@ export default function ObservabilityPage() {
   const renderResourceTable = (items: Resource[]) => (
     <div className="observability-table-wrap">
       <table className="observability-table">
-        <thead><tr><th>Resource</th><th>Type</th><th>Provider</th><th>Resource state</th><th>Monitoring</th><th>Last discovered</th></tr></thead>
+        <thead><tr><th>Resource</th><th>Type</th><th>Resource state</th><th>Monitoring</th><th>Last discovered</th></tr></thead>
         <tbody>
           {items.map((resource) => (
             <tr key={`${resource.resource_type}:${resource.id}`}>
-              <td><button className="observability-resource-link" type="button" onClick={() => void openResource(resource)}>{resource.name}</button><small>{resource.id}</small></td>
+              <td><button className="observability-resource-link" type="button" onClick={() => void openResource(resource)}>{resource.name}</button></td>
               <td>{resource.resource_type}</td>
-              <td>{resource.provider}</td>
               <td><HealthBadge value={resource.status || "unknown"} /></td>
               <td><HealthBadge value={resource.monitoring_status.replaceAll("_", " ")} /></td>
               <td>{formatTime(resource.last_seen_at)}</td>
             </tr>
           ))}
-          {!items.length && <tr><td className="observability-table-empty" colSpan={6}>No connected AtonixCorp resources were discovered in this project.</td></tr>}
+          {!items.length && <tr><td className="observability-table-empty" colSpan={5}>No connected AtonixCorp resources were discovered in this project.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -276,7 +275,7 @@ export default function ObservabilityPage() {
                 <article key={group.kind}>
                   <span>{group.kind.replaceAll(".", " ")}</span>
                   <strong>{group.count}</strong>
-                  <small>{group.source.replaceAll("_", " ")} · health {group.health}</small>
+                  <small>Health {group.health}</small>
                 </article>
               ))}
             </div>
@@ -296,13 +295,13 @@ export default function ObservabilityPage() {
       return <section className="observability-card"><header><div><h2>{section}</h2><p>Resources originate from their cloud-service integrations, not from Observability.</p></div><button type="button" onClick={refreshData}>Refresh</button></header>{renderResourceTable(resources)}</section>;
     }
     if (section === "Metrics") {
-      return <section className="observability-card"><header><div><h2>Project metrics</h2><p>Metrics are displayed only when a configured adapter supplies real samples.</p></div></header>{sectionLoading ? <p className="observability-loading">Loading metrics status…</p> : metrics?.state === "available" && metrics.metrics.length ? <div className="observability-table-wrap"><table className="observability-table"><thead><tr><th>Resource ID</th><th>Type</th><th>Metric</th><th>Value</th><th>Observed</th></tr></thead><tbody>{metrics.metrics.map((metric, index) => <tr key={`${metric.resource_id}-${metric.name}-${index}`}><td>{metric.resource_id ?? "—"}</td><td>{metric.resource_type ?? "—"}</td><td>{metric.name}</td><td>{metric.value} {metric.unit}</td><td>{formatTime(metric.observed_at)}</td></tr>)}</tbody></table></div> : <div className="observability-unavailable"><strong>No telemetry samples available</strong><p>{metrics?.reason ?? "No connected source has supplied project metrics."}</p></div>}</section>;
+      return <section className="observability-card"><header><div><h2>Project metrics</h2><p>Metrics are displayed only when a configured adapter supplies real samples.</p></div></header>{sectionLoading ? <p className="observability-loading">Loading metrics status…</p> : metrics?.state === "available" && metrics.metrics.length ? <div className="observability-table-wrap"><table className="observability-table"><thead><tr><th>Type</th><th>Metric</th><th>Value</th><th>Observed</th></tr></thead><tbody>{metrics.metrics.map((metric, index) => <tr key={`${metric.name}-${index}`}><td>{metric.resource_type ?? "—"}</td><td>{metric.name}</td><td>{metric.value} {metric.unit}</td><td>{formatTime(metric.observed_at)}</td></tr>)}</tbody></table></div> : <div className="observability-unavailable"><strong>No telemetry samples available</strong><p>{metrics?.reason ?? "No connected source has supplied project metrics."}</p></div>}</section>;
     }
     if (section === "Logs") {
       return <section className="observability-card"><header><div><h2>Logs</h2><p>Application and infrastructure logs from authorized collectors.</p></div></header><div className="observability-unavailable"><strong>{logs?.state === "available" ? "Log source connected" : "No log source connected"}</strong><p>{logs?.reason ?? "Log data is unavailable until an authorized log collector is configured."}</p></div></section>;
     }
     if (section === "Events") {
-      return <section className="observability-card"><header><div><h2>Platform events</h2><p>Security audit activity currently available for this project.</p></div></header>{sectionLoading ? <p className="observability-loading">Loading events…</p> : events.length ? <div className="observability-event-list">{events.map((event) => <article key={event.id}><HealthBadge value={event.severity} /><div><strong>{event.summary}</strong><p>{event.source} · resource {event.resource_id || "platform"}</p></div><time>{formatTime(event.created_at)}</time></article>)}</div> : <div className="observability-empty"><strong>No security events recorded</strong><p>This is an empty result from the project audit records, not a claim that every service has event telemetry connected.</p></div>}</section>;
+      return <section className="observability-card"><header><div><h2>Platform events</h2><p>Security audit activity currently available for this project.</p></div></header>{sectionLoading ? <p className="observability-loading">Loading events…</p> : events.length ? <div className="observability-event-list">{events.map((event) => <article key={event.id}><HealthBadge value={event.severity} /><div><strong>{event.summary}</strong></div><time>{formatTime(event.created_at)}</time></article>)}</div> : <div className="observability-empty"><strong>No security events recorded</strong><p>This is an empty result from the project audit records, not a claim that every service has event telemetry connected.</p></div>}</section>;
     }
     if (section === "Alerts") {
       return <section className="observability-card"><header><div><h2>Alerts</h2><p>Alert status depends on configured telemetry and evaluation rules.</p></div></header><div className="observability-unavailable"><strong>{alerts?.state === "available" ? "Alert evaluator connected" : "Alert evaluator unavailable"}</strong><p>{alerts?.reason ?? "No telemetry-backed alert evaluator is configured for this project."}</p></div></section>;
@@ -310,23 +309,23 @@ export default function ObservabilityPage() {
     if (section === "Dashboards") {
       return <section className="observability-card"><header><div><h2>Platform dashboards</h2><p>Built-in views organize telemetry when their sources are connected.</p></div></header>{sectionLoading ? <p className="observability-loading">Loading dashboards…</p> : <div className="observability-dashboard-grid">{dashboards.map((dashboard) => <article key={dashboard.id}><span>Platform dashboard</span><h3>{dashboard.name}</h3><p>{dashboard.description}</p><small>{dashboard.resource_kinds.join(" · ")}</small></article>)}</div>}</section>;
     }
-    return <section className="observability-card"><header><div><h2>Integrations</h2><p>Provider connections are server-side; configured endpoints remain unverified until collection succeeds.</p></div></header><div className="observability-integration-list">{integrations.map((item) => <article key={item.provider}><div><strong>{item.name}</strong><p>{item.description}</p></div><HealthBadge value={item.state.replaceAll("_", " ")} /></article>)}</div></section>;
+    return <section className="observability-card"><header><div><h2>Integrations</h2><p>Connections are managed by the platform and shown as active only after data collection succeeds.</p></div></header><div className="observability-integration-list">{integrations.map((item) => <article key={item.name}><div><strong>{item.name}</strong><p>{item.description}</p></div><HealthBadge value={item.state.replaceAll("_", " ")} /></article>)}</div></section>;
   };
 
   const renderResourceDetail = () => {
     if (!selectedResource) return null;
     return (
       <section className="observability-card observability-detail">
-        <header><div><p className="observability-eyebrow">RESOURCE DETAIL</p><h2>{selectedResource.name}</h2><p>{selectedResource.resource_type} · {selectedResource.provider} · {selectedResource.region || projectName}</p></div><button type="button" onClick={() => setSelectedResource(null)}>Close</button></header>
+        <header><div><p className="observability-eyebrow">RESOURCE DETAIL</p><h2>{selectedResource.name}</h2><p>{selectedResource.resource_type} · {selectedResource.region || projectName}</p></div><button type="button" onClick={() => setSelectedResource(null)}>Close</button></header>
         <nav className="observability-detail-tabs" aria-label="Resource details">
           {detailTabs.map((tab) => <button key={tab} type="button" aria-current={detailTab === tab ? "page" : undefined} onClick={() => setDetailTab(tab)}>{tab}</button>)}
         </nav>
-        {detailTab === "Overview" && <div className="observability-detail-overview"><div><span>Resource state</span><strong>{selectedResource.status}</strong></div><div><span>Monitoring state</span><strong>{selectedResource.monitoring_status.replaceAll("_", " ")}</strong></div><div><span>Health</span><strong>Unknown</strong></div><div><span>Last discovered</span><strong>{formatTime(selectedResource.last_seen_at)}</strong></div><p>{selectedGroup ? `Collector family: ${selectedGroup.source.replaceAll("_", " ")}` : "No collector has supplied health telemetry for this resource."}</p></div>}
+        {detailTab === "Overview" && <div className="observability-detail-overview"><div><span>Resource state</span><strong>{selectedResource.status}</strong></div><div><span>Monitoring state</span><strong>{selectedResource.monitoring_status.replaceAll("_", " ")}</strong></div><div><span>Health</span><strong>Unknown</strong></div><div><span>Last discovered</span><strong>{formatTime(selectedResource.last_seen_at)}</strong></div><p>{selectedGroup ? `Resource category: ${selectedGroup.kind.replaceAll("_", " ")}` : "No collector has supplied health telemetry for this resource."}</p></div>}
         {detailTab === "Metrics" && <div className="observability-unavailable"><strong>{resourceMetrics?.state === "available" ? "Metrics available" : "No metric samples available"}</strong><p>{resourceMetrics?.metrics.length ? resourceMetrics.metrics.map((metric) => `${metric.name}: ${metric.value} ${metric.unit} (${formatTime(metric.observed_at)})`).join(" · ") : "No collector currently supplies verified metrics for this resource."}</p></div>}
         {detailTab === "Logs" && <div className="observability-unavailable"><strong>Logs unavailable</strong><p>No authorized log adapter is connected to this resource.</p></div>}
-        {detailTab === "Events" && <div className="observability-unavailable"><strong>Resource event stream unavailable</strong><p>Platform security events are shown in the Events section; provider event collection is not connected.</p></div>}
+        {detailTab === "Events" && <div className="observability-unavailable"><strong>Resource event stream unavailable</strong><p>Platform security events are shown in the Events section; event collection is not connected.</p></div>}
         {detailTab === "Alerts" && <div className="observability-unavailable"><strong>Resource alert state unavailable</strong><p>No telemetry-backed alert evaluator is configured.</p></div>}
-        {detailTab === "Configuration" && <div className="observability-detail-overview"><div><span>Resource ID</span><strong>{selectedResource.id}</strong></div><div><span>Project</span><strong>{selectedResource.project_id}</strong></div><div><span>Provider</span><strong>{selectedResource.provider}</strong></div><div><span>Region</span><strong>{selectedResource.region || "Not reported"}</strong></div></div>}
+        {detailTab === "Configuration" && <div className="observability-detail-overview"><div><span>Project</span><strong>{projectName}</strong></div><div><span>Region</span><strong>{selectedResource.region || "Not reported"}</strong></div></div>}
       </section>
     );
   };

@@ -24,9 +24,9 @@ export function DeploymentSummary({
       <aside className="compute-summary-card" aria-label="Deployment summary">
         <h2>Deployment summary</h2>
         <div className="compute-summary-line"><span>Compute</span><strong>{type?.name ?? "Choose a type"}</strong></div>
-        <div className="compute-summary-line"><span>Region</span><strong>{region ? `${region.name} · ${region.id.toUpperCase()}` : "Choose a region"}</strong></div>
+        <div className="compute-summary-line"><span>Region</span><strong>{region?.name ?? "Choose a region"}</strong></div>
         <div className="compute-summary-line"><span>Image</span><strong>{image?.name ?? "Choose an image"}</strong></div>
-        <div className="compute-summary-line"><span>Flavor</span><strong>{plan?.name ?? "Choose a flavor"}</strong></div>
+        <div className="compute-summary-line"><span>Instance size</span><strong>{plan?.name ?? "Choose a size"}</strong></div>
         <div className="compute-summary-line"><span>Network</span><strong>{network?.name ?? "Choose a network"}</strong></div>
         <div className="compute-summary-specs">
           <span>{plan ? `${plan.vcpus} vCPU` : "— vCPU"}</span>
@@ -37,12 +37,12 @@ export function DeploymentSummary({
           <small>Pricing</small>
           <strong>Unavailable</strong>
         </div>
-        <p className="compute-summary-disclaimer">Prices are not provided by the OpenStack account. Deployment is not blocked by missing pricing.</p>
+        <p className="compute-summary-disclaimer">Pricing is not currently available. Deployment is not blocked by missing pricing.</p>
         <button type="button" className="compute-secondary-button compute-summary-review" onClick={onReview}>Review configuration</button>
         <button type="button" className="compute-primary-button compute-summary-deploy" disabled={blocked} onClick={onDeploy}>
           Deploy instance
         </button>
-        {blocked && <small className="compute-summary-blocked">Choose an authorized project and all required live provider resources.</small>}
+        {blocked && <small className="compute-summary-blocked">Choose an authorized project and all required resources.</small>}
       </aside>
       <div className={`compute-mobile-deploy-bar${expanded ? " expanded" : ""}`}>
         <button type="button" className="compute-mobile-summary-toggle" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>

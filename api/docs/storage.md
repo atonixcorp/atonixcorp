@@ -21,6 +21,15 @@ also asynchronous and requires delete protection to be disabled. Transient
 provider failures are retried up to three times. Project defaults are 20
 volumes and 1024 GiB.
 
+Storage operations resolve named drivers through a startup `BlockDriverRegistry`.
+Static development drivers and account-scoped driver factories share the same
+`BlockDriver` contract. The server registers the configured local driver and
+the Cinder factory; persisted volumes resolve their original driver by name,
+and scoped operations revalidate the mapped project before contacting it.
+Additional storage adapters can register without adding provider-specific
+branches to the volume service. The organization account credential format and
+the current account-scoped factory remain OpenStack-specific.
+
 ## OpenStack Cinder
 
 Map each organization to its own OpenStack project and application credential
@@ -58,14 +67,13 @@ the original project is restored. Older shared-Cinder records without this
 project binding are not accessed automatically and require an operator-led
 migration; do not bind them to a different project.
 
-Volume list and detail requests inspect Cinder after authorization and return
-`provider_id`, `provider_status`, current size and availability zone, and
-attachment IDs, server IDs and devices when provided. They reconcile persisted
-size, zone and lifecycle state; a missing provider volume is marked `ERROR`.
-Provider failures are reported rather than silently presenting stale Cinder
-details. The UI refresh button triggers a fresh read. Cinder IDs and status
-are separate from the Atonix volume ID and asynchronous operation status.
-Live provisioning must be verified against the target OpenStack deployment.
+Volume list and detail requests inspect Cinder after authorization and
+reconcile persisted size, zone and lifecycle state; a missing provider volume
+is marked `ERROR`. Provider IDs, provider status, zones, and attachment
+identifiers remain internal and are omitted from customer responses. Provider
+failures are reported rather than silently presenting stale Cinder details.
+The UI refresh button triggers a fresh read. Live provisioning must be verified
+against the target OpenStack deployment.
 
 ## Libvirt/QEMU host storage
 

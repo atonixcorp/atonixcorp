@@ -67,6 +67,7 @@ func main() {
 	storageService := storage.NewService(db, storageDriver)
 
 	var openStackProvider cloud.Provider
+	var openStackFactory cloud.ComputeProviderFactory
 	openStackConfig, openStackConfigured, err := cloud.OpenStackConfigFromEnv()
 	if err != nil {
 		log.Fatalf("configure Nova integration: %v", err)
@@ -79,6 +80,7 @@ func main() {
 			log.Fatalf("initialize Nova integration: %v", providerErr)
 		}
 		openStackProvider = provider
+		openStackFactory = provider
 		log.Printf(
 			"OpenStack provider factory configured for region %s; compute operations require a mapped organization account",
 			openStackConfig.Region,
@@ -92,8 +94,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("configure OpenStack account encryption: %v", err)
 	}
-	cloudService := cloud.NewService(db, openStackProvider, accountEncryptionKey)
-	storageService.SetScopedDrivers(storage.NewScopedDrivers(cloudService, storageDriver, storage.CinderConfig{
+	providerRegistry := cloud.NewComputeProviderRegistry()
+	if openStackFactory != nil {
+		if err := providerRegistry.Register(openStackFactory); err != nil {
+			log.Fatalf("register OpenStack provider adapter: %v", err)
+		}
+	}
+	cloudService := cloud.NewServiceWithRegistry(
+		db, openStackProvider, providerRegistry, accountEncryptionKey,
+	)
+	storageRegistry := storage.NewBlockDriverRegistry()
+	localDriverName := ""
+	if storageDriver != nil {
+		if err := storageRegistry.Register(storageDriver); err != nil {
+			log.Fatalf("register storage driver: %v", err)
+		}
+		localDriverName = storageDriver.Name()
+	}
+	cinderConfig := storage.CinderConfig{
 		AuthURL:                  firstNonEmpty(os.Getenv("CINDER_AUTH_URL"), os.Getenv("OPENSTACK_AUTH_URL")),
 		Region:                   firstNonEmpty(os.Getenv("CINDER_REGION"), os.Getenv("OPENSTACK_REGION"), "RegionOne"),
 		Interface:                firstNonEmpty(os.Getenv("CINDER_INTERFACE"), os.Getenv("OPENSTACK_INTERFACE"), "public"),
@@ -102,7 +120,17 @@ func main() {
 		UnencryptedVolumeTypeIDs: splitCSV(os.Getenv("CINDER_UNENCRYPTED_VOLUME_TYPE_IDS")),
 		Zones:                    splitCSV(os.Getenv("CINDER_AVAILABILITY_ZONES")),
 		AllowInsecureHTTP:        strings.EqualFold(strings.TrimSpace(os.Getenv("OPENSTACK_ALLOW_INSECURE_HTTP")), "true"),
-	}))
+	}
+	if err := storageRegistry.RegisterFactory(storage.NewCinderDriverFactory(cinderConfig)); err != nil {
+		log.Fatalf("register Cinder storage adapter: %v", err)
+	}
+	scopedStorageDrivers, err := storage.NewScopedDriversWithRegistry(
+		cloudService, storageRegistry, localDriverName,
+	)
+	if err != nil {
+		log.Fatalf("configure scoped storage drivers: %v", err)
+	}
+	storageService.SetScopedDrivers(scopedStorageDrivers)
 	go storageService.RunWorker(context.Background())
 	if openStackProvider != nil {
 		go cloudService.RunReconciler(context.Background())

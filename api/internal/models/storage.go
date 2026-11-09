@@ -9,8 +9,8 @@ type StorageVolume struct {
 	OwnerID           uint                `gorm:"not null" json:"owner_id"`
 	Name              string              `gorm:"size:63;uniqueIndex:idx_storage_active_volume_name,where:deleted_at IS NULL;not null" json:"name"`
 	Description       string              `gorm:"size:512" json:"description,omitempty"`
-	Region            string              `gorm:"size:64;not null" json:"region"`
-	AvailabilityZone  string              `gorm:"size:64" json:"availability_zone,omitempty"`
+	Region            string              `gorm:"size:64;not null" json:"-"`
+	AvailabilityZone  string              `gorm:"size:64" json:"-"`
 	StorageClass      string              `gorm:"size:255;not null" json:"storage_class"`
 	SizeGB            int64               `gorm:"not null" json:"size_gb"`
 	Encrypted         bool                `gorm:"not null" json:"encrypted"`
@@ -18,13 +18,13 @@ type StorageVolume struct {
 	TagsJSON          []byte              `gorm:"type:jsonb" json:"-"`
 	Tags              map[string]string   `gorm:"-" json:"tags,omitempty"`
 	State             string              `gorm:"size:32;index;not null" json:"state"`
-	Driver            string              `gorm:"size:32;not null" json:"driver"`
+	Driver            string              `gorm:"size:32;not null" json:"-"`
 	IdempotencyKey    string              `gorm:"uniqueIndex:idx_storage_volume_idempotency;size:128;not null" json:"-"`
 	RequestHash       string              `gorm:"size:64;not null" json:"-"`
-	ProviderID        string              `gorm:"size:255" json:"provider_id,omitempty"`
+	ProviderID        string              `gorm:"size:255" json:"-"`
 	ProviderProjectID string              `gorm:"size:255" json:"-"`
-	ProviderStatus    string              `gorm:"-" json:"provider_status,omitempty"`
-	Attachments       []StorageAttachment `gorm:"-" json:"attachments,omitempty"`
+	ProviderStatus    string              `gorm:"-" json:"-"`
+	Attachments       []StorageAttachment `gorm:"-" json:"-"`
 	ErrorCode         string              `gorm:"size:64" json:"error_code,omitempty"`
 	CreatedAt         time.Time           `json:"created_at"`
 	UpdatedAt         time.Time           `json:"updated_at"`
@@ -32,9 +32,9 @@ type StorageVolume struct {
 }
 
 type StorageAttachment struct {
-	ID       string `json:"id,omitempty"`
-	ServerID string `json:"server_id,omitempty"`
-	Device   string `json:"device,omitempty"`
+	ID       string `json:"-"`
+	ServerID string `json:"-"`
+	Device   string `json:"-"`
 }
 
 type StorageQuota struct {

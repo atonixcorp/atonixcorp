@@ -1,0 +1,89 @@
+.page { width: min(100% - 48px, 1440px); margin: 0 auto; padding: 34px 0 56px; }
+.heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid var(--color-border); }
+.eyebrow { margin-bottom: 8px; color: var(--color-primary); font-size: var(--font-size-caption); font-weight: 750; }
+.heading h1 { color: var(--color-text-primary); font-size: 2rem; font-weight: 680; line-height: 1.2; }
+.heading p:last-child { margin-top: 8px; color: var(--color-text-secondary); font-size: var(--font-size-body); }
+.refresh,
+.primary { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); color: var(--color-text-primary); background: var(--color-surface); cursor: pointer; font-size: var(--font-size-label); font-weight: 650; }
+.refresh:hover { border-color: var(--color-primary); }
+.refresh:disabled,
+.primary:disabled { cursor: not-allowed; opacity: 0.6; }
+.primary { border-color: var(--color-primary); color: #fff; background: var(--color-primary); }
+.primary:hover { background: var(--color-primary-hover); }
+:global(:root[data-theme="dark"]) .primary { color: #0a192b; }
+.scope { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(220px, 2fr); gap: 14px; align-items: end; margin-top: 18px; padding: 15px 16px; border-left: 3px solid var(--color-accent); background: var(--color-surface); }
+.scope label,
+.createForm label { display: grid; min-width: 0; gap: 5px; color: var(--color-text-secondary); font-size: var(--font-size-caption); font-weight: 650; }
+.scope select,
+.createForm input,
+.createForm select,
+.createForm textarea { width: 100%; min-height: 38px; padding: 7px 9px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); color: var(--color-text-primary); background: var(--color-surface); font-size: var(--font-size-label); }
+.createForm textarea { resize: vertical; }
+.scope > p { align-self: center; color: var(--color-text-muted); font-size: var(--font-size-caption); }
+.tabs { display: flex; gap: 4px; margin-top: 26px; border-bottom: 1px solid var(--color-border); overflow-x: auto; }
+.tabs button { min-height: 42px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; color: var(--color-text-secondary); background: transparent; cursor: pointer; font-size: var(--font-size-label); font-weight: 650; white-space: nowrap; }
+.tabs button[aria-selected="true"] { border-bottom-color: var(--color-primary); color: var(--color-primary); }
+.content { min-height: 280px; padding-top: 20px; }
+.loading,
+.empty,
+.muted { padding: 18px 0; color: var(--color-text-secondary); font-size: var(--font-size-body); }
+.error { margin: 12px 0; color: var(--color-error); font-size: var(--font-size-body); }
+.error a { margin-left: 5px; color: inherit; font-weight: 700; }
+.notice { margin: 12px 0; color: var(--color-success); font-size: var(--font-size-body); }
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.metric { display: grid; min-height: 92px; align-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); }
+.metric span { color: var(--color-text-secondary); font-size: var(--font-size-caption); }
+.metric strong { color: var(--color-text-primary); font-size: var(--font-size-heading); font-weight: 700; overflow-wrap: anywhere; }
+.status,
+.section { margin-top: 24px; padding: 18px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); }
+.status h2,
+.sectionHeading h2 { color: var(--color-text-primary); font-size: 1rem; font-weight: 680; }
+.status > div > p,
+.sectionHeading p { margin-top: 4px; color: var(--color-text-secondary); font-size: var(--font-size-caption); }
+.status dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+.status dl div { display: grid; gap: 5px; }
+.status dt { color: var(--color-text-muted); font-size: var(--font-size-caption); }
+.status dd { color: var(--color-text-primary); font-size: var(--font-size-label); font-weight: 650; overflow-wrap: anywhere; }
+.disclaimer { margin-top: 14px; color: var(--color-text-secondary); font-size: var(--font-size-caption); }
+.section { margin-top: 0; }
+.sectionHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.createForm { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 18px 0; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-background); }
+.createForm > label:nth-child(3),
+.createForm fieldset,
+.createForm > p,
+.formFooter { grid-column: 1 / -1; }
+.createForm fieldset { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 13px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
+.createForm legend { padding: 0 5px; color: var(--color-text-primary); font-size: var(--font-size-label); font-weight: 700; }
+.formFooter { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.formFooter p { color: var(--color-text-secondary); font-size: var(--font-size-caption); }
+.tableWrap { max-width: 100%; overflow-x: auto; }
+.tableWrap table { width: 100%; border-collapse: collapse; text-align: left; }
+.tableWrap th,
+.tableWrap td { padding: 11px 10px; border-bottom: 1px solid var(--color-border); color: var(--color-text-primary); font-size: var(--font-size-label); vertical-align: top; }
+.tableWrap th { color: var(--color-text-secondary); background: var(--color-background); font-size: var(--font-size-caption); font-weight: 700; white-space: nowrap; }
+.tableWrap td small { display: block; margin-top: 3px; color: var(--color-text-secondary); font-size: var(--font-size-caption); }
+
+@media (max-width: 850px) {
+  .scope { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .scope > p { grid-column: 1 / -1; }
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .status dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .createForm fieldset { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .page { width: min(100% - 32px, 1440px); padding-top: 24px; }
+  .heading { align-items: flex-start; flex-direction: column; }
+  .scope,
+  .metrics,
+  .status dl,
+  .createForm { grid-template-columns: 1fr; }
+  .createForm > label:nth-child(3),
+  .createForm fieldset,
+  .createForm > p,
+  .formFooter,
+  .scope > p { grid-column: auto; }
+  .createForm fieldset { grid-template-columns: 1fr; }
+  .section { padding: 14px; }
+  .formFooter { align-items: flex-start; flex-direction: column; }
+}

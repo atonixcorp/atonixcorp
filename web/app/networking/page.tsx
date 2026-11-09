@@ -10,9 +10,7 @@ type Network = {
   name: string;
   cidr: string;
   status?: string;
-  provider_id?: string;
-  provider_subnet_id?: string;
-  provider_subnet_status?: string;
+  subnet_status?: string;
 };
 type Capabilities = { network_provisioning: boolean; resources: string[] };
 
@@ -142,7 +140,7 @@ export default function NetworkingPage() {
           `/api/networking/tenants/${encodeURIComponent(tenantID)}/projects/${encodeURIComponent(projectID)}/networks`,
         );
         setNetworks(refreshed);
-        setNotice("Network and subnet were created and verified in OpenStack.");
+        setNotice("Network and subnet were created and verified.");
       } catch (subnetError) {
         setError(`Network was created, but its subnet could not be verified: ${
           subnetError instanceof Error ? subnetError.message : "Networking service returned an unknown error."
@@ -190,7 +188,7 @@ export default function NetworkingPage() {
         {capabilities && !capabilities.network_provisioning && (
           <section className="network-unavailable" role="status">
             <h2>Network provisioning is not enabled</h2>
-            <p>The service is available for viewing, but there is no verified network provider enabled to apply and confirm network changes.</p>
+            <p>The service is available for viewing, but networking is not configured to apply and confirm changes.</p>
           </section>
         )}
         <div className="network-layout">
@@ -198,8 +196,8 @@ export default function NetworkingPage() {
             <header><div><p className="network-eyebrow">PROJECT INVENTORY</p><h2>Virtual networks</h2></div><span>{networks.length} total</span></header>
             {loading ? <p className="network-empty">Loading networks…</p> : networks.length === 0
               ? <p className="network-empty">No networks in this project.</p>
-              : <table><thead><tr><th>Name</th><th>IPv4 / IPv6 range</th><th>OpenStack network ID</th><th>Subnet</th><th>Status</th></tr></thead><tbody>
-                {networks.map((network) => <tr key={network.id}><td>{network.name}</td><td>{network.cidr}</td><td>{network.provider_id ?? "Unavailable"}</td><td>{network.provider_subnet_id ? `${network.provider_subnet_id} · ${network.provider_subnet_status ?? "unknown"}` : "Not created"}</td><td>{network.status ?? "Unavailable"}</td></tr>)}
+              : <table><thead><tr><th>Name</th><th>IPv4 / IPv6 range</th><th>Subnet</th><th>Status</th></tr></thead><tbody>
+                {networks.map((network) => <tr key={network.id}><td>{network.name}</td><td>{network.cidr}</td><td>{network.subnet_status ?? "Not created"}</td><td>{network.status ?? "Unavailable"}</td></tr>)}
               </tbody></table>}
           </section>
           <section className="network-panel">

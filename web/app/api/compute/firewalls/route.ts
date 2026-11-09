@@ -43,7 +43,7 @@ async function proxy(request: Request): Promise<NextResponse> {
   }
   const apiURL = process.env.API_URL;
   if (!apiURL) {
-    return NextResponse.json({ error: "OpenStack security groups are unavailable.", code: "DEPENDENCY_UNAVAILABLE" }, { status: 503 });
+    return NextResponse.json({ error: "Security groups are unavailable.", code: "DEPENDENCY_UNAVAILABLE" }, { status: 503 });
   }
   const incoming = new URL(request.url);
   const tenantID = incoming.searchParams.get("tenant_id") ?? "";
@@ -81,7 +81,7 @@ async function proxy(request: Request): Promise<NextResponse> {
       },
     });
   } catch {
-    return NextResponse.json({ error: "OpenStack security groups are temporarily unavailable.", code: "DEPENDENCY_UNAVAILABLE" }, { status: 503 });
+    return NextResponse.json({ error: "Security groups are temporarily unavailable.", code: "DEPENDENCY_UNAVAILABLE" }, { status: 503 });
   }
 }
 

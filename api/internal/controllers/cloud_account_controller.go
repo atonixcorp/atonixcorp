@@ -72,7 +72,7 @@ func (c *CloudAccountController) SetOrganizationAccount(ctx *gin.Context) {
 	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, 16<<10)
 	decoder := json.NewDecoder(ctx.Request.Body)
 	decoder.DisallowUnknownFields()
-	var account cloud.CloudAccountCredentials
+	var account cloud.OpenStackAccountCredentials
 	if err := decoder.Decode(&account); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid cloud account request", "code": "INVALID_REQUEST"})
 		return

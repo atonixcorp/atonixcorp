@@ -7,12 +7,12 @@ import (
 
 type Reconciler struct {
 	store    Store
-	os       OpenStackClient
+	provider DatabaseProvisioner
 	interval time.Duration
 }
 
-func NewReconciler(store Store, os OpenStackClient, interval time.Duration) *Reconciler {
-	return &Reconciler{store, os, interval}
+func NewReconciler(store Store, provider DatabaseProvisioner, interval time.Duration) *Reconciler {
+	return &Reconciler{store, provider, interval}
 }
 
 func (r *Reconciler) Start() {

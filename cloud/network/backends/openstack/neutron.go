@@ -131,7 +131,7 @@ func (b *NeutronBackend) clientForTenant(tenantID string) (*NeutronClient, error
 	if err != nil {
 		return nil, err
 	}
-	if account.ProjectID == "" || account.CredentialID == "" || len(account.EncryptedSecret) == 0 {
+	if account.ScopeID == "" || len(account.EncryptedSecret) == 0 || account.Provider != "" && account.Provider != "openstack" {
 		return nil, errors.New("mapped OpenStack account is incomplete")
 	}
 	secret, err := decryptAccountSecret(b.encryptionKey, account.EncryptedSecret)
@@ -139,9 +139,29 @@ func (b *NeutronBackend) clientForTenant(tenantID string) (*NeutronClient, error
 		return nil, fmt.Errorf("decrypt mapped OpenStack credential: %w", err)
 	}
 	config := b.baseConfig
-	config.ProjectID = account.ProjectID
-	config.ApplicationCredentialID = account.CredentialID
-	config.ApplicationCredentialSecret = string(secret)
+	config.ProjectID = account.ScopeID
+	switch account.CredentialVersion {
+	case 0:
+		config.ApplicationCredentialID = account.LegacyCredentialID
+		config.ApplicationCredentialSecret = string(secret)
+	case 1:
+		var credential struct {
+			ProjectID        string `json:"project_id"`
+			CredentialID     string `json:"credential_id"`
+			CredentialSecret string `json:"credential_secret"`
+			Region           string `json:"region"`
+		}
+		if err := json.Unmarshal(secret, &credential); err != nil {
+			return nil, errors.New("invalid OpenStack credential payload")
+		}
+		if strings.TrimSpace(credential.ProjectID) != account.ScopeID || strings.TrimSpace(credential.Region) != account.Region {
+			return nil, errors.New("OpenStack credential does not match the mapped account")
+		}
+		config.ApplicationCredentialID = credential.CredentialID
+		config.ApplicationCredentialSecret = credential.CredentialSecret
+	default:
+		return nil, errors.New("unsupported cloud credential version")
+	}
 	if account.Region != "" {
 		config.Region = account.Region
 	}
@@ -226,6 +246,7 @@ func (b *NeutronBackend) InspectNetwork(network core.Network) (core.Network, err
 	}
 	network.ProviderSubnetID = subnet.ID
 	network.ProviderSubnetStatus = subnet.Status
+	network.SubnetStatus = subnet.Status
 	return network, nil
 }
 

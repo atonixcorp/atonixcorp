@@ -65,7 +65,7 @@ func (h *Handler) CreateNetwork(w http.ResponseWriter, r *http.Request) {
 	created, err := h.Controller.GetNetworkInProject(n.ID, n.TenantID, n.ProjectID)
 	if err != nil {
 		log.Printf("read created network from provider: %v", err)
-		writeError(w, http.StatusInternalServerError, "NETWORK_READ_FAILED", "Created network could not be read from the provider.")
+		writeError(w, http.StatusInternalServerError, "NETWORK_READ_FAILED", "The created network could not be loaded.")
 		return
 	}
 	writeJSON(w, http.StatusCreated, created)
@@ -163,11 +163,13 @@ func (h *Handler) CreateRouter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Controller.CreateRouter(rtr); err != nil {
-		http.Error(w, err.Error(), 500)
+		writeOperationFailure(
+			w, "create router", "ROUTER_CREATE_FAILED", "The router could not be created.", err,
+		)
 		return
 	}
 
-	json.NewEncoder(w).Encode(rtr)
+	writeJSON(w, http.StatusCreated, rtr)
 }
 
 func (h *Handler) AttachRouterInterface(w http.ResponseWriter, r *http.Request) {
@@ -185,11 +187,14 @@ func (h *Handler) AttachRouterInterface(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := h.Controller.AttachRouterInterface(iface); err != nil {
-		http.Error(w, err.Error(), 500)
+		writeOperationFailure(
+			w, "attach router interface", "ROUTER_INTERFACE_ATTACH_FAILED",
+			"The router interface could not be attached.", err,
+		)
 		return
 	}
 
-	json.NewEncoder(w).Encode(iface)
+	writeJSON(w, http.StatusCreated, iface)
 }
 
 // -----------------------------
@@ -211,11 +216,14 @@ func (h *Handler) CreatePort(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Controller.CreatePort(p); err != nil {
-		http.Error(w, err.Error(), 500)
+		writeOperationFailure(
+			w, "create network interface", "NETWORK_INTERFACE_CREATE_FAILED",
+			"The network interface could not be created.", err,
+		)
 		return
 	}
 
-	json.NewEncoder(w).Encode(p)
+	writeJSON(w, http.StatusCreated, p)
 }
 
 // -----------------------------
@@ -236,11 +244,14 @@ func (h *Handler) CreateSecurityGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Controller.CreateSecurityGroup(sg); err != nil {
-		http.Error(w, err.Error(), 500)
+		writeOperationFailure(
+			w, "create security group", "SECURITY_GROUP_CREATE_FAILED",
+			"The security group could not be created.", err,
+		)
 		return
 	}
 
-	json.NewEncoder(w).Encode(sg)
+	writeJSON(w, http.StatusCreated, sg)
 }
 
 // -----------------------------
@@ -263,11 +274,14 @@ func (h *Handler) CreateFloatingIP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Controller.CreateFloatingIP(fip); err != nil {
-		http.Error(w, err.Error(), 500)
+		writeOperationFailure(
+			w, "allocate public IP", "PUBLIC_IP_ALLOCATE_FAILED",
+			"The public IP could not be allocated.", err,
+		)
 		return
 	}
 
-	json.NewEncoder(w).Encode(fip)
+	writeJSON(w, http.StatusCreated, fip)
 }
 
 func decodeRequest(w http.ResponseWriter, r *http.Request, target any) error {
@@ -285,6 +299,15 @@ func decodeRequest(w http.ResponseWriter, r *http.Request, target any) error {
 
 func writeError(w http.ResponseWriter, status int, code, message string) {
 	writeJSON(w, status, map[string]string{"code": code, "error": message})
+}
+
+func writeOperationFailure(
+	w http.ResponseWriter,
+	operation, code, message string,
+	err error,
+) {
+	log.Printf("network %s failed: %v", operation, err)
+	writeError(w, http.StatusInternalServerError, code, message)
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {
