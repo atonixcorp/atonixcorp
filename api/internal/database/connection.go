@@ -61,6 +61,8 @@ func migrate(db *gorm.DB) {
 		&models.StorageQuota{},
 		&models.StorageOperation{},
 		&models.StorageAuditEvent{},
+		&models.StorageObject{},
+		&models.ObjectAuditEvent{},
 		&models.SecurityPolicy{},
 		&models.SecurityAuditEvent{},
 		&models.ObservabilityResource{},

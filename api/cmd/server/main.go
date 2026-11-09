@@ -12,6 +12,9 @@ import (
 	"atonixcorp/api/internal/containers"
 	"atonixcorp/api/internal/controllers"
 	"atonixcorp/api/internal/database"
+	"atonixcorp/api/internal/files"
+	"atonixcorp/api/internal/objectstorage"
+	minioadapter "atonixcorp/api/internal/objectstorage/minio"
 	"atonixcorp/api/internal/repositories"
 	"atonixcorp/api/internal/routes"
 	"atonixcorp/api/internal/services"
@@ -29,6 +32,18 @@ func main() {
 
 	// Connect to PostgreSQL
 	db := database.Connect()
+
+	var objectProvider objectstorage.Provider
+	minioProvider, objectErr := minioadapter.FromEnvironment()
+	if objectErr != nil {
+		log.Printf("object storage disabled: %v", objectErr)
+	} else if minioProvider != nil {
+		objectProvider = minioProvider
+	} else {
+		log.Print("object storage disabled until STORAGE_PROVIDER is configured")
+	}
+	fileService := files.NewService(db, objectProvider)
+	go fileService.RunCleanup(context.Background())
 
 	provisioner, err := containers.NewKubernetesProvisioner()
 	if err != nil {
@@ -154,7 +169,7 @@ func main() {
 	// Routes
 	routes.SetupRoutes(
 		r, authController, contactController, blogController, containerService, storageService,
-		cloudService,
+		cloudService, fileService,
 	)
 
 	r.Run(":8080")

@@ -23,6 +23,7 @@ func SetupRoutes(
 	containerService *containers.Service,
 	storageService *storage.Service,
 	cloudService *cloud.Service,
+	fileService *files.Service,
 ) {
 
 	r.Use(middleware.SecurityHeaders())
@@ -159,15 +160,20 @@ func SetupRoutes(
 	// -------------------------
 	// FILE ROUTES
 	// -------------------------
-	fileRepo := files.NewFileRepository(database.DB)
-	fileService := files.NewFileService(fileRepo)
-	fileController := files.NewFileController(fileService)
+	fileController := files.NewController(fileService)
 
 	filesGroup := protected.Group("/files")
+	filesGroup.Use(middleware.SecurityRequestMetadata(), middleware.SecurityRateLimit(120, time.Minute))
 	{
 		filesGroup.POST("/upload", fileController.Upload)
+		filesGroup.GET("/objects", fileController.List)
+		filesGroup.POST("/direct-uploads", fileController.AuthorizeUpload)
+		filesGroup.POST("/direct-uploads/:id/complete", fileController.CompleteUpload)
 		filesGroup.GET("/:id/download", fileController.Download)
+		filesGroup.GET("/:id/download-url", fileController.Presign)
+		filesGroup.DELETE("/:id", fileController.Delete)
 	}
+	platformAdmin.GET("/health/storage", fileController.Health)
 
 	tenantController := controllers.NewTenantController(database.DB)
 	tenants := protected.Group("/tenants")

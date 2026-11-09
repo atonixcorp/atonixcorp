@@ -20,6 +20,7 @@ import {
   type StorageVolumeType,
 } from "./lib/api";
 import { CloudShell } from "@/app/shared/ui/CloudShell";
+import ObjectStorage from "./ObjectStorage";
 import "./storage.css";
 
 type WorkspaceTab = "overview" | "volumes" | "snapshots" | "objects" | "files" | "operations";
@@ -306,7 +307,7 @@ export default function StoragePage() {
         </nav>
 
         {error && <div className="storage-alert" role="alert">{error}{error.includes("Authentication") && <> <Link href="/login">Sign in</Link> to continue.</>}</div>}
-        {!selectedProject && !loading && !error && <div className="storage-empty"><h2>No project available</h2><p>Create or join a project before managing storage.</p></div>}
+        {!selectedProject && tab !== "objects" && !loading && !error && <div className="storage-empty"><h2>No project available</h2><p>Create or join a project before managing storage.</p></div>}
         {loading && <div className="storage-empty" role="status">Loading storage workspace…</div>}
 
         {!loading && selectedProject && (tab === "overview" || tab === "volumes") && (
@@ -342,7 +343,8 @@ export default function StoragePage() {
           </>
         )}
 
-        {!loading && selectedProject && tab !== "overview" && tab !== "volumes" && (
+        {!loading && tenantID && tab === "objects" && <ObjectStorage key={tenantID} tenantID={Number(tenantID)} />}
+        {!loading && selectedProject && tab !== "overview" && tab !== "volumes" && tab !== "objects" && (
           tab === "operations" ? <section className="storage-table-panel">
             <div className="storage-panel-heading"><div><p className="storage-eyebrow">PROJECT ACTIVITY</p><h2>Operations</h2><p>Asynchronous provisioning and deletion jobs.</p></div></div>
             {operations.length === 0 ? <div className="storage-empty"><h3>No operations yet</h3><p>Volume provisioning and lifecycle operations will be listed here.</p></div>

@@ -160,6 +160,19 @@
   border-color: #9fb1c6;
 }
 
+.storage-object-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  padding: 18px;
+}
+
+.storage-object-form .storage-field {
+  min-width: 180px;
+  flex: 1 1 180px;
+}
+
 .storage-environment {
   display: flex;
   align-items: flex-start;
