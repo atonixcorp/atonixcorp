@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { CloudShell } from "@/app/shared/ui/CloudShell";
+import InfrastructureOverview from "./InfrastructureOverview";
 import styles from "./WorkspaceOverview.module.css";
 
 type SessionState = "checking" | "connected" | "unavailable";
@@ -23,17 +23,6 @@ type AgentModel = {
   metadata?: { family?: string };
   versions?: Record<string, { version: string; stage?: string }>;
 };
-
-const resourceWorkspaces = [
-  { name: "Compute", href: "/compute", detail: "Instances and compute catalog" },
-  { name: "Networking", href: "/networking", detail: "Networks and subnets" },
-  { name: "Storage", href: "/storage", detail: "Block storage" },
-  { name: "Databases", href: "/cloud/databases", detail: "Managed database requests" },
-  { name: "Containers", href: "/containers", detail: "Container deployments" },
-  { name: "Security", href: "/security", detail: "Policies and security controls" },
-  { name: "Observability", href: "/observability", detail: "Metrics, events, and alerts" },
-  { name: "Billing", href: "/billing", detail: "Usage and billing workspace" },
-];
 
 export default function WorkspaceOverview() {
   const router = useRouter();
@@ -169,16 +158,15 @@ export default function WorkspaceOverview() {
   return (
     <CloudShell>
       <main className={styles.page}>
-        <header className={styles.heading}>
+        <header className={styles.heading} data-console-heading>
           <div className={styles.headingCopy}>
             <nav className={styles.breadcrumb} aria-label="Breadcrumb">
               <span>AtonixCorp Cloud</span>
               <span aria-hidden="true">/</span>
               <span aria-current="page">Overview</span>
             </nav>
-            <p className={styles.eyebrow}>WORKSPACE OVERVIEW</p>
-            <h1>Cloud overview</h1>
-            <p className={styles.intro}>Your platform connections, workspace, and cloud services at a glance.</p>
+            <h1>Your cloud, in focus.</h1>
+            <p className={styles.intro}>Manage compute, storage, networking, containers, security and infrastructure resources.</p>
           </div>
           <div className={styles.headingActions}>
             <div className={`${styles.sessionBadge} ${session === "connected" ? styles.sessionConnected : session === "checking" ? styles.sessionChecking : styles.sessionUnavailable}`}>
@@ -202,21 +190,10 @@ export default function WorkspaceOverview() {
           </div>
         </header>
 
-        <section className={styles.context} aria-label="Current account context">
-          <div>
-            <span>Account</span>
-            <strong>{session === "connected" ? email : session === "checking" ? "Checking session" : "Unavailable"}</strong>
-          </div>
-          <div>
-            <span>Workspace</span>
-            <strong>{workspaceState === "checking" ? "Checking workspaces" : workspaceState === "available" ? workspaces[0]?.name : workspaceState === "empty" ? "None created" : "Unavailable"}</strong>
-          </div>
-          <div>
-            <span>Region</span>
-            <strong>Not selected</strong>
-          </div>
-          <p>Region selection and resource summaries are not available in the dashboard yet.</p>
-        </section>
+        {workspaceState === "checking" && <p role="status">Loading authorized workspaces...</p>}
+        {(workspaceState === "available" || workspaceState === "empty") && <Suspense fallback={<p role="status">Loading infrastructure...</p>}>
+          <InfrastructureOverview workspaces={workspaces} revision={refreshKey} />
+        </Suspense>}
 
         {workspaceState === "empty" && (
           <section className={styles.workspaceSetup} aria-labelledby="workspace-setup-title">
@@ -241,6 +218,8 @@ export default function WorkspaceOverview() {
         )}
         {workspaceState === "unavailable" && <p className={styles.pageError} role="status">Workspace access could not be verified. Try refreshing the dashboard.</p>}
 
+        <details className={styles.platformDetails}>
+          <summary>Account connections and agent model registry</summary>
         <section className={styles.connections} aria-labelledby="connections-title">
           <div className={styles.sectionHeading}>
             <div>
@@ -293,43 +272,7 @@ export default function WorkspaceOverview() {
             </ul>
           )}
         </section>
-
-        <section className={styles.resources} aria-labelledby="resources-title">
-          <div className={styles.sectionHeading}>
-            <div>
-              <h2 id="resources-title">Resource workspaces</h2>
-              <p>Open a platform area. Resource totals are not currently available from a unified summary API.</p>
-            </div>
-          </div>
-          <div className={styles.workspaceGrid}>
-            {resourceWorkspaces.map((workspace) => (
-              <Link className={styles.workspaceLink} href={workspace.href} key={workspace.name}>
-                <span className={styles.workspaceMark} aria-hidden="true">{workspace.name.slice(0, 1)}</span>
-                <span className={styles.workspaceText}>
-                  <strong>{workspace.name}</strong>
-                  <small>{workspace.detail}</small>
-                </span>
-                <span className={styles.workspaceArrow} aria-hidden="true">↗</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section className={styles.unavailable} aria-labelledby="live-data-title">
-          <div className={styles.unavailableHeader}>
-            <span className={styles.infoMark} aria-hidden="true">i</span>
-            <div>
-              <h2 id="live-data-title">Live resource summary unavailable</h2>
-              <p>The platform does not yet expose an authorized dashboard aggregation API for this account.</p>
-            </div>
-          </div>
-          <dl className={styles.dataList}>
-            <div><dt>Instances, networks, and volumes</dt><dd>Unavailable</dd></div>
-            <div><dt>Quotas and utilization</dt><dd>Unavailable</dd></div>
-            <div><dt>Recent platform activity</dt><dd>Not integrated</dd></div>
-            <div><dt>Infrastructure health</dt><dd>Not aggregated</dd></div>
-          </dl>
-        </section>
+        </details>
 
         {session === "unavailable" && (
           <p className={styles.pageError} role="status">Account status could not be verified. Some workspaces may not be available.</p>

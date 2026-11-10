@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createDeployment, getProjects, getTenants } from "../lib/api";
+import { initialScopeID } from "@/app/shared/lib/cloud-scope";
 import type {
   ContainerDeploymentSpec,
   ContainerEnvironmentVariable,
@@ -112,6 +113,12 @@ export default function ContainerDeployPage() {
         setError("The saved deployment draft could not be restored.");
         setTenantID(items[0]?.id ?? 0);
       }
+      if (new URLSearchParams(window.location.search).has("tenant_id")) {
+        setTenantID(0);
+        setProjectID(0);
+        setStep(0);
+        setTenantID(initialScopeID(items, "tenant_id"));
+      }
       setDraftLoaded(true);
       setScopeLoading(false);
     }).catch((loadError: unknown) => {
@@ -167,9 +174,10 @@ export default function ContainerDeployPage() {
     void getProjects(tenantID).then((items) => {
       if (active) {
         setProjects(items);
+        const initialProject = initialScopeID(items, "project_id", tenantID);
         setProjectID((current) => items.some((item) => item.id === current)
           ? current
-          : items[0]?.id ?? 0);
+          : initialProject);
       }
     }).catch((loadError: unknown) => {
       if (active) setError(messageOf(loadError));

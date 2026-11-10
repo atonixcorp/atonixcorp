@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { ComputeCatalogPage } from "../components/ComputeCatalogPage";
 
 const sectionContent: Record<string, { title: string; description: string }> = {
   dedicated: { title: "Dedicated compute", description: "Dedicated CPU plans will appear here when the Compute API publishes available inventory." },
@@ -13,6 +14,7 @@ const sectionContent: Record<string, { title: string; description: string }> = {
 
 export default function ComputeSectionPage() {
   const { section } = useParams<{ section: string }>();
+  if (section === "images" || section === "sizes") return <ComputeCatalogPage key={section} section={section} />;
   const content = sectionContent[section] ?? { title: "Compute", description: "This compute section is not available." };
   return (
     <div className="compute-page">

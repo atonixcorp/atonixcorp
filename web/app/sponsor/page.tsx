@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import Footer from "../sections/footer/Footer";
-import GlobalHeader from "../sections/header/GlobalHeader";
-import TopHeader from "../sections/header/TopHeader";
+import PublicShell from "../shared/marketing/PublicShell";
 import SponsorOptions, { SponsorCallToAction, SponsorCheckoutLink } from "./SponsorOptions";
 import "../styles/SponsorPage.css";
 
@@ -57,14 +55,12 @@ const initiatives = [
 
 export default function SponsorPage() {
   return (
-    <main className="sponsor-page">
-      <TopHeader />
-      <GlobalHeader />
+    <PublicShell><div className="sponsor-page">
 
-      <section className="sponsor-hero" id="top">
+      <section className="sponsor-hero">
         <div className="sponsor-hero-content">
           <p className="sponsor-eyebrow"><span /> AtonixCorp / Sponsorship</p>
-          <h1>Sponsor AtonixCorp</h1>
+          <h1>Help build<br />what comes next.</h1>
           <p className="sponsor-hero-description">
             Join us in building enterprise-grade cloud, AI, education, and digital transformation solutions that create global impact.
           </p>
@@ -164,7 +160,6 @@ export default function SponsorPage() {
         </div>
       </section>
 
-      <Footer />
-    </main>
+    </div></PublicShell>
   );
 }

@@ -4,9 +4,7 @@ import "../styles/LoginSignup.css";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import TopHeader from "../sections/header/TopHeader";
-import GlobalHeader from "../sections/header/GlobalHeader";
-import Footer from "../sections/footer/Footer";
+import PublicShell from "../shared/marketing/PublicShell";
 
 export default function LoginSignup() {
   const [loginError, setLoginError] = useState("");
@@ -14,10 +12,7 @@ export default function LoginSignup() {
   const router = useRouter();
 
   return (
-    <main className="login-page">
-
-      <TopHeader />
-      <GlobalHeader />
+    <PublicShell><div className="login-page">
 
       <section className="login-hero">
         <div className="login-wrap">
@@ -122,7 +117,6 @@ export default function LoginSignup() {
         </div>
       </section>
 
-      <Footer />
-    </main>
+    </div></PublicShell>
   );
 }

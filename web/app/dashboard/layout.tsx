@@ -1,6 +1,6 @@
 export const metadata = {
-  title: "Cloud dashboard | AtonixCorp",
-  description: "AtonixCorp Cloud workspace overview.",
+  title: "Cloud Infrastructure | AtonixCorp",
+  description: "Project-scoped infrastructure, resource utilization, health and activity.",
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

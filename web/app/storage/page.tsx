@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   createVolume,
   deleteVolume,
@@ -21,6 +22,8 @@ import {
 } from "./lib/api";
 import { CloudShell } from "@/app/shared/ui/CloudShell";
 import ObjectStorage from "./ObjectStorage";
+import { initialScopeID } from "@/app/shared/lib/cloud-scope";
+import { ResourcePagination, SearchFilterBar } from "@/app/shared/ui/Infrastructure";
 import "./storage.css";
 
 type WorkspaceTab = "overview" | "volumes" | "snapshots" | "objects" | "files" | "operations";
@@ -34,7 +37,17 @@ const tabs: Array<{ id: WorkspaceTab; label: string }> = [
   { id: "operations", label: "Operations" },
 ];
 
-export default function StoragePage() {
+export default function StorageRoute() {
+  return <Suspense fallback={<p role="status">Loading storage workspace...</p>}><StorageLocation /></Suspense>;
+}
+
+function StorageLocation() {
+  const query = useSearchParams();
+  const initialTab = tabs.find((item) => item.id === query.get("tab"))?.id ?? "overview";
+  return <StoragePage key={query.toString()} initialTab={initialTab} />;
+}
+
+function StoragePage({ initialTab }: { initialTab: WorkspaceTab }) {
   const [tenants, setTenants] = useState<StorageTenant[]>([]);
   const [projects, setProjects] = useState<StorageProject[]>([]);
   const [tenantID, setTenantID] = useState("");
@@ -44,7 +57,7 @@ export default function StoragePage() {
   const [overview, setOverview] = useState<StorageOverview | null>(null);
   const [volumes, setVolumes] = useState<StorageVolume[]>([]);
   const [operations, setOperations] = useState<StorageOperation[]>([]);
-  const [tab, setTab] = useState<WorkspaceTab>("overview");
+  const [tab, setTab] = useState<WorkspaceTab>(initialTab);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeOperation, setActiveOperation] = useState<StorageOperation | null>(null);
@@ -58,6 +71,15 @@ export default function StoragePage() {
   const selectedType = types.find((type) => type.id === storageClass);
   const [deleteProtection, setDeleteProtection] = useState(true);
   const [tagsText, setTagsText] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [sort, setSort] = useState("newest");
+  const [page, setPage] = useState(0);
+  const filteredVolumes = volumes.filter((volume) =>
+    (!statusFilter || volume.state === statusFilter) &&
+    `${volume.name} ${volume.description ?? ""} ${volume.id} ${volume.state}`.toLowerCase().includes(search.trim().toLowerCase()),
+  ).sort((a, b) => sort === "name" ? a.name.localeCompare(b.name) : Date.parse(b.created_at) - Date.parse(a.created_at));
+  const currentPage = Math.min(page, Math.max(0, Math.ceil(filteredVolumes.length / 20) - 1));
 
   const selectedProject = useMemo(
     () => projects.find((project) => String(project.id) === projectID),
@@ -97,7 +119,7 @@ export default function StoragePage() {
       .then((availableTenants) => {
         if (!active) return;
         setTenants(availableTenants);
-        if (availableTenants[0]) setTenantID(String(availableTenants[0].id));
+        if (availableTenants[0]) setTenantID(String(initialScopeID(availableTenants, "tenant_id")));
         else setLoading(false);
       })
       .catch((loadError: unknown) => {
@@ -114,9 +136,13 @@ export default function StoragePage() {
       .then((items) => {
         if (!active) return;
         setProjects(items);
+        const initialProject = initialScopeID(items, "project_id", Number(tenantID));
         setProjectID((current) => items.some((item) => String(item.id) === current)
           ? current
-          : String(items[0]?.id ?? ""));
+          : String(initialProject || ""));
+        if (initialProject && new URLSearchParams(window.location.search).get("action") === "create") {
+          setShowWizard(true);
+        }
         if (items.length === 0) setLoading(false);
       })
       .catch((loadError: unknown) => {
@@ -251,13 +277,14 @@ export default function StoragePage() {
         <header className="storage-heading">
           <div>
             <p className="storage-eyebrow">DATA SERVICES / STORAGE</p>
-            <h1>Storage</h1>
-            <p>Manage project-scoped volumes and review storage operations.</p>
+            <h1>{tab === "objects" ? "Object Storage" : "Block Storage"}</h1>
+            <p>{tab === "objects" ? "Manage your workspace objects through the authorized object service." : "Manage project-scoped volumes and review storage operations."}</p>
           </div>
           <div className="storage-heading-actions">
             <label>
               <span className="storage-visually-hidden">Workspace</span>
               <select aria-label="Workspace" value={tenantID} onChange={(event) => {
+                setSearch(""); setStatusFilter(""); setPage(0);
                 setProjects([]);
                 setProjectID("");
                 setTypes([]);
@@ -279,21 +306,25 @@ export default function StoragePage() {
             <label>
               <span className="storage-visually-hidden">Project</span>
               <select aria-label="Project" value={projectID} onChange={(event) => {
+                setVolumes([]); setOverview(null); setOperations([]); setTypes([]);
+                setActiveOperation(null); setShowWizard(false);
+                setSearch(""); setStatusFilter(""); setPage(0);
                 setLoading(true);
                 setProjectID(event.target.value);
               }}>
                 {projects.map((project) => <option value={project.id} key={project.id}>{project.name}</option>)}
               </select>
             </label>
-            <button type="button" className="storage-primary-button" onClick={openWizard} disabled={!selectedProject || types.length === 0}>
-              Create resource <span aria-hidden="true">⌄</span>
-            </button>
+            {tab !== "objects" && <button type="button" className="storage-primary-button" onClick={openWizard} disabled={!selectedProject || types.length === 0}>
+              Create volume
+            </button>}
           </div>
         </header>
 
         <div className="storage-environment"><span aria-hidden="true">i</span>
-          {overview
-            ? "Volumes are provided by the storage service for this project. Attachment to compute instances and snapshot, backup, object, and file-share workflows are not yet connected."
+          {tab === "objects" ? "Objects are scoped to your account within this workspace, not the selected block-storage project. Bucket administration, lifecycle policies and versioning are not connected."
+            : overview
+            ? "Volume provisioning is connected. Attachment, resize, protection updates, snapshots, backups and shared file systems are not yet connected."
             : "Storage provisioning is unavailable until a storage service is configured."}
         </div>
 
@@ -323,22 +354,34 @@ export default function StoragePage() {
                 <div><button type="button" className="storage-secondary-button" onClick={() => void refreshWorkspace().catch((err: unknown) => setError(err instanceof Error ? err.message : "Storage could not be refreshed."))}>Refresh</button>{" "}
                 <button type="button" className="storage-secondary-button" onClick={openWizard} disabled={types.length === 0}>Create volume</button></div>
               </div>
+              <SearchFilterBar search={search} onSearch={(value) => { setSearch(value); setPage(0); }}
+                status={statusFilter} onStatus={(value) => { setStatusFilter(value); setPage(0); }} statuses={[...new Set(volumes.map((volume) => volume.state))].sort()} />
+              <label className="storage-field"><span>Sort volumes</span><select value={sort} onChange={(event) => { setSort(event.target.value); setPage(0); }}><option value="newest">Newest first</option><option value="name">Name A to Z</option></select></label>
               {volumes.length === 0
                 ? <div className="storage-empty"><span aria-hidden="true">◈</span><h3>No volumes yet</h3><p>Create a volume to start the asynchronous storage workflow.</p></div>
+                : filteredVolumes.length === 0 ? <div className="storage-empty"><h3>No matching volumes</h3><p>Clear the search or status filter to see more resources.</p></div>
                 : <div className="storage-table-scroll"><table className="storage-table">
-                    <thead><tr><th>Name</th><th>Status</th><th>Capacity</th><th>Type</th><th>Protection</th><th>Created</th><th><span className="storage-visually-hidden">Actions</span></th></tr></thead>
-                    <tbody>{volumes.map((volume) => (
+                    <thead><tr><th>Name</th><th>Status</th><th>Capacity</th><th>Type</th><th>Availability zone</th><th>Encryption</th><th>Protection</th><th>Created</th><th>Details / actions</th></tr></thead>
+                    <tbody>{filteredVolumes.slice(currentPage * 20, currentPage * 20 + 20).map((volume) => (
                       <tr key={volume.id}>
                         <td><strong>{volume.name}</strong><small>{volume.description || volume.id.slice(0, 12)}</small></td>
                         <td><span className={`storage-status ${volume.state.toLowerCase()}`}>{volume.state}</span></td>
                         <td>{formatBytes(volume.size_gb)}</td>
                         <td>{volume.storage_class}</td>
+                        <td>{volume.availability_zone || "Not reported"}</td>
+                        <td>{volume.encrypted ? "Enabled" : "Not enabled"}</td>
                         <td>{volume.delete_protection ? "Delete protected" : "Unprotected"}</td>
                         <td>{new Date(volume.created_at).toLocaleDateString()}</td>
-                        <td>{!volume.delete_protection && volume.state === "AVAILABLE" && <button className="storage-delete-button" type="button" onClick={() => void handleDelete(volume)}>Delete</button>}</td>
+                        <td><details><summary>Volume details</summary>
+                          <p>Resource: {volume.id}</p><p>Region: {volume.region || "Not reported"}</p>
+                          <p>Attached instances: {volume.attachments?.map((attachment) => attachment.server_id || "Not reported").join(", ") || "No attachments reported"}</p>
+                          <p>Updated: {new Date(volume.updated_at).toLocaleString()}</p>
+                          {volume.error_code && <p role="status">Error: {volume.error_code}</p>}
+                        </details>{!volume.delete_protection && volume.state === "AVAILABLE" && <button className="storage-delete-button" type="button" onClick={() => void handleDelete(volume)}>Delete</button>}</td>
                       </tr>
                     ))}</tbody>
                   </table></div>}
+              {filteredVolumes.length > 0 && <ResourcePagination page={currentPage} total={filteredVolumes.length} pageSize={20} onPage={setPage} />}
             </section>
           </>
         )}

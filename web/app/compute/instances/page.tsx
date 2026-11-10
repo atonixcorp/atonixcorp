@@ -12,12 +12,17 @@ import {
 } from "../lib/api";
 import type { ComputeProject, ComputeTenant } from "../lib/api";
 import type { ComputeImage, ComputeInstance, ComputeNetwork, ComputePlan } from "../lib/types";
+import { initialScopeID, scopedCloudHref } from "@/app/shared/lib/cloud-scope";
+import { ResourcePagination } from "@/app/shared/ui/Infrastructure";
 
 export default function ComputeInstancesPage() {
   const [instances, setInstances] = useState<ComputeInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [sort, setSort] = useState("newest");
+  const [page, setPage] = useState(0);
   const [plans, setPlans] = useState<ComputePlan[]>([]);
   const [images, setImages] = useState<ComputeImage[]>([]);
   const [networks, setNetworks] = useState<ComputeNetwork[]>([]);
@@ -66,7 +71,7 @@ export default function ComputeInstancesPage() {
     void getTenants().then((items) => {
       if (!active) return;
       setTenants(items);
-      if (items.length) setTenantID(String(items[0].id));
+      if (items.length) setTenantID(String(initialScopeID(items, "tenant_id")));
       else {
         setLoading(false);
         setPlanCatalogLoading(false);
@@ -86,7 +91,7 @@ export default function ComputeInstancesPage() {
     void getProjects(Number(tenantID)).then((items) => {
       if (!active) return;
       setProjects(items);
-      setProjectID(items.length ? String(items[0].id) : "");
+      setProjectID(String(initialScopeID(items, "project_id", Number(tenantID)) || ""));
       if (!items.length) {
         setLoading(false);
         setPlanCatalogLoading(false);
@@ -153,12 +158,13 @@ export default function ComputeInstancesPage() {
 
   const filteredInstances = useMemo(() => {
     const query = filter.trim().toLowerCase();
-    return query
-      ? instances.filter((instance) =>
-        `${instance.name} ${instance.label} ${instance.region} ${instance.status}`
-          .toLowerCase().includes(query))
-      : instances;
-  }, [filter, instances]);
+    return instances.filter((instance) =>
+      (!statusFilter || instance.status === statusFilter) &&
+      `${instance.name} ${instance.label} ${instance.region} ${instance.status} ${instance.public_ip ?? ""} ${instance.private_ip ?? ""}`
+        .toLowerCase().includes(query))
+      .sort((a, b) => sort === "name" ? a.name.localeCompare(b.name) : Date.parse(b.created_at) - Date.parse(a.created_at));
+  }, [filter, instances, statusFilter, sort]);
+  const currentPage = Math.min(page, Math.max(0, Math.ceil(filteredInstances.length / 20) - 1));
 
   const submitCreate = async () => {
     if (!tenantID || !projectID || !catalogProvisioning) {
@@ -314,9 +320,13 @@ export default function ComputeInstancesPage() {
                 type="search"
                 placeholder="Filter by name, region, or status"
                 value={filter}
-                onChange={(event) => setFilter(event.target.value)}
+                onChange={(event) => { setFilter(event.target.value); setPage(0); }}
               />
             </label>
+            <label className="compute-filter"><span className="sr-only">Status</span><select aria-label="Status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(0); }}>
+              <option value="">All statuses</option>{[...new Set(instances.map((item) => item.status))].sort().map((status) => <option key={status} value={status}>{status}</option>)}
+            </select></label>
+            <label className="compute-filter"><span className="sr-only">Sort instances</span><select aria-label="Sort instances" value={sort} onChange={(event) => { setSort(event.target.value); setPage(0); }}><option value="newest">Newest first</option><option value="name">Name A to Z</option></select></label>
             <button type="button" className="compute-secondary-button" onClick={() => void loadInstances()} disabled={loading}>
               Refresh
             </button>
@@ -352,27 +362,29 @@ export default function ComputeInstancesPage() {
           <div className="compute-state-panel">
             <h3>No matching instances</h3>
             <p>Try a different search, or clear the filter to see all instances.</p>
-            <button className="compute-secondary-button" type="button" onClick={() => setFilter("")}>Clear filter</button>
+            <button className="compute-secondary-button" type="button" onClick={() => { setFilter(""); setStatusFilter(""); setPage(0); }}>Clear filters</button>
           </div>
         ) : (
           <div className="compute-table-scroll">
             <table className="compute-table">
               <thead>
-                <tr><th>Name</th><th>Status</th><th>Region</th><th>vCPU</th><th>Memory</th><th>IP address</th><th><span className="sr-only">Actions</span></th></tr>
+                <tr><th>Name</th><th>Status</th><th>Region</th><th>vCPU</th><th>Memory</th><th>Boot disk</th><th>IP address</th><th><span className="sr-only">Actions</span></th></tr>
               </thead>
               <tbody>
-                {filteredInstances.map((instance) => (
+                {filteredInstances.slice(currentPage * 20, currentPage * 20 + 20).map((instance) => (
                   <InstanceRow
                     key={instance.id}
                     instance={instance}
                     plan={plans.find((item) => item.id === instance.plan_id)}
                     planCatalogLoading={planCatalogLoading}
+                    href={scopedCloudHref(`/compute/instances/${encodeURIComponent(instance.id)}`, Number(tenantID), Number(projectID))}
                   />
                 ))}
               </tbody>
             </table>
           </div>
         )}
+        {!loading && !error && filteredInstances.length > 0 && <ResourcePagination page={currentPage} total={filteredInstances.length} pageSize={20} onPage={setPage} />}
       </section>
     </div>
   );
@@ -382,20 +394,23 @@ function InstanceRow({
   instance,
   plan,
   planCatalogLoading,
+  href,
 }: {
   instance: ComputeInstance;
   plan?: ComputePlan;
   planCatalogLoading: boolean;
+  href: string;
 }) {
   return (
     <tr>
-      <td><Link className="compute-instance-name" href={`/compute/instances/${encodeURIComponent(instance.id)}`}>{instance.label || instance.name}<small>{instance.hostname}</small></Link></td>
+      <td><Link className="compute-instance-name" href={href}>{instance.label || instance.name}<small>{instance.hostname}</small></Link></td>
       <td><span className={`compute-instance-status ${statusTone(instance.status)}`}><i />{instance.status}</span></td>
       <td>{instance.region ? "Primary region" : "Not assigned"}</td>
       <td>{plan ? plan.vcpus : planCatalogLoading ? "Loading…" : "—"}</td>
-      <td>{plan ? `${Math.round(plan.memory_mb / 1024)} GB` : planCatalogLoading ? "Loading…" : "—"}</td>
-      <td>{instance.public_ip || "—"}</td>
-      <td><Link className="compute-row-action" href={`/compute/instances/${encodeURIComponent(instance.id)}`}>Manage</Link></td>
+      <td>{plan ? `${plan.memory_mb / 1024} GiB` : planCatalogLoading ? "Loading…" : "—"}</td>
+      <td>{plan ? `${plan.boot_disk_gb} GB` : planCatalogLoading ? "Loading…" : "—"}</td>
+      <td>{instance.public_ip || instance.private_ip || "—"}</td>
+      <td><Link className="compute-row-action" href={href}>Manage</Link></td>
     </tr>
   );
 }

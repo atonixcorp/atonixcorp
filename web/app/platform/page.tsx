@@ -1,203 +1,23 @@
 import Link from "next/link";
-import "../styles/PlatformPage.css";
-import TopHeader from "../sections/header/TopHeader";
-import GlobalHeader from "../sections/header/GlobalHeader";
-import Footer from "../sections/footer/Footer";
+import PublicShell from "../shared/marketing/PublicShell";
+import { ArchitectureVisual, PublicCTA } from "../shared/marketing/PublicComponents";
+import { CloudNavIcon } from "../shared/ui/CloudNavIcon";
+import styles from "../shared/marketing/PublicSite.module.css";
 
-const capabilities = [
-  {
-    number: "01",
-    title: "Cloud Control",
-    description:
-      "Bring identity, orchestration, policy, and automation into a coordinated operating foundation.",
-  },
-  {
-    number: "02",
-    title: "Compute & HPC",
-    description:
-      "Support demanding applications, large-scale simulation, scientific work, and advanced engineering.",
-  },
-  {
-    number: "03",
-    title: "AI Infrastructure",
-    description:
-      "Create room for accelerated workloads, AI development, and intelligent services to grow.",
-  },
-  {
-    number: "04",
-    title: "Network & Data",
-    description:
-      "Connect workloads to dependable data services, storage, and secure communication.",
-  },
-  {
-    number: "05",
-    title: "Secure Operations",
-    description:
-      "Build protection, observability, and operational insight into the platform experience.",
-  },
-  {
-    number: "06",
-    title: "DevSecOps",
-    description:
-      "Carry secure delivery practices from source and build through release and operation.",
-  },
-];
-
-const workloads = [
-  "Artificial intelligence",
-  "Scientific research",
-  "Robotics",
-  "Aerospace & flight",
-  "Energy systems",
-  "Enterprise applications",
-];
+export const metadata = { title: "Platform Architecture | AtonixCorp", description: "Understand how AtonixCorp connects workspaces, platform APIs and infrastructure providers without exposing provider dashboards." };
 
 export default function PlatformPage() {
-  return (
-    <main className="platform-page" id="top">
-      <TopHeader />
-      <GlobalHeader />
-
-      <section className="platform-page-hero">
-        <div className="platform-page-wrap">
-          <p className="platform-page-eyebrow"><span /> ATONIXCORP / PLATFORM OVERVIEW</p>
-          <h1>
-            A connected cloud foundation
-            <span>for a world of workloads.</span>
-          </h1>
-          <p className="platform-page-lead">
-            AtonixCorp is building a unified platform to help teams develop, simulate,
-            deploy, and operate the complex systems the future depends on.
-          </p>
-          <div className="platform-page-actions">
-            <Link href="/contact" className="platform-page-primary">
-              Talk with our team <span aria-hidden="true">→</span>
-            </Link>
-            <a href="#platform-capabilities" className="platform-page-secondary">
-              Explore platform capabilities
-            </a>
-          </div>
-          <div className="platform-page-hero-meta">
-            <span>COMPUTE</span><i />
-            <span>DATA</span><i />
-            <span>NETWORKS</span><i />
-            <span>SECURITY</span><i />
-            <span>OPERATIONS</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="platform-page-intro">
-        <div className="platform-page-wrap platform-page-intro-grid">
-          <div>
-            <p className="platform-page-index">01 / The platform</p>
-            <h2>
-              More than infrastructure.
-              <span>A foundation to build on.</span>
-            </h2>
-          </div>
-          <div className="platform-page-copy">
-            <p>
-              Tomorrow’s most demanding work—from AI and scientific discovery to
-              robotics, aerospace, flight, energy, and enterprise services—depends on
-              systems that can work together. AtonixCorp is bringing compute,
-              networking, data, security, and operations into one evolving cloud
-              foundation.
-            </p>
-            <p>
-              The goal is a more consistent way to move from an idea or experiment to
-              simulation, deployment, and ongoing operation, with a platform designed
-              to adapt as workloads and ambitions grow.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="platform-page-capabilities" id="platform-capabilities">
-        <div className="platform-page-wrap">
-          <header className="platform-page-section-heading">
-            <p className="platform-page-index">02 / Platform capabilities</p>
-            <h2>Connected capabilities.<span>One operating foundation.</span></h2>
-            <p>
-              Each domain has a distinct role. Together, they are designed to support
-              workloads across their full lifecycle.
-            </p>
-          </header>
-          <div className="platform-page-capability-grid">
-            {capabilities.map((capability) => (
-              <article className="platform-page-capability" key={capability.number}>
-                <span className="platform-page-capability-number">{capability.number}</span>
-                <h3>{capability.title}</h3>
-                <p>{capability.description}</p>
-                <span className="platform-page-card-line" aria-hidden="true" />
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="platform-page-lifecycle">
-        <div className="platform-page-wrap">
-          <header className="platform-page-section-heading">
-            <p className="platform-page-index">03 / Workload lifecycle</p>
-            <h2>From first experiment<span>to dependable operation.</span></h2>
-          </header>
-          <div className="platform-page-lifecycle-grid">
-            <article>
-              <span>01 — DEVELOP</span>
-              <h3>Build and prepare</h3>
-              <p>Give teams a foundation for developing applications, services, and research workflows.</p>
-            </article>
-            <article>
-              <span>02 — SIMULATE</span>
-              <h3>Test at meaningful scale</h3>
-              <p>Support compute-intensive engineering, scientific analysis, and demanding workloads.</p>
-            </article>
-            <article>
-              <span>03 — OPERATE</span>
-              <h3>Deploy with confidence</h3>
-              <p>Bring secure operations and ongoing visibility to workloads as they move into use.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="platform-page-workloads">
-        <div className="platform-page-wrap platform-page-workloads-grid">
-          <div>
-            <p className="platform-page-index">04 / Designed for ambitious work</p>
-            <h2>One platform.<span>Many frontiers.</span></h2>
-            <p>
-              A flexible foundation for teams working across disciplines and building
-              systems with demanding requirements.
-            </p>
-          </div>
-          <ul>
-            {workloads.map((workload, index) => (
-              <li key={workload}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                {workload}
-                <b aria-hidden="true">↗</b>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="platform-page-cta">
-        <div className="platform-page-wrap platform-page-cta-inner">
-          <div>
-            <p className="platform-page-index">Build what comes next</p>
-            <h2>Have a demanding workload in mind?</h2>
-            <p>Talk with AtonixCorp about your platform, research, or engineering goals.</p>
-          </div>
-          <Link href="/contact" className="platform-page-primary">
-            Contact AtonixCorp <span aria-hidden="true">→</span>
-          </Link>
-        </div>
-      </section>
-
-      <Footer />
-    </main>
-  );
+  return <PublicShell>
+    <section className={`${styles.pageHero} ${styles.darkHero}`}><div className={`${styles.container} ${styles.split}`}><div><p className={styles.kicker}>THE PLATFORM / HOW IT FITS TOGETHER</p><h1>One workspace.<br />A deliberate architecture.</h1><p>AtonixCorp connects the experience of managing infrastructure with the services that actually run it. Clear interfaces. Explicit ownership. No collection of disconnected provider dashboards.</p><div className={styles.actions}><a className={styles.primary} href="#architecture">Explore the architecture <span aria-hidden="true">&darr;</span></a><Link className={styles.secondary} href="/products">Browse products</Link></div></div><ArchitectureVisual compact /></div></section>
+    <section className={styles.section} id="architecture"><div className={styles.container}><header className={styles.sectionHeading}><div><p className={styles.kicker}>FOUR LAYERS. ONE CONNECTED EXPERIENCE.</p><h2>From the console<br />to the infrastructure underneath.</h2></div></header>
+      <div className={styles.platformLayers}>{[
+        { title: "Your workspace", copy: "The console organizes resources by workspace and project. A resource's ownership remains visible as you move between compute, storage and networking.", icon: "overview" as const },
+        { title: "The AtonixCorp API layer", copy: "Authenticated requests use platform resource models and permissions. The browser does not need infrastructure-provider credentials.", icon: "security" as const },
+        { title: "Service & provider boundaries", copy: "Service adapters translate infrastructure-specific operations into AtonixCorp workflows. A configured provider is not a promise that every product capability is implemented.", icon: "networking" as const },
+        { title: "Resources & reported state", copy: "Provisioning state, operation records and available telemetry return to the console. Missing telemetry remains unknown rather than being presented as healthy.", icon: "observability" as const },
+      ].map((layer, index) => <article className={styles.platformLayer} key={layer.title}><span>0{index + 1}</span><div><h3>{layer.title}</h3><p>{layer.copy}</p></div><CloudNavIcon name={layer.icon} /></article>)}</div>
+    </div></section>
+    <section className={`${styles.section} ${styles.softSection}`} id="principles"><div className={`${styles.container} ${styles.split}`}><div className={styles.splitCopy}><p className={styles.kicker}>ENGINEERING PRINCIPLES</p><h2>Clarity is a platform feature.</h2><p>We are building around consistent ownership and honest operational information, not a screen full of implied guarantees.</p><Link className={styles.textLink} href="/about">Our direction <span aria-hidden="true">&rarr;</span></Link></div><ul className={styles.checkList}><li>Server-side authorization remains the source of truth.</li><li>Submitted requests are not the same as completed operations.</li><li>Physical capacity, quotas and allocations are different measurements.</li><li>Unconnected services are labeled instead of populated with demo resources.</li><li>Provider implementation details stay behind platform interfaces.</li></ul></div></section>
+    <PublicCTA title="Understand the foundation before you build." description="Explore the developer resources or talk with us about an integration." />
+  </PublicShell>;
 }

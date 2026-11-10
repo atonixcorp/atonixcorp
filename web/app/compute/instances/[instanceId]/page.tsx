@@ -1,14 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { deleteInstance, getInstance, operateInstance } from "../../lib/api";
 import type { ComputeInstance } from "../../lib/types";
+import { scopedCloudHref } from "@/app/shared/lib/cloud-scope";
+import { cloudServices } from "@/app/shared/ui/cloud-navigation";
 
-export default function ComputeInstanceDetailsPage() {
+export default function ComputeInstanceDetailsRoute() {
+  return <Suspense fallback={<p role="status">Loading instance...</p>}><ComputeInstanceDetailsPage /></Suspense>;
+}
+
+function ComputeInstanceDetailsPage() {
   const { instanceId } = useParams<{ instanceId: string }>();
   const router = useRouter();
+  const query = useSearchParams();
+  const href = (path: string) => scopedCloudHref(path, Number(query.get("tenant_id")), Number(query.get("project_id")));
   const [instance, setInstance] = useState<ComputeInstance>();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -70,9 +78,23 @@ export default function ComputeInstanceDetailsPage() {
     setError("");
     try {
       await deleteInstance(instanceId);
-      router.push("/compute/instances");
+      router.push(href("/compute/instances"));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not delete this instance.");
+      setOperation("");
+    }
+  };
+
+  const refresh = async () => {
+    setOperation("refresh");
+    setError("");
+    try {
+      const updated = await getInstance(instanceId);
+      instanceStatus.current = updated.status;
+      setInstance(updated);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not refresh this instance.");
+    } finally {
       setOperation("");
     }
   };
@@ -83,8 +105,9 @@ export default function ComputeInstanceDetailsPage() {
   if (!instance) {
     return (
       <div className="compute-page">
-        <header className="compute-page-heading"><div><p className="compute-eyebrow">COMPUTE / INSTANCE</p><h1>Instance details</h1></div><Link className="compute-secondary-button" href="/compute/instances">Back to instances</Link></header>
+        <header className="compute-page-heading"><div><p className="compute-eyebrow">COMPUTE / INSTANCE</p><h1>Instance details</h1></div><Link className="compute-secondary-button" href={href("/compute/instances")}>Back to instances</Link></header>
         <div className="compute-state-panel" role="alert"><h3>Instance details are unavailable</h3><p>{error}</p><p>Instance details require an authenticated account and tenant session.</p></div>
+        <button className="compute-secondary-button" onClick={() => void refresh()} disabled={Boolean(operation)}>Retry</button>
       </div>
     );
   }
@@ -92,9 +115,10 @@ export default function ComputeInstanceDetailsPage() {
   return (
     <div className="compute-page">
       <header className="compute-page-heading">
-        <div><p className="compute-eyebrow"><Link href="/compute/instances">COMPUTE / INSTANCES</Link> / {instance.id}</p><h1>{instance.name}</h1><p>{instance.region ? "Primary region" : "Not assigned"}</p></div>
+        <div><p className="compute-eyebrow"><Link href={href("/compute/instances")}>COMPUTE / INSTANCES</Link> / {instance.id}</p><h1>{instance.name}</h1><p>{instance.region ? "Primary region" : "Not assigned"}</p></div>
         <div className="compute-detail-actions">
           <span className={`compute-instance-status ${instance.status}`}>{instance.status}</span>
+          <button className="compute-secondary-button" type="button" disabled={Boolean(operation)} onClick={() => void refresh()}>{operation === "refresh" ? "Refreshing..." : "Refresh"}</button>
           <button className="compute-secondary-button" type="button" disabled={Boolean(operation) || instance.status !== "stopped"} onClick={() => void operate("start")}>{operation === "start" ? "Starting…" : "Start"}</button>
           <button className="compute-secondary-button" type="button" disabled={Boolean(operation) || instance.status !== "running"} onClick={() => void operate("stop")}>{operation === "stop" ? "Stopping…" : "Stop"}</button>
           <button className="compute-secondary-button" type="button" disabled={Boolean(operation) || instance.status !== "running"} onClick={() => void operate("reboot")}>{operation === "reboot" ? "Restarting…" : "Restart"}</button>
@@ -111,9 +135,12 @@ export default function ComputeInstanceDetailsPage() {
           </div>
         </header>
       </section>
-      <div className="compute-detail-tabs" role="tablist" aria-label="Instance sections">
-        {["Overview", "Metrics", "Networking", "Storage", "Snapshots", "Backups", "Firewall", "Console", "Activity", "Settings"].map((tab) => <button type="button" role="tab" aria-selected={tab === "Overview"} key={tab}>{tab}</button>)}
-      </div>
+      <nav className="compute-detail-actions" aria-label="Related resource workspaces">
+        <Link className="compute-secondary-button" href={href("/observability?section=Metrics")}>Project metrics</Link>
+        <Link className="compute-secondary-button" href={href("/observability?section=Events")}>Project activity</Link>
+        <Link className="compute-secondary-button" href={href("/networking/firewalls")}>Firewall inventory</Link>
+        <Link className="compute-secondary-button" href={href("/storage")}>Project volumes</Link>
+      </nav>
       <section className="compute-card compute-detail-overview">
         <h2>Instance information</h2>
         <dl>
@@ -122,7 +149,18 @@ export default function ComputeInstanceDetailsPage() {
           <div><dt>Region</dt><dd>{instance.region}</dd></div>
           <div><dt>Floating IP</dt><dd>{instance.public_ip || "Not assigned"}</dd></div><div><dt>Fixed IP</dt><dd>{instance.private_ip || "Not assigned"}</dd></div>
           <div><dt>Created</dt><dd>{new Date(instance.created_at).toLocaleString()}</dd></div>
+          <div><dt>Updated</dt><dd>{new Date(instance.updated_at).toLocaleString()}</dd></div>
+          <div><dt>Image reference</dt><dd>{instance.image_id || "Not reported"}</dd></div>
+          <div><dt>Size reference</dt><dd>{instance.plan_id || "Not reported"}</dd></div>
+          <div><dt>Network reference</dt><dd>{instance.network_id || "Not reported"}</dd></div>
+          <div><dt>SSH key name</dt><dd>{instance.ssh_key_ids.join(", ") || "Not reported"}</dd></div>
         </dl>
+      </section>
+      <section className="compute-card compute-detail-overview">
+        <h2>Not yet connected</h2>
+        <p>These operations are not available through the current instance API. No inactive tabs or simulated controls are shown.</p>
+        <ul>{cloudServices.find((service) => service.id === "instances")?.pending.map((item) => <li key={item}>{item}</li>)}</ul>
+        <p>Power and provisioning information are currently supplied as one lifecycle status, not independently measured signals.</p>
       </section>
     </div>
   );

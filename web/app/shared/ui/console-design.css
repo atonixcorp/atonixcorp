@@ -1,0 +1,128 @@
+/* Existing service-specific layouts share the console's visual primitives. */
+[data-cloud-console] :is(.compute-page, .storage-content, .database-content, .container-main, .network-content, .observability-page, .billing-page, .support-page) {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px var(--console-gutter) 56px;
+}
+[data-cloud-console] :is(.compute-console, .container-console, .storage-console, .database-console, .network-console) { min-height: 0; }
+[data-cloud-console] :is(.compute-page-heading, .storage-heading, .database-heading, .container-heading, .network-heading, .observability-heading, .billing-heading, .support-heading, [data-console-heading]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: clamp(22px, 2.5vw, 34px);
+  margin-bottom: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--console-radius);
+  background: radial-gradient(ellipse at 100% 0, var(--console-selected), transparent 70%), var(--color-surface);
+  box-shadow: var(--console-shadow);
+}
+[data-cloud-console] :is(.compute-page-heading, .storage-heading, .database-heading, .container-heading, .network-heading, .observability-heading, .billing-heading, .support-heading, [data-console-heading]) h1 {
+  margin: 6px 0 10px;
+  color: var(--color-text-primary);
+  font-size: clamp(27px, 2.7vw, 38px);
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -.045em;
+  overflow-wrap: anywhere;
+}
+[data-cloud-console] :is(.compute-eyebrow, .storage-eyebrow, .database-eyebrow, .container-eyebrow, .network-eyebrow, .observability-eyebrow, .billing-eyebrow, .support-eyebrow) {
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .12em;
+}
+[data-cloud-console] :is(.compute-card, .compute-summary-card, .container-card, .storage-table-panel, .database-panel, .network-panel, .observability-card, .billing-section, .billing-nav, .support-card) {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--console-radius);
+  background: var(--color-surface);
+  box-shadow: var(--console-shadow);
+}
+[data-cloud-console] :is(.storage-metrics article, .container-detail-grid > div, .observability-metric, .billing-metric) {
+  border-radius: var(--console-radius);
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--console-shadow);
+}
+[data-cloud-console] :is(.compute-table-toolbar, .container-toolbar, .storage-panel-heading, .database-panel-heading) {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+[data-cloud-console] .compute-table-toolbar { flex-wrap: wrap; }
+[data-cloud-console] .compute-table-actions { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+[data-cloud-console] .compute-filter { min-width: 0; max-width: 100%; }
+[data-cloud-console] .compute-table-scroll { position: relative; }
+[data-cloud-console] :is(.compute-table-toolbar, .container-toolbar, .storage-panel-heading, .database-panel-heading, .network-panel header, .observability-card header) h2 { font-size: 16px; font-weight: 700; letter-spacing: -.02em; }
+[data-cloud-console] :is(.compute-table, .container-table, .storage-table, .database-table-wrap table, .network-panel table, .observability-table) { width: 100%; border-collapse: collapse; }
+[data-cloud-console] :is(.compute-table, .container-table, .storage-table, .database-table-wrap table, .network-panel table, .observability-table) th {
+  padding: 13px 18px;
+  color: var(--color-text-secondary);
+  background: var(--console-tint);
+  border-color: var(--color-border);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+[data-cloud-console] :is(.compute-table, .container-table, .storage-table, .database-table-wrap table, .network-panel table, .observability-table) td { padding: 16px 18px; border-color: var(--color-border); font-size: 13px; }
+[data-cloud-console] :is(.compute-table, .container-table, .storage-table, .database-table-wrap table, .network-panel table, .observability-table) tbody tr:hover { background: var(--console-tint); }
+[data-cloud-console] :is(.compute-primary-button, .storage-primary-button, .container-button:not(.secondary):not(.danger), .database-create-panel form > button, .support-form > button) {
+  min-height: 42px;
+  padding-inline: 18px;
+  border-radius: 7px;
+  background: var(--color-primary);
+  color: var(--console-on-primary) !important;
+  font-size: 13px;
+  font-weight: 650;
+}
+[data-cloud-console] :is(.compute-secondary-button, .storage-secondary-button, .container-button.secondary) {
+  min-height: 42px;
+  padding-inline: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-text-primary) !important;
+  font-size: 13px;
+}
+[data-cloud-console] :is(.compute-primary-button, .storage-primary-button, .container-button:not(.secondary):not(.danger), .database-create-panel form > button, .support-form > button):hover:not(:disabled) { background: var(--color-primary-hover); }
+[data-cloud-console] :is(.compute-secondary-button, .storage-secondary-button, .container-button.secondary):hover:not(:disabled) { border-color: var(--color-primary); background: var(--console-tint); }
+[data-cloud-console] main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 7px;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  font: 13px/1.5 var(--font-sans);
+}
+[data-cloud-console] :is(a, button, input, select, textarea, summary, [tabindex="0"]):focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+[data-cloud-console] :is(.compute-state-panel, .container-empty, .storage-empty, .database-empty, .observability-empty) { padding: 48px 24px; }
+[data-cloud-console] :is(.compute-state-panel, .container-empty, .storage-empty, .database-empty, .observability-empty) :is(h2,h3) { font-size: 19px; letter-spacing: -.025em; }
+[data-cloud-console] .container-section-nav { padding-inline: var(--console-gutter); gap: 28px; }
+[data-cloud-console] :is(.container-heading, .database-heading, .network-heading, .observability-heading) > div { min-width: 0; }
+[data-cloud-console] :is(.container-selectors, .database-scope, .network-scope, .observability-scope) { min-width: 0; flex-wrap: wrap; }
+[data-cloud-console] :is(.container-selectors, .database-scope, .network-scope, .observability-scope) select { max-width: 250px; }
+[data-cloud-console] .network-layout { grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); }
+[data-cloud-console] .network-panel { overflow-x: auto; }
+[data-cloud-console] .network-panel button { color: var(--console-on-primary); }
+@media (max-width: 1100px) {
+  [data-cloud-console] .container-deploy-shell { grid-template-columns: minmax(0, 1fr); }
+  [data-cloud-console] .container-steps { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+  [data-cloud-console] .container-sticky-summary { position: static; }
+}
+@media (max-width: 760px) {
+  [data-cloud-console] :is(.compute-page, .storage-content, .database-content, .container-main, .network-content, .observability-page, .billing-page, .support-page) { padding: 20px 16px 40px; }
+  [data-cloud-console] :is(.compute-page-heading, .storage-heading, .database-heading, .container-heading, .network-heading, .observability-heading, .billing-heading, .support-heading, [data-console-heading]) { align-items: flex-start; gap: 18px; padding: 22px 20px; }
+  [data-cloud-console] .network-layout { grid-template-columns: minmax(0, 1fr); }
+  [data-cloud-console] .compute-table-actions { width: 100%; }
+  [data-cloud-console] .compute-filter { width: auto; flex: 1 1 120px; }
+  [data-cloud-console] .compute-filter:first-child { flex-basis: 100%; }
+  [data-cloud-console] .compute-filter :is(input, select) { width: 100%; }
+  [data-cloud-console] :is(.container-selectors, .database-scope, .network-scope, .observability-scope) { width: 100%; }
+  [data-cloud-console] :is(.container-selectors, .database-scope, .network-scope, .observability-scope) label { flex: 1 1 160px; min-width: 0; }
+  [data-cloud-console] :is(.container-selectors, .database-scope, .network-scope, .observability-scope) select { width: 100%; max-width: none; min-width: 0; }
+}

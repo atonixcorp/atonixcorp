@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CloudShell } from "@/app/shared/ui/CloudShell";
+import { initialScopeID } from "@/app/shared/lib/cloud-scope";
 import {
   getAlerts,
   getDashboards,
@@ -62,13 +63,23 @@ function HealthBadge({ value }: { value: string }) {
   return <span className={`observability-health observability-health-${value.toLowerCase().replaceAll(" ", "-")}`}>{value}</span>;
 }
 
-export default function ObservabilityPage() {
+export default function ObservabilityRoute() {
+  return <Suspense fallback={<p role="status">Loading observability workspace...</p>}><ObservabilityLocation /></Suspense>;
+}
+
+function ObservabilityLocation() {
+  const query = useSearchParams();
+  const initialSection = sections.find((item) => item === query.get("section")) ?? "Overview";
+  return <ObservabilityPage key={query.toString()} initialSection={initialSection} />;
+}
+
+function ObservabilityPage({ initialSection }: { initialSection: Section }) {
   const router = useRouter();
   const [tenants, setTenants] = useState<ObservabilityTenant[]>([]);
   const [projects, setProjects] = useState<ObservabilityProject[]>([]);
   const [tenantID, setTenantID] = useState(0);
   const [projectID, setProjectID] = useState(0);
-  const [section, setSection] = useState<Section>("Overview");
+  const [section, setSection] = useState<Section>(initialSection);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [resources, setResources] = useState<Resource[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
@@ -91,7 +102,7 @@ export default function ObservabilityPage() {
     getTenants().then((items) => {
       if (!active) return;
       setTenants(items);
-      setTenantID(items[0]?.id ?? 0);
+      setTenantID(initialScopeID(items, "tenant_id"));
       if (!items.length) setLoading(false);
     }).catch((loadError: unknown) => {
       if (!active) return;
@@ -110,7 +121,7 @@ export default function ObservabilityPage() {
         const items = await getProjects(tenantID);
         if (!active) return;
         setProjects(items);
-        setProjectID(items[0]?.id ?? 0);
+        setProjectID(initialScopeID(items, "project_id", tenantID));
         if (!items.length) setLoading(false);
       } catch (loadError) {
         if (!active) return;

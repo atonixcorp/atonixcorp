@@ -25,6 +25,7 @@ import {
   ReviewSection,
 } from "../components/DeploymentSections";
 import { DeploymentSummary } from "../components/DeploymentSummary";
+import { initialScopeID } from "@/app/shared/lib/cloud-scope";
 
 const emptyCatalog: ComputeCatalog = {
   provisioning_enabled: false,
@@ -100,7 +101,7 @@ export default function DeployInstancePage() {
     void getTenants().then((items) => {
       if (!active) return;
       setTenants(items);
-      setTenantID(items.length ? String(items[0].id) : "");
+      setTenantID(String(initialScopeID(items, "tenant_id") || ""));
       if (!items.length) {
         setScopeError("No accessible workspaces were found.");
         setLoading(false);
@@ -120,7 +121,7 @@ export default function DeployInstancePage() {
     void getProjects(Number(tenantID)).then((items) => {
       if (!active) return;
       setProjects(items);
-      setProjectID(items.length ? String(items[0].id) : "");
+      setProjectID(String(initialScopeID(items, "project_id", Number(tenantID)) || ""));
       setScopeError(items.length ? "" : "No accessible projects were found.");
       if (!items.length) setLoading(false);
     }).catch((error: unknown) => {

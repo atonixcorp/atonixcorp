@@ -3,19 +3,14 @@
 import "../styles/Onboard.css";
 import Link from "next/link";
 import { useState } from "react";
-import TopHeader from "../sections/header/TopHeader";
-import GlobalHeader from "../sections/header/GlobalHeader";
-import Footer from "../sections/footer/Footer";
+import PublicShell from "../shared/marketing/PublicShell";
 
 export default function OnboardPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState(false);
   return (
-    <main className="onboard-page">
-
-      <TopHeader />
-      <GlobalHeader />
+    <PublicShell><div className="onboard-page">
 
       <section className="onboard-hero">
         <div className="onboard-wrap">
@@ -26,8 +21,8 @@ export default function OnboardPage() {
               <span>Start building what comes next.</span>
             </h1>
             <p className="onboard-subtitle">
-              Request your place in a connected platform for AI, research, advanced
-              engineering, and the systems shaping tomorrow.
+              Create an account to begin. Cloud resources and service availability
+              depend on the workspace and infrastructure configured for your team.
             </p>
             <div className="onboard-benefits" aria-label="Platform focus areas">
               <p><span>01</span> Cloud and compute foundations</p>
@@ -135,7 +130,6 @@ export default function OnboardPage() {
         </div>
       </section>
 
-      <Footer />
-    </main>
+    </div></PublicShell>
   );
 }

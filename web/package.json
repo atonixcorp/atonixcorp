@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:cloud": "node --experimental-strip-types --test app/dashboard/infrastructure-summary.test.mjs",
+    "test:public": "node --experimental-strip-types --test app/shared/marketing/public-site.test.mjs"
   },
   "dependencies": {
     "autoprefixer": "^10.6.1",

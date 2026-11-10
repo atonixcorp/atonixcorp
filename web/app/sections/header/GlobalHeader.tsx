@@ -1,251 +1,95 @@
 "use client";
 
-import "../../styles/GlobalHeader.css";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-
-type NavItem = {
-  label: string;
-  href?: string;
-  target?: "_blank";
-  rel?: string;
-  items?: { label: string; href: string }[];
-};
-
-const navigation: NavItem[] = [
-  {
-    label: "Software",
-    items: [
-      { label: "Overview", href: "/platform" },
-      { label: "AtonixCorp Components", href: "#capabilities" },
-      { label: "Development Tools", href: "#capabilities" },
-      { label: "AtonixCorp Map", href: "/platform" },
-      { label: "Configuration", href: "#capabilities" },
-      { label: "Security", href: "#sovereignty" },
-      { label: "Marketplace", href: "#capabilities" },
-      { label: "Software Catalog", href: "#capabilities" },
-    ],
-  },
-  {
-    label: "Platform",
-    items: [
-      { label: "Cloud Control", href: "#capabilities" },
-      { label: "Compute & HPC", href: "#capabilities" },
-      { label: "Network & Data", href: "#capabilities" },
-      { label: "Secure Operations", href: "#capabilities" },
-      { label: "Platform Governance", href: "#sovereignty" },
-      { label: "Platform Architecture", href: "/platform" },
-    ],
-  },
-  {
-    label: "Uses Cases",
-    items: [
-      { label: "Enterprise Workloads", href: "#capabilities" },
-      { label: "Scientific Research & HPC", href: "#capabilities" },
-      { label: "Critical Infrastructure", href: "#mission" },
-      { label: "Energy‑Driven Computing", href: "#mission" },
-      { label: "Developer Automation", href: "#capabilities" },
-      { label: "Security & Identity", href: "#sovereignty" },
-    ],
-  },
-  {
-    label: "Solutions",
-    items: [
-      { label: "Cloud & AI Systems", href: "#capabilities" },
-      { label: "Compute & Energy Systems", href: "#capabilities" },
-      { label: "Security Engineering", href: "#sovereignty" },
-      { label: "Developer Ecosystem", href: "#capabilities" },
-      { label: "Operational Intelligence", href: "#capabilities" },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { label: "Developer Delivery", href: "#capabilities" },
-      { label: "Analytics & Monitoring", href: "#capabilities" },
-      { label: "Security & Identity", href: "#sovereignty" },
-      { label: "Platform Policies", href: "#sovereignty" },
-      { label: "Platform Roadmap", href: "#roadmap" },
-    ],
-  },
-  {
-    label: "Engineering",
-    items: [
-      { label: "High‑Performance Workloads", href: "#capabilities" },
-      { label: "Data Services", href: "#capabilities" },
-      { label: "Infrastructure Automation", href: "#capabilities" },
-      { label: "Platform Architecture", href: "/platform" },
-      { label: "Energy Systems", href: "#mission" },
-    ],
-  },
-  {
-    label: "Developers",
-    items: [
-      { label: "Documentation", href: "#capabilities" },
-      { label: "API Reference", href: "#capabilities" },
-      { label: "CLI Tools", href: "#capabilities" },
-      { label: "SDKs", href: "#capabilities" },
-      { label: "Tutorials", href: "#capabilities" },
-      { label: "Open Innovation", href: "#mission" },
-    ],
-  },
-  {
-    label: "Community",
-    items: [
-      { label: "Forums", href: "#contact" },
-      { label: "Events", href: "#contact" },
-      { label: "Engineering Blog", href: "#capabilities" },
-      { label: "Research Network", href: "#mission" },
-      { label: "Ambassador Program", href: "#contact" },
-    ],
-  },
-  {
-    label: "Contact",
-    items: [
-      { label: "Contact Us", href: "#contact" },
-      { label: "Support Center", href: "mailto:dev@atonixcorp.com" },
-      { label: "Enterprise Solutions", href: "mailto:partners@atonixcorp.com" },
-      { label: "Partnerships", href: "mailto:partners@atonixcorp.com" },
-      { label: "Careers", href: "mailto:info@atonixcorp.com" },
-    ],
-  },
-  {
-    label: "Sponsor",
-    href: "https://www.atonixcorp.com/sponsor",
-    target: "_blank",
-    rel: "noopener noreferrer",
-  },
-];
+import { usePathname } from "next/navigation";
+import { publicNavigation } from "@/app/shared/marketing/content";
+import { CloudNavIcon } from "@/app/shared/ui/CloudNavIcon";
+import "../../styles/GlobalHeader.css";
 
 export default function GlobalHeader() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const headerRef = useRef<HTMLElement>(null);
+  const header = useRef<HTMLElement>(null);
+  const mobileButton = useRef<HTMLButtonElement>(null);
+  const hoverOpened = useRef<string | null>(null);
+  const pathname = usePathname();
+  const closeAll = () => { setActiveMenu(null); setMobileOpen(false); };
 
   useEffect(() => {
-    const closeOnOutsideClick = (event: MouseEvent) => {
-      if (!headerRef.current?.contains(event.target as Node)) {
-        setActiveMenu(null);
+    if (!activeMenu && !mobileOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !header.current?.contains(event.target)) {
+        setActiveMenu(null); setMobileOpen(false);
       }
     };
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
-  }, []);
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [activeMenu, mobileOpen]);
 
-  const closeAll = () => {
-    setActiveMenu(null);
-    setMobileOpen(false);
-  };
-
-  const resolveHref = (href?: string) =>
-    href ? (href.startsWith("#") ? `/${href}` : href) : "/";
-
-  return (
-    <header className="global-header" ref={headerRef}>
-      <div className="header-row wrap">
-
-        {/* Brand */}
-        <Link className="global-brand" href="/" aria-label="AtonixCorp home" onClick={closeAll}>
-          <Image
-            src="/atonixcorp-icon.png"
-            alt="AtonixCorp logo"
-            width={34}
-            height={34}
-            priority
-          />
-          <span>
-            ATONIXCORP
-          </span>
-        </Link>
-
-        {/* Navigation */}
-        <nav className="global-nav" aria-label="Global navigation">
-          {navigation.map((item) =>
-            item.items ? (
-              <div className="nav-menu" key={item.label}>
-                <button
-                  className={activeMenu === item.label ? "nav-trigger open" : "nav-trigger"}
-                  type="button"
-                  aria-expanded={activeMenu === item.label}
-                  onClick={() =>
-                    setActiveMenu(activeMenu === item.label ? null : item.label)
-                  }
-                >
-                  {item.label}
-
-                  {/* ENTERPRISE CHEVRON */}
-                  <span className="nav-chevron" aria-hidden="true">
-                    <svg width="12" height="12" viewBox="0 0 24 24">
-                      <path
-                        d="M6 9l6 6 6-6"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                </button>
-
-                <div className={activeMenu === item.label ? "dropdown visible" : "dropdown"}>
-                  {item.items.map((subItem) => (
-                    <a href={resolveHref(subItem.href)} key={subItem.label} onClick={closeAll}>
-                      {subItem.label}
-                      <span aria-hidden="true">↗</span>
-                    </a>
-                  ))}
-                </div>
+  return <header className="global-header" ref={header} onKeyDown={(event) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    if (activeMenu) {
+      header.current?.querySelector<HTMLButtonElement>(`[data-nav-trigger="${activeMenu}"]`)?.focus();
+      setActiveMenu(null);
+    } else {
+      setMobileOpen(false); mobileButton.current?.focus();
+    }
+  }} onBlur={(event) => {
+    if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) closeAll();
+  }} onPointerLeave={(event) => {
+    if (event.pointerType === "mouse" && !event.currentTarget.contains(document.activeElement)) setActiveMenu(null);
+  }}>
+    <div className="public-header-row">
+      <Link className="global-brand" href="/" aria-label="AtonixCorp home" onClick={closeAll}>
+        <Image src="/atonixcorp-icon.png" alt="" width={36} height={36} priority /><span>AtonixCorp<span className="brand-period">.</span></span>
+      </Link>
+      <button className="public-menu-toggle" ref={mobileButton} type="button" aria-expanded={mobileOpen} aria-controls="public-navigation" onClick={() => { setMobileOpen(!mobileOpen); setActiveMenu(null); }}>
+        {mobileOpen ? "Close" : "Menu"}<svg aria-hidden="true" viewBox="0 0 24 24"><path d={mobileOpen ? "M6 6l12 12M6 18 18 6" : "M4 7h16M4 12h16M4 17h16"} /></svg>
+      </button>
+      <nav className="public-navigation" id="public-navigation" data-open={mobileOpen} aria-label="Main navigation">
+        {publicNavigation.map((item) => {
+          const open = activeMenu === item.id;
+          return <div className="public-nav-group" key={item.id}>
+            <button type="button" className="public-nav-trigger" data-nav-trigger={item.id} aria-expanded={open} aria-controls={`public-menu-${item.id}`}
+              onClick={(event) => {
+                setActiveMenu(event.detail > 0 && hoverOpened.current === item.id ? item.id : open ? null : item.id);
+                hoverOpened.current = null;
+              }}
+              onPointerEnter={(event) => {
+                if (event.pointerType === "mouse" && window.matchMedia("(min-width: 1100px)").matches && !open) {
+                  hoverOpened.current = item.id;
+                  setActiveMenu(item.id);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  hoverOpened.current = null;
+                  setActiveMenu(item.id);
+                  requestAnimationFrame(() => header.current?.querySelector<HTMLAnchorElement>(`#public-menu-${item.id} .public-mega-group a`)?.focus());
+                }
+              }}>
+              {item.label}<svg aria-hidden="true" viewBox="0 0 16 16"><path d="m4 6 4 4 4-4" /></svg>
+            </button>
+            <div className="public-mega-menu" id={`public-menu-${item.id}`} hidden={!open}>
+              <div className="public-mega-inner">
+                <aside className="public-mega-intro"><span>EXPLORE ATONIXCORP</span><h2>{item.intro}</h2><p>{item.description}</p><Link href={item.href} onClick={closeAll}>{item.cta} <span aria-hidden="true">&rarr;</span></Link></aside>
+                {item.groups.map((group) => <section className="public-mega-group" key={group.title} aria-label={group.title}>
+                  <h3>{group.title}</h3>{group.links.map((link) => <Link href={link.href} key={link.href} onClick={closeAll} aria-current={pathname === link.href ? "page" : undefined}>
+                    <span className="public-menu-icon"><CloudNavIcon name={link.icon} /></span><span><strong>{link.label}</strong><small>{link.description}</small></span><span className="public-menu-arrow" aria-hidden="true">&rarr;</span>
+                  </Link>)}
+                </section>)}
               </div>
-            ) : (
-              <a
-                className="nav-trigger home-link"
-                href={resolveHref(item.href)}
-                target={item.target}
-                rel={item.rel}
-                key={item.label}
-              >
-                {item.label}
-              </a>
-            )
-          )}
-        </nav>
-
-        {/* Mobile toggle */}
-        <button
-          className={mobileOpen ? "menu-toggle open" : "menu-toggle"}
-          type="button"
-          aria-expanded={mobileOpen}
-          aria-label="Toggle navigation menu"
-          onClick={() => setMobileOpen(!mobileOpen)}
-        >
-          <span />
-          <span />
-        </button>
-      </div>
-
-      {/* Mobile nav */}
-      <nav className={mobileOpen ? "mobile-nav visible" : "mobile-nav"} aria-label="Mobile global navigation">
-        {navigation.map((item) => (
-          <div key={item.label} className="mobile-nav-group">
-            {item.href ? (
-              <a href={resolveHref(item.href)} target={item.target} rel={item.rel} onClick={closeAll}>
-                {item.label}
-              </a>
-            ) : (
-              <>
-                <span>{item.label}</span>
-                {item.items?.map((subItem) => (
-                  <a href={resolveHref(subItem.href)} key={subItem.label} onClick={closeAll}>
-                    {subItem.label}
-                  </a>
-                ))}
-              </>
-            )}
-          </div>
-        ))}
+              <div className="public-mega-bottom"><span>A clearer path from infrastructure to application.</span><Link href="/platform" onClick={closeAll}>Meet the platform <span aria-hidden="true">&rarr;</span></Link></div>
+            </div>
+          </div>;
+        })}
+        <Link className="public-nav-link" href="/platform" onClick={closeAll} aria-current={pathname === "/platform" ? "page" : undefined}>Platform</Link>
+        <div className="public-header-actions"><Link href="/login" onClick={closeAll}>Log in</Link><Link className="public-header-cta" href="/onboard" onClick={closeAll}>Get started <span aria-hidden="true">&rarr;</span></Link></div>
       </nav>
-    </header>
-  );
+    </div>
+  </header>;
 }

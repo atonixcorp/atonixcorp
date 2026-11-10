@@ -2,51 +2,25 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { CloudShell } from "@/app/shared/ui/CloudShell";
+import { getNetworks, requestJSON, type Network, type Capabilities } from "./api";
+import { initialScopeID } from "@/app/shared/lib/cloud-scope";
+import { useCloudResource } from "@/app/shared/hooks/useCloudResource";
+import { EmptyState, ResourcePagination, ResourceState, ResourceStatus, ResourceTable, SearchFilterBar } from "@/app/shared/ui/Infrastructure";
 
 type Tenant = { id: number; name: string };
 type Project = { id: number; tenant_id: number; name: string };
-type Network = {
-  id: string;
-  name: string;
-  cidr: string;
-  status?: string;
-  subnet_status?: string;
-};
-type Capabilities = { network_provisioning: boolean; resources: string[] };
-
-async function requestJSON<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    cache: "no-store",
-    headers: {
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...init?.headers,
-    },
-  });
-  const body = await response.text();
-  let payload: unknown;
-  try {
-    payload = body ? JSON.parse(body) : null;
-  } catch {
-    payload = null;
-  }
-  if (!response.ok) {
-    const message = payload && typeof payload === "object" && "error" in payload
-      ? String(payload.error)
-      : `Networking request failed (${response.status}).`;
-    throw new Error(message);
-  }
-  if (payload === null) throw new Error("Networking service returned an empty response.");
-  return payload as T;
-}
-
 export default function NetworkingPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [tenantID, setTenantID] = useState("");
   const [projectID, setProjectID] = useState("");
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
-  const [networks, setNetworks] = useState<Network[]>([]);
+  const [revision, setRevision] = useState(0);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+  const [sort, setSort] = useState("asc");
+  const [page, setPage] = useState(0);
+  const networks = useCloudResource(getNetworks, Number(tenantID), Number(projectID), revision);
   const [name, setName] = useState("");
   const [cidr, setCIDR] = useState("");
   const [loading, setLoading] = useState(true);
@@ -64,7 +38,7 @@ export default function NetworkingPage() {
         if (!active) return;
         setTenants(availableTenants);
         setCapabilities(serviceCapabilities);
-        setTenantID(String(availableTenants[0]?.id ?? ""));
+        setTenantID(String(initialScopeID(availableTenants, "tenant_id") || ""));
       })
       .catch((cause: unknown) => {
         if (active) setError(cause instanceof Error ? cause.message : "Networking could not be loaded.");
@@ -82,30 +56,16 @@ export default function NetworkingPage() {
       .then((items) => {
         if (!active) return;
         setProjects(items);
+        const initialProject = initialScopeID(items, "project_id", Number(tenantID));
         setProjectID((current) => items.some((item) => String(item.id) === current)
           ? current
-          : String(items[0]?.id ?? ""));
+          : String(initialProject || ""));
       })
       .catch((cause: unknown) => {
         if (active) setError(cause instanceof Error ? cause.message : "Projects could not be loaded.");
       });
     return () => { active = false; };
   }, [tenantID]);
-
-  useEffect(() => {
-    if (!tenantID || !projectID) return;
-    let active = true;
-    requestJSON<Network[]>(
-      `/api/networking/tenants/${encodeURIComponent(tenantID)}/projects/${encodeURIComponent(projectID)}/networks`,
-    )
-      .then((items) => {
-        if (active) setNetworks(items);
-      })
-      .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : "Networks could not be loaded.");
-      });
-    return () => { active = false; };
-  }, [tenantID, projectID]);
 
   async function createNetwork(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -125,7 +85,6 @@ export default function NetworkingPage() {
           body: JSON.stringify({ name, cidr }),
         },
       );
-      setNetworks((current) => [created, ...current]);
       setName("");
       setCIDR("");
       try {
@@ -136,10 +95,9 @@ export default function NetworkingPage() {
             body: JSON.stringify({ network_id: created.id, cidr: networkCIDR, gateway_ip: "" }),
           },
         );
-        const refreshed = await requestJSON<Network[]>(
+        await requestJSON<Network[]>(
           `/api/networking/tenants/${encodeURIComponent(tenantID)}/projects/${encodeURIComponent(projectID)}/networks`,
         );
-        setNetworks(refreshed);
         setNotice("Network and subnet were created and verified.");
       } catch (subnetError) {
         setError(`Network was created, but its subnet could not be verified: ${
@@ -150,6 +108,7 @@ export default function NetworkingPage() {
       setError(cause instanceof Error ? cause.message : "Network could not be created.");
     } finally {
       setSaving(false);
+      setRevision((value) => value + 1);
     }
   }
 
@@ -160,7 +119,7 @@ export default function NetworkingPage() {
         <header className="network-heading">
           <div>
             <p className="network-eyebrow">CLOUD CONNECTIVITY</p>
-            <h1>Networking</h1>
+            <h1>VPC Networks</h1>
             <p>Manage project networks and their address ranges.</p>
           </div>
           <div className="network-scope">
@@ -170,14 +129,21 @@ export default function NetworkingPage() {
                 setTenantID(event.target.value);
                 setProjects([]);
                 setProjectID("");
-                setNetworks([]);
-              }} disabled={loading}>
+                setError("");
+                setNotice("");
+                setSearch("");
+                setStatus("");
+              }} disabled={loading || saving}>
+                {!tenantID && <option value="">Choose workspace</option>}
                 {tenants.map((tenant) => <option value={tenant.id} key={tenant.id}>{tenant.name}</option>)}
               </select>
             </label>
             <label>
               <span>Project</span>
-              <select value={projectID} onChange={(event) => setProjectID(event.target.value)} disabled={loading || !projects.length}>
+              <select value={projectID} onChange={(event) => {
+                setProjectID(event.target.value); setError(""); setNotice(""); setSearch(""); setStatus("");
+              }} disabled={loading || saving || !projects.length}>
+                {!projectID && <option value="">Choose project</option>}
                 {projects.map((project) => <option value={project.id} key={project.id}>{project.name}</option>)}
               </select>
             </label>
@@ -193,14 +159,25 @@ export default function NetworkingPage() {
         )}
         <div className="network-layout">
           <section className="network-panel">
-            <header><div><p className="network-eyebrow">PROJECT INVENTORY</p><h2>Virtual networks</h2></div><span>{networks.length} total</span></header>
-            {loading ? <p className="network-empty">Loading networks…</p> : networks.length === 0
-              ? <p className="network-empty">No networks in this project.</p>
-              : <table><thead><tr><th>Name</th><th>IPv4 / IPv6 range</th><th>Subnet</th><th>Status</th></tr></thead><tbody>
-                {networks.map((network) => <tr key={network.id}><td>{network.name}</td><td>{network.cidr}</td><td>{network.subnet_status ?? "Not created"}</td><td>{network.status ?? "Unavailable"}</td></tr>)}
-              </tbody></table>}
+            <header><div><p className="network-eyebrow">PROJECT INVENTORY</p><h2>Virtual networks</h2><p>{networks.state === "ready" ? `${networks.data.length} total` : networks.state === "loading" ? "Loading networks..." : "Inventory unavailable"}</p></div>
+              <button type="button" onClick={() => setRevision((value) => value + 1)} disabled={!projectID || networks.state === "loading"}>Refresh</button>
+            </header>
+            <SearchFilterBar search={search} onSearch={(value) => { setSearch(value); setPage(0); }} status={status} onStatus={(value) => { setStatus(value); setPage(0); }}
+              statuses={networks.state === "ready" ? [...new Set(networks.data.map((item) => item.status || "unknown"))] : []} />
+            <label>Sort by name <select value={sort} onChange={(event) => { setSort(event.target.value); setPage(0); }}><option value="asc">A to Z</option><option value="desc">Z to A</option></select></label>
+            <ResourceState resource={networks}>{(items) => {
+              const filtered = items.filter((item) => (!status || (item.status || "unknown") === status) &&
+                `${item.name} ${item.cidr} ${item.status ?? ""}`.toLowerCase().includes(search.trim().toLowerCase()))
+                .sort((a, b) => a.name.localeCompare(b.name) * (sort === "asc" ? 1 : -1));
+              if (!items.length) return <EmptyState title="No networks in this project" description="Create a virtual network and address range for your infrastructure." action={<a href="#create-network">Create Network</a>} />;
+              if (!filtered.length) return <EmptyState title="No matching networks" description="Try another search or clear the status filter." />;
+              const currentPage = Math.min(page, Math.ceil(filtered.length / 20) - 1);
+              return <><ResourceTable caption="Project networks" headings={["Name", "IPv4 / IPv6 range", "Subnet", "Status"]}>
+                {filtered.slice(currentPage * 20, currentPage * 20 + 20).map((network) => <tr key={network.id}><td>{network.name}</td><td>{network.cidr}</td><td>{network.subnet_status ?? "Not created"}</td><td><ResourceStatus value={network.status || "unknown"} /></td></tr>)}
+              </ResourceTable><ResourcePagination page={currentPage} total={filtered.length} pageSize={20} onPage={setPage} /></>;
+            }}</ResourceState>
           </section>
-          <section className="network-panel">
+          <section className="network-panel" id="create-network">
             <header><div><p className="network-eyebrow">ADDRESS PLANNING</p><h2>Create a virtual network</h2></div></header>
             <form onSubmit={createNetwork}>
               <label><span>Network name</span><input value={name} onChange={(event) => setName(event.target.value)} required minLength={2} maxLength={63} /></label>
@@ -211,6 +188,7 @@ export default function NetworkingPage() {
             </form>
           </section>
         </div>
+        <p>Network update and deletion are not connected in this console. Reported provisioning state is not a connectivity health check.</p>
       </section>
       <style jsx>{`
         .network-console{min-height:100vh;background:var(--color-background);color:var(--color-text-primary);font-family:var(--font-sans)}

@@ -116,6 +116,45 @@ through same-origin `/api/...` routes. Auth is part of the main API, not a
 separate authentication service. The storage worker runs in the main API;
 container workers only start with a working Kubernetes provisioner.
 
+### Cloud infrastructure workspace
+
+The Cloud dashboard uses the existing authenticated, project-authorized APIs;
+it does not require a separate aggregation service. Workspace/project selection
+scopes compute instances and catalog, networks, volumes, container deployments,
+and Observability health, metrics and events. Individual source failures remain
+visible without hiding successful responses. Refresh reloads the sources, and
+late responses from a previous scope are discarded.
+
+Compute and memory totals are allocations calculated from instance size IDs in
+the current catalog, not available host capacity. Missing sizes make those
+totals unavailable rather than incomplete. Storage shows provisioned GB and
+the API's project quota, not physical disk usage. Utilization is the mean of
+reported percent samples with sample count and oldest timestamp. Missing
+telemetry and unknown health are never represented as zero or healthy.
+The compute region comes from the catalog; project inventories cover all regions.
+
+Creation links preserve the chosen workspace/project and open the existing
+workflows, which retain their authorization and capability checks. The shared
+sidebar links only connected resource workspaces. Images and instance sizes
+are read-only catalog views; image upload, HPC cluster provisioning, provider
+administration and unconnected lifecycle services are not advertised as actions.
+The sidebar groups services under Workspace, Infrastructure, Operations and
+Organization. Multi-service groups expand automatically for the current route;
+the service search reveals matching links without changing project scope.
+On mobile, Menu opens navigation and Escape closes it (or first clears a search).
+Account setup and the agent registry remain under the dashboard's account details.
+Infrastructure providers remain behind the AtonixCorp API boundary.
+
+Frontend checks (Node 22.6 or newer):
+
+```sh
+cd web
+npm ci
+npm run test:cloud
+npx tsc --noEmit
+npm run build
+```
+
 ## Standalone project status
 
 These projects are not orchestrated by root Compose. Standalone containers

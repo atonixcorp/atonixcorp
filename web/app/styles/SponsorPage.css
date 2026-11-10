@@ -8,7 +8,7 @@
   --sponsor-border: #dce7e9;
   color: var(--sponsor-ink);
   background: var(--sponsor-surface);
-  font-family: var(--font-geist-sans), Inter, system-ui, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .sponsor-content,

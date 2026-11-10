@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { getDeployments, getProjects, getTenants } from "./lib/api";
 import type { ContainerDeployment, Project, Tenant } from "./lib/api";
+import { initialScopeID } from "@/app/shared/lib/cloud-scope";
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : "The container service could not complete the request.";
@@ -23,7 +24,7 @@ export default function ContainerDeploymentsPage() {
     void getTenants().then((items) => {
       if (!active) return;
       setTenants(items);
-      setTenantID(items[0]?.id ?? 0);
+      setTenantID(initialScopeID(items, "tenant_id"));
       if (!items.length) setLoading(false);
     }).catch((loadError: unknown) => {
       if (!active) return;
@@ -41,7 +42,7 @@ export default function ContainerDeploymentsPage() {
     void getProjects(tenantID).then((items) => {
       if (!active) return;
       setProjects(items);
-      setProjectID(items[0]?.id ?? 0);
+      setProjectID(initialScopeID(items, "project_id", tenantID));
       if (!items.length) setLoading(false);
     }).catch((loadError: unknown) => {
       if (!active) return;

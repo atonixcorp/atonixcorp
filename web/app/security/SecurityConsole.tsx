@@ -278,7 +278,7 @@ export function SecurityConsole() {
   return (
     <CloudShell>
       <main className={styles.page}>
-        <header className={styles.heading}>
+        <header className={styles.heading} data-console-heading>
           <div>
             <p className={styles.eyebrow}>ATONIXCORP CLOUD / SECURITY</p>
             <h1>Security</h1>
