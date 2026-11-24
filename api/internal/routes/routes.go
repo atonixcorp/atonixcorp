@@ -120,6 +120,11 @@ func SetupRoutes(
 
 	cloudInstanceController := controllers.NewCloudInstanceController(cloudService)
 	cloudAccountController := controllers.NewCloudAccountController(cloudService)
+	protected.GET(
+		"/integrations/openstack/health",
+		middleware.SecurityRequestMetadata(),
+		cloudInstanceController.OpenStackHealth,
+	)
 	internalCloud := r.Group("/internal/cloud")
 	internalCloud.Use(
 		middleware.SecurityRequestMetadata(),

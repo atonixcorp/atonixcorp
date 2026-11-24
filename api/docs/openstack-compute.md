@@ -84,6 +84,7 @@ resources.
 
 | Method | Path | Purpose |
 |---|---|---|
+| `GET` | `/api/v1/integrations/openstack/health?tenant_id={id}&project_id={id}` | Check Identity and the independently available Compute, Networking, Image, Block Storage, and Placement services |
 | `GET` | `/api/v1/cloud/catalog?tenant_id={id}&project_id={id}` | Return project-authorized images, instance sizes, networks, and service capabilities |
 | `GET` | `/api/v1/cloud/security-groups?tenant_id={id}&project_id={id}` | List Neutron security groups and rules in the organization's mapped OpenStack project |
 | `POST` | `/api/v1/cloud/security-groups?tenant_id={id}&project_id={id}` | Create a mapped-project security group with a restricted TCP 443 test rule |
@@ -97,6 +98,15 @@ resources.
 | `DELETE` | `/api/v1/cloud/instances/{id}` | Request instance deletion |
 | `GET` | `/api/v1/cloud/operations?tenant_id={id}&project_id={id}` | List recent compute operations for an authorized project |
 | `GET` | `/api/v1/cloud/operations/{id}` | Get an operation after checking project membership |
+
+The OpenStack health endpoint requires an authenticated AtonixCorp user with
+access to the selected tenant and project. It checks each service using the
+regional endpoint and interface selected from the authenticated Keystone
+catalog. A service returning HTTP 401 or 403 is reported as
+`permission_denied`; a missing catalog endpoint is `not_configured`; connection
+or other HTTP failures are `unavailable`. One service failure does not hide
+the status of other services. The endpoint never returns Keystone tokens or
+service URLs.
 
 The catalog endpoint authorizes both tenant and project membership, resolves
 the organization's configured infrastructure account, and reads its live

@@ -24,8 +24,8 @@ export function ResourcePanel({ title, description, action, children }: { title:
 export function ResourceStatus({ value }: { value: string }) {
   const normalized = value.toLowerCase();
   const tone = ["healthy", "running", "active", "available", "succeeded", "connected"].includes(normalized) ? "good"
-    : ["critical", "failed", "error", "down"].includes(normalized) ? "bad"
-    : ["warning", "degraded", "pending", "provisioning", "building"].includes(normalized) ? "warning" : "neutral";
+    : ["critical", "failed", "error", "down", "unavailable", "permission denied"].includes(normalized) ? "bad"
+    : ["warning", "degraded", "pending", "provisioning", "building", "not configured"].includes(normalized) ? "warning" : "neutral";
   return <span className={styles.status} data-tone={tone}><span aria-hidden="true" />{value.replaceAll("_", " ")}</span>;
 }
 

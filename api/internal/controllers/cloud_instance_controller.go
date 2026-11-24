@@ -112,6 +112,26 @@ func (c *CloudInstanceController) Capabilities(ctx *gin.Context) {
 	})
 }
 
+func (c *CloudInstanceController) OpenStackHealth(ctx *gin.Context) {
+	userID, ok := authenticatedUserID(ctx)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		return
+	}
+	tenantID, projectID, ok := cloudProjectScope(ctx)
+	if !ok {
+		return
+	}
+	health, err := c.service.OpenStackHealth(
+		ctx.Request.Context(), userID, tenantID, projectID,
+	)
+	if err != nil {
+		writeCloudInstanceError(ctx, err)
+		return
+	}
+	ctx.JSON(http.StatusOK, health)
+}
+
 func (c *CloudInstanceController) Catalog(ctx *gin.Context) {
 	userID, ok := authenticatedUserID(ctx)
 	if !ok {

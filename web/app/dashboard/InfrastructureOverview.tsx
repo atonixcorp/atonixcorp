@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { getCatalog, getInstances, type ComputeTenant } from "@/app/compute/lib/api";
+import { getCatalog, getInstances, getOpenStackHealth, type ComputeTenant } from "@/app/compute/lib/api";
 import { getOverview as getStorage, getVolumes, getVolumeTypes } from "@/app/storage/lib/api";
 import { getOverview as getHealth, getMetrics, getEvents, getAlerts } from "@/app/observability/lib/api";
 import { getDeployments } from "@/app/containers/lib/api";
@@ -28,6 +28,7 @@ export default function InfrastructureOverview({ workspaces, revision }: { works
   const [status, setStatus] = useState("");
   const instances = useCloudResource(getInstances, tenantID, projectID, revision);
   const catalog = useCloudResource(getCatalog, tenantID, projectID, revision);
+  const openStackHealth = useCloudResource(getOpenStackHealth, tenantID, projectID, revision);
   const networks = useCloudResource(getNetworks, tenantID, projectID, revision);
   const storage = useCloudResource(getStorage, tenantID, projectID, revision);
   const volumes = useCloudResource(getVolumes, tenantID, projectID, revision);
@@ -43,6 +44,7 @@ export default function InfrastructureOverview({ workspaces, revision }: { works
   const createInstanceHref = scopedHref("/compute/deploy");
   const sources = [
     { name: "Compute instances", resource: instances }, { name: "Compute catalog", resource: catalog },
+    { name: "OpenStack health", resource: openStackHealth },
     { name: "Networking", resource: networks }, { name: "Storage summary", resource: storage },
     { name: "Volumes", resource: volumes }, { name: "Infrastructure health", resource: health },
     { name: "Metrics", resource: metrics }, { name: "Events", resource: events },
@@ -97,6 +99,7 @@ export default function InfrastructureOverview({ workspaces, revision }: { works
 
     <ResourceGrid>
       <ResourceSummaryCard icon="compute" title="Compute" value={allocation ? `${allocation.vcpus} vCPU` : instances.state === "loading" || catalog.state === "loading" ? "Loading..." : "Unavailable"} detail="Allocated to listed instances, not free capacity" href={scopedHref("/compute/instances")} />
+      <ResourceSummaryCard icon="compute" title="OpenStack" value={summaryValue(openStackHealth, (data) => data.status.replaceAll("_", " "))} detail="Live service checks for the selected project" />
       <ResourceSummaryCard icon="compute" title="Memory" value={allocation ? `${allocation.memoryGB.toLocaleString()} GiB` : instances.state === "loading" || catalog.state === "loading" ? "Loading..." : "Unavailable"} detail="Instance size allocation, not live memory use" />
       <ResourceSummaryCard icon="storage" title="Block storage" value={summaryValue(storage, (data) => `${data.used_gb.toLocaleString()} GB`)} detail="Provisioned volume capacity" href={scopedHref("/storage")} />
       <ResourceSummaryCard icon="compute" title="Instances" value={summaryValue(instances, (data) => data.length)} detail={instances.state === "ready" ? `${instances.data.filter((item) => item.status === "running").length} running` : "Project instance inventory"} href={scopedHref("/compute/instances")} />
@@ -107,6 +110,17 @@ export default function InfrastructureOverview({ workspaces, revision }: { works
     <div className={styles.operations}>
       <ResourcePanel title="Capacity and service coverage" description="Allocation, quotas and physical capacity are different measurements">
         <div className={styles.health}>
+          <strong>OpenStack service health</strong>
+          <ResourceState resource={openStackHealth}>{(data) => <div className={styles.health}>
+            {([
+              ["Identity", data.services.identity],
+              ["Compute", data.services.compute],
+              ["Networking", data.services.network],
+              ["Images", data.services.image],
+              ["Block storage", data.services.block_storage],
+              ["Placement", data.services.placement],
+            ] as const).map(([name, value]) => <div key={name}><span>{name}</span><ResourceStatus value={value.replaceAll("_", " ")} /></div>)}
+          </div>}</ResourceState>
           <div><span>Unallocated CPU / RAM capacity</span><ResourceStatus value="Not reported" /></div>
           <p>The compute API does not publish physical capacity or remaining CPU/RAM quotas. Allocated resources above must not be interpreted as available capacity.</p>
           <div><span>Remaining block storage quota</span><strong>{summaryValue(storage, (data) => {

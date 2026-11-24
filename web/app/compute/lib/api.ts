@@ -46,6 +46,17 @@ type ComputeCatalogResponse = {
 
 export type ComputeTenant = { id: number; name: string };
 export type ComputeProject = { id: number; tenant_id: number; name: string };
+export type OpenStackHealth = {
+  status: "available" | "degraded" | "unavailable" | "not_configured";
+  services: {
+    identity: string;
+    compute: string;
+    network: string;
+    image: string;
+    block_storage: string;
+    placement: string;
+  };
+};
 export type CreateInstanceRequest = {
   tenant_id: number;
   project_id: number;
@@ -207,6 +218,14 @@ export function getComputeCapabilities(tenantID: number): Promise<{
       orchestration: boolean;
     };
   }>(`/api/compute/instances/capabilities?tenant_id=${tenantID}`);
+}
+
+export function getOpenStackHealth(
+  tenantID: number,
+  projectID: number,
+): Promise<OpenStackHealth> {
+  const query = new URLSearchParams({ tenant_id: String(tenantID), project_id: String(projectID) });
+  return requestJSON<OpenStackHealth>(`/api/openstack/health?${query}`);
 }
 
 export function createInstance(

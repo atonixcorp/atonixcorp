@@ -191,6 +191,45 @@ func (s *Service) TenantCapabilities(
 	return enabled, provider.Region(), capabilities, nil
 }
 
+func (s *Service) OpenStackHealth(
+	ctx context.Context, userID, tenantID, projectID uint,
+) (OpenStackServiceHealth, error) {
+	if userID == 0 || tenantID == 0 || projectID == 0 {
+		return OpenStackServiceHealth{}, ErrForbidden
+	}
+	if err := s.authorizeProject(ctx, userID, tenantID, projectID, false); err != nil {
+		return OpenStackServiceHealth{}, err
+	}
+	provider, err := s.providerForTenant(ctx, tenantID)
+	if errors.Is(err, ErrCloudAccountNotConfigured) {
+		return openStackHealthWithStatus("not_configured"), nil
+	}
+	if errors.Is(err, ErrProviderRequest) || errors.Is(err, ErrProviderUnavailable) ||
+		errors.Is(err, ErrAccountEncryptionUnavailable) {
+		return openStackHealthWithStatus("unavailable"), nil
+	}
+	if err != nil {
+		return OpenStackServiceHealth{}, err
+	}
+	healthProvider, ok := provider.(interface {
+		IntegrationHealth(context.Context) OpenStackServiceHealth
+	})
+	if !ok {
+		return openStackHealthWithStatus("unavailable"), nil
+	}
+	return healthProvider.IntegrationHealth(ctx), nil
+}
+
+func openStackHealthWithStatus(status string) OpenStackServiceHealth {
+	return OpenStackServiceHealth{
+		Status: status,
+		Services: OpenStackServiceStatuses{
+			Identity: status, Compute: status, Network: status, Image: status,
+			BlockStorage: status, Placement: status,
+		},
+	}
+}
+
 func (s *Service) providerForTenant(ctx context.Context, tenantID uint) (Provider, error) {
 	providerName := s.providerName()
 	if providerName == "" {

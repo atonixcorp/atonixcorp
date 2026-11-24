@@ -4,6 +4,7 @@ import { allocatedCompute, utilizationSample, recentResources, remainingQuota } 
 import { initialScopeID, resolveScopeID, scopedCloudHref } from "../shared/lib/cloud-scope.ts";
 import { cloudNavigation, isCloudNavigationItemActive } from "../shared/ui/cloud-navigation.ts";
 import { getFirewallGroups } from "../networking/api.ts";
+import { getOpenStackHealth } from "../compute/lib/api.ts";
 
 test("compute allocation joins actual instance sizes and refuses incomplete totals", () => {
   const plans = [{ id: "small", vcpus: 2, memory_mb: 2048 }, { id: "large", vcpus: 8, memory_mb: 16384 }];
@@ -115,6 +116,33 @@ test("firewall inventory uses the project API and preserves permission and depen
     }
     globalThis.fetch = async () => Response.json([]);
     assert.deepEqual(await getFirewallGroups(2, 22), []);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("OpenStack health is requested through the scoped platform API", async () => {
+  const originalFetch = globalThis.fetch;
+  const health = {
+    status: "degraded",
+    services: {
+      identity: "available",
+      compute: "available",
+      network: "permission_denied",
+      image: "available",
+      block_storage: "not_configured",
+      placement: "unavailable",
+    },
+  };
+  try {
+    globalThis.fetch = async (path, init) => {
+      assert.equal(path, "/api/openstack/health?tenant_id=2&project_id=22");
+      assert.equal(init.cache, "no-store");
+      return Response.json(health);
+    };
+    assert.deepEqual(await getOpenStackHealth(2, 22), health);
+    globalThis.fetch = async () => Response.json({ error: "Project access denied." }, { status: 403 });
+    await assert.rejects(getOpenStackHealth(2, 22), /Project access denied/);
   } finally {
     globalThis.fetch = originalFetch;
   }

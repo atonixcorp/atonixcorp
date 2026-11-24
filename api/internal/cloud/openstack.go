@@ -39,10 +39,30 @@ type OpenStackProvider struct {
 	Compute                  *gophercloud.ServiceClient
 	Network                  *gophercloud.ServiceClient
 	config                   OpenStackConfig
+	catalog                  []openStackCatalogService
 	region                   string
 	projectID                string
 	allowProjectProvisioning bool
 	capabilities             ComputeCapabilities
+}
+
+type OpenStackServiceHealth struct {
+	Status   string                   `json:"status"`
+	Services OpenStackServiceStatuses `json:"services"`
+}
+
+type OpenStackServiceStatuses struct {
+	Identity     string `json:"identity"`
+	Compute      string `json:"compute"`
+	Network      string `json:"network"`
+	Image        string `json:"image"`
+	BlockStorage string `json:"block_storage"`
+	Placement    string `json:"placement"`
+}
+
+type openStackHealthProbeResult struct {
+	setStatus func(string)
+	status    string
 }
 
 type openStackImage struct {
@@ -202,6 +222,7 @@ func NewOpenStackProvider(ctx context.Context, cfg OpenStackConfig) (*OpenStackP
 	}
 	return &OpenStackProvider{
 		Provider: provider, Compute: compute, Network: network, config: cfg, region: cfg.Region,
+		catalog: tokenInfo.Catalog,
 		projectID:                cfg.ProjectID,
 		allowProjectProvisioning: cfg.AllowProjectProvisioning,
 		capabilities:             capabilities,
@@ -398,6 +419,161 @@ func openStackCapabilities(
 		}
 	}
 	return capabilities
+}
+
+func (p *OpenStackProvider) IntegrationHealth(ctx context.Context) OpenStackServiceHealth {
+	if p.Provider == nil || p.Provider.TokenID == "" {
+		return openStackHealthWithStatus("unavailable")
+	}
+	health := OpenStackServiceHealth{Services: OpenStackServiceStatuses{
+		Identity: "available", Compute: "not_configured", Network: "not_configured",
+		Image: "not_configured", BlockStorage: "not_configured", Placement: "not_configured",
+	}}
+	services := []struct {
+		types      []string
+		path       string
+		setStatus  func(string)
+		projectURL bool
+	}{
+		{
+			types: []string{"compute"}, path: "flavors/detail?limit=1",
+			setStatus: func(status string) { health.Services.Compute = status },
+		},
+		{
+			types: []string{"network", "networking"}, path: "networks?limit=1",
+			setStatus: func(status string) { health.Services.Network = status },
+		},
+		{
+			types: []string{"image"}, path: "images?limit=1",
+			setStatus: func(status string) { health.Services.Image = status },
+		},
+		{
+			types: []string{"block-storage", "block-store", "volume", "volumev2", "volumev3"},
+			path: "volumes/detail?limit=1", projectURL: true,
+			setStatus: func(status string) { health.Services.BlockStorage = status },
+		},
+		{
+			types: []string{"placement"}, path: "resource_providers?limit=1",
+			setStatus: func(status string) { health.Services.Placement = status },
+		},
+	}
+	results := make(chan openStackHealthProbeResult, len(services))
+	for _, service := range services {
+		service := service
+		go func() {
+			endpoint := openStackCatalogEndpointFor(
+				p.catalog, service.types, p.region, p.config.Interface,
+			)
+			if endpoint == "" {
+				results <- openStackHealthProbeResult{setStatus: service.setStatus, status: "not_configured"}
+				return
+			}
+			if service.projectURL {
+				projectID := url.PathEscape(p.projectID)
+				endpoint = strings.NewReplacer(
+					"%(project_id)s", projectID,
+					"%(tenant_id)s", projectID,
+					"{project_id}", projectID,
+					"{tenant_id}", projectID,
+				).Replace(endpoint)
+				if projectID != "" && !strings.Contains(strings.TrimRight(endpoint, "/"), "/"+projectID) {
+					endpoint = strings.TrimRight(endpoint, "/") + "/" + projectID
+				}
+			}
+			status := probeOpenStackEndpoint(
+				ctx, p.Provider, endpoint, service.path, p.config.AllowInsecureHTTP,
+			)
+			results <- openStackHealthProbeResult{setStatus: service.setStatus, status: status}
+		}()
+	}
+	for range services {
+		result := <-results
+		result.setStatus(result.status)
+	}
+	health.Status = "available"
+	for _, status := range []string{
+		health.Services.Identity, health.Services.Compute, health.Services.Network,
+		health.Services.Image, health.Services.BlockStorage, health.Services.Placement,
+	} {
+		if status != "available" {
+			health.Status = "degraded"
+			break
+		}
+	}
+	return health
+}
+
+func openStackCatalogEndpointFor(
+	catalog []openStackCatalogService, serviceTypes []string, region, interfaceName string,
+) string {
+	for _, service := range catalog {
+		matchesType := false
+		for _, serviceType := range serviceTypes {
+			if service.Type == serviceType {
+				matchesType = true
+				break
+			}
+		}
+		if !matchesType {
+			continue
+		}
+		for _, endpoint := range service.Endpoints {
+			endpointRegion := endpoint.Region
+			if endpointRegion == "" {
+				endpointRegion = endpoint.RegionID
+			}
+			if strings.TrimSpace(endpoint.URL) != "" &&
+				(endpointRegion == "" || endpointRegion == region) &&
+				(endpoint.Interface == "" || endpoint.Interface == interfaceName) {
+				return endpoint.URL
+			}
+		}
+	}
+	return ""
+}
+
+func probeOpenStackEndpoint(
+	ctx context.Context,
+	provider *gophercloud.ProviderClient,
+	endpoint, resourcePath string,
+	allowInsecureHTTP bool,
+) string {
+	if provider == nil || provider.TokenID == "" {
+		return "unavailable"
+	}
+	parsed, err := url.Parse(endpoint)
+	if err != nil || parsed.Host == "" || parsed.User != nil ||
+		parsed.RawQuery != "" || parsed.Fragment != "" ||
+		(parsed.Scheme != "https" && !(parsed.Scheme == "http" && allowInsecureHTTP)) {
+		return "unavailable"
+	}
+	probeURL := strings.TrimRight(endpoint, "/") + "/" + resourcePath
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, probeURL, nil)
+	if err != nil {
+		return "unavailable"
+	}
+	request.Header.Set("X-Auth-Token", provider.TokenID)
+	request.Header.Set("Accept", "application/json")
+	client := &http.Client{
+		Timeout: 4 * time.Second,
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return "unavailable"
+	}
+	defer response.Body.Close()
+	switch response.StatusCode {
+	case http.StatusUnauthorized, http.StatusForbidden:
+		return "permission_denied"
+	default:
+		if response.StatusCode >= http.StatusOK && response.StatusCode < http.StatusMultipleChoices {
+			return "available"
+		}
+		return "unavailable"
+	}
 }
 
 func validOpenStackInterface(interfaceName string) bool {

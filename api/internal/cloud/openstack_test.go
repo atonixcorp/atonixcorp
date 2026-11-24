@@ -163,6 +163,77 @@ func TestCatalogPageURLAddsOpenStackMarkerAndLimit(t *testing.T) {
 	}
 }
 
+func TestOpenStackIntegrationHealthChecksServicesIndependently(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.Header.Get("X-Auth-Token") != "health-token" {
+			t.Errorf("%s request missing auth token", request.URL.Path)
+		}
+		switch request.URL.Path {
+		case "/compute/flavors/detail":
+			writer.WriteHeader(http.StatusOK)
+		case "/network/networks":
+			writer.WriteHeader(http.StatusForbidden)
+		case "/image/images":
+			writer.WriteHeader(http.StatusServiceUnavailable)
+		case "/volume/v3/openstack-project/volumes/detail":
+			writer.WriteHeader(http.StatusOK)
+		case "/placement/resource_providers":
+			writer.WriteHeader(http.StatusOK)
+		default:
+			t.Errorf("unexpected health probe path %s", request.URL.Path)
+			writer.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	endpoint := func(serviceType, path string) openStackCatalogService {
+		return openStackCatalogService{
+			Type: serviceType,
+			Endpoints: []openStackCatalogEndpoint{{
+				Region: "RegionOne", Interface: "public", URL: server.URL + path,
+			}},
+		}
+	}
+	provider := &OpenStackProvider{
+		Provider:  &gophercloud.ProviderClient{TokenID: "health-token"},
+		projectID: "openstack-project",
+		region:    "RegionOne",
+		config:    OpenStackConfig{Interface: "public", AllowInsecureHTTP: true},
+		catalog: []openStackCatalogService{
+			endpoint("compute", "/compute"),
+			endpoint("network", "/network"),
+			endpoint("image", "/image"),
+			endpoint("volumev3", "/volume/v3"),
+			endpoint("placement", "/placement"),
+		},
+	}
+
+	health := provider.IntegrationHealth(context.Background())
+	if health.Services.Identity != "available" ||
+		health.Services.Compute != "available" ||
+		health.Services.Network != "permission_denied" ||
+		health.Services.Image != "unavailable" ||
+		health.Services.BlockStorage != "available" ||
+		health.Services.Placement != "available" ||
+		health.Status != "degraded" {
+		t.Fatalf("unexpected OpenStack health: %+v", health)
+	}
+}
+
+func TestOpenStackIntegrationHealthReportsMissingCatalogServices(t *testing.T) {
+	provider := &OpenStackProvider{
+		Provider: &gophercloud.ProviderClient{TokenID: "health-token"},
+		region:   "RegionOne",
+		config:   OpenStackConfig{Interface: "public"},
+	}
+	health := provider.IntegrationHealth(context.Background())
+	if health.Status != "degraded" || health.Services.Identity != "available" ||
+		health.Services.Compute != "not_configured" ||
+		health.Services.BlockStorage != "not_configured" {
+		t.Fatalf("unexpected health for a partial catalog: %+v", health)
+	}
+}
+
 func TestSecurityGroupRequestsAreScopedAndUseSafeTestRule(t *testing.T) {
 	var groupCreated, ruleCreated bool
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
